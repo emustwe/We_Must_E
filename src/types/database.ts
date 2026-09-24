@@ -954,6 +954,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_activate_survey: {
+        Args: { p_survey_id: string }
+        Returns: undefined
+      }
+      admin_activate_test: { Args: { p_test_id: string }; Returns: undefined }
       admin_get_answer_keys: {
         Args: { p_test_id: string }
         Returns: {
@@ -972,6 +977,30 @@ export type Database = {
         Returns: number
       }
       admin_revoke_grant: { Args: { p_grant_id: string }; Returns: undefined }
+      admin_search_employees: {
+        Args: {
+          p_availability?: Database["public"]["Enums"]["availability"]
+          p_city?: string
+          p_min_score?: number
+          p_page?: number
+          p_query?: string
+          p_status?: Database["public"]["Enums"]["employee_status"]
+        }
+        Returns: {
+          availability: Database["public"]["Enums"]["availability"][]
+          city_emirate: string
+          created_at: string
+          full_name: string
+          headline: string
+          pending_videos: number
+          skills: string[]
+          status: Database["public"]["Enums"]["employee_status"]
+          test_score: number
+          total_count: number
+          user_id: string
+          video_count: number
+        }[]
+      }
       admin_set_answer_key: {
         Args: { p_correct_option: number; p_question_id: string }
         Returns: undefined
@@ -995,6 +1024,21 @@ export type Database = {
           p_job_id: string
           p_status: Database["public"]["Enums"]["job_status"]
         }
+        Returns: undefined
+      }
+      admin_set_video_status: {
+        Args: {
+          p_status: Database["public"]["Enums"]["video_status"]
+          p_video_id: string
+        }
+        Returns: undefined
+      }
+      admin_swap_survey_questions: {
+        Args: { p_a: string; p_b: string }
+        Returns: undefined
+      }
+      admin_swap_test_questions: {
+        Args: { p_a: string; p_b: string }
         Returns: undefined
       }
       check_rate_limit: {

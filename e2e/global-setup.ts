@@ -1,9 +1,12 @@
 import { execFileSync } from "node:child_process";
+import { rmSync } from "node:fs";
+import { SECRET_FILE } from "./admin-session";
 
 // Local stack only. Resets state the suite depends on:
 // - app rate-limit counters (every test signs up/in from the same IP)
 // - the seeded admin's MFA factors, so the suite can enroll a fresh TOTP secret
 export default function globalSetup() {
+  rmSync(SECRET_FILE, { force: true });
   execFileSync("docker", [
     "exec",
     "supabase_db_we_must_e",

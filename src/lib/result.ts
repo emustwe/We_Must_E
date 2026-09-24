@@ -18,7 +18,8 @@ export type ActionError =
   | "emailTaken"
   | "invalidFile"
   | "timeExpired"
-  | "incomplete";
+  | "incomplete"
+  | "inUse";
 
 export type ActionResult<T = undefined> =
   { ok: true; data: T } | { ok: false; error: ActionError; fieldErrors?: Record<string, string> };

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { login, signOut, unique } from "./helpers";
-import { totp } from "./totp";
+import { loginAsAdmin } from "./admin-session";
 
 // Full marketplace journey across all three roles, using the local seed:
 // admin@wemuste.local (admin) and worker@wemuste.local (finished profile).
@@ -12,12 +12,7 @@ test("admin creates employer → employer posts job → worker requests → empl
   const jobTitle = `Weekend barista ${unique()}`;
 
   // --- Admin: MFA enrollment, then create the employer account ---
-  await login(page, "admin@wemuste.local");
-  await expect(page).toHaveURL(/\/admin\/mfa$/);
-  const secret = (await page.locator("code").first().textContent({ timeout: 15_000 }))!.trim();
-  await page.getByLabel("6-digit code").fill(totp(secret));
-  await page.getByRole("button", { name: "Verify" }).click();
-  await expect(page).toHaveURL(/\/admin$/);
+  await loginAsAdmin(page);
 
   await page.getByRole("link", { name: "Employers" }).first().click();
   await page.getByRole("link", { name: "Create employer" }).click();

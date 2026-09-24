@@ -320,6 +320,33 @@ select ok(tests.denied_as(:B, $$select save_test_answer((select id from test_att
   'answers after the time limit are rejected');
 
 -- ---------------------------------------------------------------------------
+-- Admin panel functions
+-- ---------------------------------------------------------------------------
+select ok(tests.denied_as(:B, 'select * from admin_search_employees()'), 'employees cannot search employees');
+select ok(tests.denied_as(:E1, 'select * from admin_search_employees()'), 'employers cannot search employees');
+select ok(tests.denied_as(:AD, 'select * from admin_search_employees()'), 'admin without MFA cannot search employees');
+select ok(tests.rows_as(:AD, 'select * from admin_search_employees()', 'aal2') >= 3, 'MFA admin can search employees');
+select is(tests.rows_as(:AD, $$select * from admin_search_employees('Emp B')$$, 'aal2'), 1, 'search by name');
+select is(tests.rows_as(:AD, $$select * from admin_search_employees(null, null, null, null, 90)$$, 'aal2'), 0, 'min test score filter');
+
+select ok(tests.denied_as(:C, $$update video_resumes set status = 'approved'$$), 'employees cannot approve their own video');
+select ok(tests.denied_as(:AD, $$update video_resumes set status = 'approved'$$, 'aal2'), 'video status only changes through the audited function');
+select tests.run_as(:AD, $$select admin_set_video_status((select id from video_resumes where employee_id = '00000000-0000-0000-0000-0000000000c1'), 'approved')$$, 'aal2');
+select is((select status::text from video_resumes where employee_id = :C), 'approved', 'admin approves a video');
+select ok(exists (select 1 from audit_logs where action = 'video.status_changed' and actor_id = :AD), 'video review is audited');
+
+insert into tests (id, title, time_limit_seconds, pass_score) values ('00000000-0000-0000-0000-00000000c002', '[SAMPLE] Draft test', 300, 50);
+insert into test_questions (id, test_id, prompt, options, position) values
+  ('00000000-0000-0000-0000-00000000d101', '00000000-0000-0000-0000-00000000c002', '[SAMPLE] A', '["x","y"]', 0),
+  ('00000000-0000-0000-0000-00000000d102', '00000000-0000-0000-0000-00000000c002', '[SAMPLE] B', '["x","y"]', 1);
+select ok(tests.denied_as(:AD, $$select admin_activate_test('00000000-0000-0000-0000-00000000c002')$$, 'aal2'),
+  'a test cannot be activated until every question has an answer key');
+select tests.run_as(:AD, $$select admin_swap_test_questions('00000000-0000-0000-0000-00000000d101', '00000000-0000-0000-0000-00000000d102')$$, 'aal2');
+select is((select position from test_questions where id = '00000000-0000-0000-0000-00000000d101'), 1, 'questions swap positions');
+select ok(tests.denied_as(:B, $$select admin_swap_test_questions('00000000-0000-0000-0000-00000000d101', '00000000-0000-0000-0000-00000000d102')$$),
+  'employees cannot reorder questions');
+
+-- ---------------------------------------------------------------------------
 -- 8. Nobody changes their own role or status
 -- ---------------------------------------------------------------------------
 select ok(tests.denied_as(:B, $$update profiles set role = 'admin' where id = auth.uid()$$), 'employee cannot change role');

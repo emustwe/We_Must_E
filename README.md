@@ -74,6 +74,14 @@ editor (it has no JWT, which is the only context where roles can change).
 On first login the admin is sent to `/admin/mfa` to enroll an authenticator app; admin pages and admin RLS
 policies require MFA (`aal2`).
 
+### Admin panel
+
+`/admin` (MFA required): review job seekers (survey answers, test score, videos, CV) and approve
+profiles and videos; create and suspend employers; remove jobs from the map; grant employers access to
+chosen job seekers with scopes and expiry; edit the survey, the test (with answer keys) and the video
+questions; read the append-only audit log. Status changes, grants, video reviews and activations run
+through audited database functions.
+
 ### Creating employers
 
 Employers cannot sign up. An admin creates them at **Admin > Employers > Create employer**. The app

@@ -6,8 +6,8 @@ export default async function SecureAdminLayout({ children }: { children: React.
   await requireAdminMfa();
   return (
     <>
-      <div className="pb-24">{children}</div>
       <AdminTabs />
+      <div className="pt-4">{children}</div>
     </>
   );
 }
