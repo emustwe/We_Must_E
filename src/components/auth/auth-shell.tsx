@@ -64,7 +64,7 @@ export async function AuthShell({
           </ul>
         </aside>
 
-        <main className="animate-sheet shadow-float w-full rounded-t-[2rem] bg-background px-5 pt-3 pb-6 sm:max-w-md sm:rounded-[2rem] sm:p-8">
+        <main className="shadow-float w-full rounded-t-[2rem] bg-background px-5 pt-3 pb-6 sm:max-w-md sm:rounded-[2rem] sm:p-8">
           <div
             className="mx-auto mb-5 h-1.5 w-10 rounded-full bg-border sm:hidden"
             aria-hidden="true"

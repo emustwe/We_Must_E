@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/validations/zod";
 import { idSchema } from "@/lib/validations/jobs";
 
 export const SCOPES = ["profile", "survey", "test", "video", "cv", "contact"] as const;

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/validations/zod";
 
 // Messages are keys into messages/*.json ("validation" namespace) so the same
 // schema produces translated errors on the client and the server.

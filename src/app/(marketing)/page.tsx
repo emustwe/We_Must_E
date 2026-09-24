@@ -43,7 +43,7 @@ export default async function LandingPage() {
       </header>
 
       <main className="relative z-10 mt-auto flex flex-1 items-end sm:items-center sm:px-6 lg:px-12">
-        <section className="animate-sheet shadow-float w-full rounded-t-[2rem] bg-background px-5 pt-3 pb-6 sm:max-w-lg sm:rounded-[2rem] sm:p-8">
+        <section className="shadow-float w-full rounded-t-[2rem] bg-background px-5 pt-3 pb-6 sm:max-w-lg sm:rounded-[2rem] sm:p-8">
           <div
             className="mx-auto mb-5 h-1.5 w-10 rounded-full bg-border sm:hidden"
             aria-hidden="true"

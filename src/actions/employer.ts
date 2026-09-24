@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/session";
 import { dbFail } from "@/lib/db-errors";
+import { notifyUser } from "@/lib/email/notify";
 import { logError } from "@/lib/log";
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { withinRateLimit } from "@/lib/security/rate-limit";
@@ -105,6 +106,14 @@ export async function respondToApplication(input: unknown): Promise<ActionResult
     p_accept: parsed.data.accept,
   });
   if (error) return dbFail("respond-application", error);
+  if (parsed.data.accept) {
+    const { data: application } = await supabase
+      .from("job_applications")
+      .select("employee_id")
+      .eq("id", parsed.data.applicationId)
+      .maybeSingle();
+    if (application) notifyUser("jobRequestAccepted", application.employee_id);
+  }
   revalidatePath("/employer", "layout");
   return ok(undefined);
 }

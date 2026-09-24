@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/validations/zod";
 
 // Public configuration only. Server secrets live in env.server.ts, which is
 // guarded by `server-only` so it can never end up in a browser bundle.

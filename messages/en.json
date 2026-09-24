@@ -51,7 +51,8 @@
     "createAccount": "Create an account",
     "resetDone": "Your password was changed. Please log in again.",
     "signedOutAll": "You have been logged out on all devices.",
-    "linkInvalid": "That link is invalid or has expired. Please try again."
+    "linkInvalid": "That link is invalid or has expired. Please try again.",
+    "deleted": "Your account and data were deleted."
   },
   "signup": {
     "employeeTitle": "Create your free account",
@@ -443,7 +444,8 @@
     "content": "Content",
     "audit": "Audit log",
     "candidates": "Candidates",
-    "meetings": "Meetings"
+    "meetings": "Meetings",
+    "account": "Account"
   },
   "categories": {
     "hospitality": "Hospitality",
@@ -760,5 +762,15 @@
     "accepted": "Accepted. The employer will share the meeting link here.",
     "declined": "You declined this invite.",
     "noLinkYet": "The employer hasn't added the link yet."
+  },
+  "account": {
+    "title": "Account",
+    "deleteTitle": "Delete my account",
+    "deleteBody": "This permanently deletes your profile, answers, videos, CV and requests. It can't be undone.",
+    "deleteStart": "Delete my account",
+    "typeDelete": "Type DELETE to confirm",
+    "deleteForever": "Delete forever",
+    "cancel": "Cancel",
+    "employerDeleteBody": "This permanently deletes your company account, your jobs and their requests. It can't be undone."
   }
 }

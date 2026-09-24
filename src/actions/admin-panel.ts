@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdminMfa } from "@/lib/auth/session";
 import { dbFail } from "@/lib/db-errors";
+import { notifyUser } from "@/lib/email/notify";
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { createClient } from "@/lib/supabase/server";
 import { toFieldErrors } from "@/lib/validations/auth";
@@ -83,6 +84,7 @@ export async function createGrant(input: unknown): Promise<ActionResult<{ count:
     p_note: note || undefined,
   });
   if (error) return dbFail("admin-grant", error);
+  notifyUser("candidatesShared", employerId);
   revalidatePath("/admin/grants");
   return ok({ count: data ?? 0 });
 }

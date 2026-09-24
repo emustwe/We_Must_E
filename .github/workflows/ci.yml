@@ -72,6 +72,7 @@ jobs:
             echo "NEXT_PUBLIC_SITE_URL=http://localhost:3100"
             echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
             echo "IP_HASH_SECRET=$(openssl rand -base64 48)"
+            echo "SMTP_URL=smtp://127.0.0.1:54325"
           } > .env.local
       - run: npx playwright install --with-deps chromium
       - name: End-to-end tests (all three roles)

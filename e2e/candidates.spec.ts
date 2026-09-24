@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { createUser, psql, uploadObject } from "./db";
 import { login, signOut, unique } from "./helpers";
+import { waitForEmail } from "./mailpit";
 
 const PASSWORD = "Candidate-Pass-2026!";
 
@@ -71,11 +72,17 @@ test("employer views a granted candidate, plays a logged video, and books a meet
   // --- Meeting request with one proposed time (tomorrow 10:00 local) ---
   const tomorrow = new Date(Date.now() + 86_400_000);
   const local = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, "0")}-${String(tomorrow.getDate()).padStart(2, "0")}T10:00`;
+  const invitedAt = new Date(Date.now() - 1000);
   await page.getByRole("button", { name: "Request a meeting" }).click();
   await page.getByLabel("Time 1").fill(local);
   await page.getByRole("button", { name: "Send request" }).click();
   await expect(page.getByText("Meeting request sent.")).toBeVisible();
   await expect(page.getByText("Waiting for reply")).toBeVisible();
+  // The job seeker is emailed, with no personal details in the email.
+  const invite = await waitForEmail(email, /new meeting request/, invitedAt);
+  expect(invite.text).toContain("/employee/requests");
+  for (const secret of ["Sample Cafe Group", name, "Forklift"])
+    expect(invite.html).not.toContain(secret);
   await signOut(page);
 
   // --- Job seeker: pick the time ---
@@ -83,8 +90,15 @@ test("employer views a granted candidate, plays a logged video, and books a meet
   await expect(page).toHaveURL(/\/employee$/);
   await page.getByRole("link", { name: "Requests" }).click();
   await expect(page.getByRole("heading", { name: "Meeting invites" })).toBeVisible();
+  const repliedAt = new Date(Date.now() - 1000);
   await page.getByRole("button", { name: /Pick this time/ }).click();
   await expect(page.getByText("The employer hasn't added the link yet.")).toBeVisible();
+  const reply = await waitForEmail(
+    "employer@wemuste.local",
+    /replied to your meeting request/,
+    repliedAt,
+  );
+  expect(reply.html).not.toContain(name);
   await page.getByRole("link", { name: "Profile", exact: true }).click();
   await signOut(page);
 
@@ -108,8 +122,11 @@ test("employer views a granted candidate, plays a logged video, and books a meet
   const stranger = psql(
     `select user_id from public.employee_profiles where user_id <> '${id}' and status = 'draft' limit 1`,
   );
-  const res = await page.goto(`/employer/candidates/${stranger}`);
-  expect(res!.status()).toBe(404);
+  // With a loading skeleton the page streams first, so Next.js serves the
+  // not-found UI (noindex) rather than a 404 status; nothing leaks either way.
+  await page.goto(`/employer/candidates/${stranger}`);
+  await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Profile" })).toHaveCount(0);
   await page.goto("/employer");
   await signOut(page);
 

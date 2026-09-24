@@ -13,7 +13,13 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const t = await getTranslations("login");
   const params = await searchParams;
   const notice =
-    params.reset === "1" ? t("resetDone") : params.signedOut === "all" ? t("signedOutAll") : null;
+    params.reset === "1"
+      ? t("resetDone")
+      : params.signedOut === "all"
+        ? t("signedOutAll")
+        : params.deleted === "1"
+          ? t("deleted")
+          : null;
   const linkError = params.link === "invalid" ? t("linkInvalid") : null;
 
   return (

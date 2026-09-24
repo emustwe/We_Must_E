@@ -4,6 +4,7 @@ import { randomInt } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { requireAdminMfa } from "@/lib/auth/session";
 import { dbFail } from "@/lib/db-errors";
+import { notifyUser } from "@/lib/email/notify";
 import { logError } from "@/lib/log";
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -61,6 +62,7 @@ export async function createEmployer(input: unknown): Promise<ActionResult<Creat
   });
   if (approveError) return dbFail("admin-approve-employer", approveError);
 
+  notifyUser("employerAccountReady", data.user.id);
   revalidatePath("/admin/employers");
   return ok({ email, temporaryPassword: password, companyName });
 }

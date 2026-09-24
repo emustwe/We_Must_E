@@ -98,7 +98,8 @@ password at first login. Under the hood the service role creates the user with
 - **Auth > Attack protection:** CAPTCHA ON with Cloudflare Turnstile.
 - **Auth > Rate limits:** review the defaults. The app adds its own limits on signup, login and reset.
 - **Auth > MFA:** TOTP enabled.
-- **Auth > SMTP:** Resend as custom SMTP (Phase 6).
+- **Auth > SMTP:** Resend as custom SMTP (host `smtp.resend.com`, port 465, user `resend`, password =
+  a Resend API key), sender on your verified domain, so verification/reset emails come from Wemuste.
 - **Storage:** the project-wide upload limit must be ≥ 100 MB for video resumes (the Free plan caps it at 50 MB).
 
 ## Security model (summary)
@@ -121,6 +122,50 @@ password at first login. Under the hood the service role creates the user with
   user-scoped client so RLS applies, and return generic errors.
 - Nonce-based CSP, HSTS, `nosniff`, strict referrer policy and a camera/microphone-only permissions policy.
 - CI fails if a secret value appears in `.next/static` (`npm run check:bundle`) or gitleaks finds a secret.
+
+## Emails
+
+Transactional emails (`src/emails`, sent from `src/lib/email`) go out after the response, never block an
+action, and contain no personal data, only "log in to see it":
+
+| Email                            | To         | When                                                         |
+| -------------------------------- | ---------- | ------------------------------------------------------------ |
+| Employer account ready           | employer   | an admin creates the account (the password is never emailed) |
+| New candidates shared            | employer   | an admin grants access                                       |
+| New meeting request              | job seeker | an employer proposes times                                   |
+| Reply to your meeting request    | employer   | the job seeker picks a time or declines                      |
+| Good news about your job request | job seeker | an employer accepts their request                            |
+
+## Account deletion
+
+Job seekers (Profile) and employers (Account) can delete their account after typing `DELETE`. This
+revokes grants, deletes their files and the auth user (which cascades through every table), and leaves a
+single pseudonymous `account.deleted` audit entry (id + role). Admin accounts can't self-delete.
+
+## Performance and accessibility
+
+Lighthouse (mobile, simulated slow 4G) on the public pages: performance 90-95, accessibility 100, best
+practices 100, SEO 100. Public pages don't load the map library: their backgrounds are small static WebP
+renders (a 38 KB portrait crop on phones). Zod runs in jitless mode so the strict CSP (no `unsafe-eval`)
+is never violated.
+
+## Final security checklist
+
+- [x] RLS enabled and forced on every table; `npx supabase test db` passes (109 tests)
+- [x] No public storage buckets; signed URLs expire in 5 minutes
+- [x] Service-role key only in `server-only` files; `npm run check:bundle` finds nothing
+- [x] Roles in `profiles`; no path for users to change role or status (tested)
+- [x] Admin requires MFA (`aal2`) in pages and in RLS
+- [x] Every server action validates with Zod (`strictObject`) and checks the role
+- [x] Test answer keys unreadable by any client (no RLS policies at all)
+- [x] App-level rate limits on auth, requests, uploads, meetings, media links; enable CAPTCHA and
+      Supabase rate limits in the hosted project
+- [x] Security headers and nonce CSP on every response
+- [x] Employer access only through active, unexpired, scoped grants or the candidate's own request,
+      from an approved employer to an approved/submitted candidate
+- [x] Every employer view of candidate data and media logged in `audit_logs`
+- [x] No personal data in logs, URLs or emails
+- [x] Consent recorded at signup (and required before a profile can be submitted)
 
 ## Maps
 

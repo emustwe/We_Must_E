@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { signOut } from "@/actions/auth";
+import { DeleteAccountCard } from "@/components/layout/delete-account";
 import { SignOutEverywhereCard } from "@/components/layout/sign-out-everywhere";
 import { Button } from "@/components/ui/button";
 import { requireRole } from "@/lib/auth/session";
@@ -78,6 +79,7 @@ export default async function EmployeeProfilePage() {
       ) : null}
 
       <SignOutEverywhereCard body={t("securityBody")} />
+      <DeleteAccountCard />
       <form action={signOut}>
         <Button type="submit" variant="ghost" size="touch" className="w-full text-muted-foreground">
           {tc("signOut")}

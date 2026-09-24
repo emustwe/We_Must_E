@@ -1180,6 +1180,7 @@ export type Database = {
         Args: { p_employee_id: string; p_ip_hash?: string; p_scope: string }
         Returns: undefined
       }
+      record_account_deletion: { Args: never; Returns: undefined }
       request_job: {
         Args: { p_job_id: string; p_message?: string }
         Returns: string

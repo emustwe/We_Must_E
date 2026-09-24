@@ -23,12 +23,24 @@ export function MapBackdrop({
 }) {
   return (
     <div className={cn("absolute inset-0 overflow-hidden", className)}>
+      {/* Phones get a small portrait crop; WebP with a JPEG fallback. */}
       <picture>
-        <source srcSet="/brand/map-dark.jpg" media="(prefers-color-scheme: dark)" />
+        <source
+          media="(prefers-color-scheme: dark) and (max-width: 640px)"
+          srcSet="/brand/map-dark-600.webp"
+          type="image/webp"
+        />
+        <source
+          media="(prefers-color-scheme: dark)"
+          srcSet="/brand/map-dark-1600.webp"
+          type="image/webp"
+        />
+        <source media="(max-width: 640px)" srcSet="/brand/map-light-600.webp" type="image/webp" />
+        <source srcSet="/brand/map-light-1600.webp" type="image/webp" />
         <img
           src="/brand/map-light.jpg"
           alt={alt}
-          className="size-full object-cover object-[60%_40%]"
+          className="size-full object-cover object-center sm:object-[60%_40%]"
           fetchPriority="high"
           decoding="async"
         />

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/validations/zod";
 import { AVAILABILITY, CITIES } from "@/lib/jobs/meta";
 import { idSchema } from "@/lib/validations/jobs";
 

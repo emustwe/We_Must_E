@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from "@/lib/validations/zod";
 import { idSchema } from "@/lib/validations/jobs";
 
 const slot = z

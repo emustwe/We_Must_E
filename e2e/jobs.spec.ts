@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { login, signOut, unique } from "./helpers";
+import { waitForEmail } from "./mailpit";
 import { loginAsAdmin } from "./admin-session";
 
 // Full marketplace journey across all three roles, using the local seed:
@@ -20,10 +21,14 @@ test("admin creates employer → employer posts job → worker requests → empl
   await page.getByLabel("Contact person").fill("Omar Ali");
   await page.getByLabel("Phone number").fill("+971 50 123 4567");
   await page.getByLabel("Login email").fill(employerEmail);
+  const createdAt = new Date(Date.now() - 1000);
   await page.getByRole("button", { name: "Create account" }).click();
   await expect(page.getByRole("heading", { name: "Account created" })).toBeVisible();
   const tempPassword = (await page.getByTestId("temp-password").textContent())!.trim();
   expect(tempPassword).toMatch(/^[A-Za-z0-9]{4}(-[A-Za-z0-9]{4}){3}$/);
+  // The welcome email never contains the password.
+  const welcome = await waitForEmail(employerEmail, /employer account is ready/, createdAt);
+  expect(welcome.html).not.toContain(tempPassword);
   await signOut(page);
 
   // --- Employer: first login forces a password change ---
@@ -86,10 +91,17 @@ test("admin creates employer → employer posts job → worker requests → empl
   await expect(page.getByText("“I have 3 years of barista experience.”")).toBeVisible();
   await expect(page.getByText("Maria Santos")).toHaveCount(0);
   await expect(page.getByText("Name and contact details appear when you accept.")).toBeVisible();
+  const acceptedAt = new Date(Date.now() - 1000);
   await page.getByRole("button", { name: "Accept" }).click();
   await expect(page.getByText("Maria Santos")).toBeVisible();
   await expect(page.getByRole("link", { name: "worker@wemuste.local" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Call" })).toBeVisible();
+  const good = await waitForEmail(
+    "worker@wemuste.local",
+    /Good news about your job request/,
+    acceptedAt,
+  );
+  for (const secret of ["Harbour Coffee", jobTitle]) expect(good.html).not.toContain(secret);
   await signOut(page);
 
   // --- Worker: exact address unlocked ---

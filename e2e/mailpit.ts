@@ -24,3 +24,24 @@ export async function waitForAuthLink(
   }
   throw new Error(`No auth email for ${to}`);
 }
+
+// Waits for an email to `to` whose subject matches, and returns its content.
+export async function waitForEmail(to: string, subject: RegExp, since: Date, timeoutMs = 20_000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const res = await fetch(`${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:"${to}"`)}`);
+    const { messages = [] } = (await res.json()) as {
+      messages?: { ID: string; Created: string; Subject: string }[];
+    };
+    const match = messages.find((m) => new Date(m.Created) >= since && subject.test(m.Subject));
+    if (match) {
+      const message = (await (await fetch(`${MAILPIT}/api/v1/message/${match.ID}`)).json()) as {
+        HTML: string;
+        Text: string;
+      };
+      return { subject: match.Subject, html: message.HTML, text: message.Text };
+    }
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  throw new Error(`No email "${subject}" for ${to}`);
+}

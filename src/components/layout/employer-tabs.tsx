@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, MapPinned, Users } from "lucide-react";
+import { CalendarDays, MapPinned, Settings, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { PillNav } from "@/components/layout/pill-nav";
 
@@ -19,6 +19,7 @@ export function EmployerTabs() {
         },
         { href: "/employer/candidates", label: t("candidates"), icon: Users },
         { href: "/employer/meetings", label: t("meetings"), icon: CalendarDays },
+        { href: "/employer/account", label: t("account"), icon: Settings },
       ]}
     />
   );

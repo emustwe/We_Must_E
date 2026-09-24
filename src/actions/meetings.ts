@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/session";
 import { dbFail } from "@/lib/db-errors";
+import { notifyUser } from "@/lib/email/notify";
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { getIpHash } from "@/lib/security/ip";
 import { withinRateLimit } from "@/lib/security/rate-limit";
@@ -31,6 +32,7 @@ export async function requestMeeting(input: unknown): Promise<ActionResult> {
   });
   if (error?.code === "23505") return fail("meetingOpen");
   if (error) return dbFail("request-meeting", error);
+  notifyUser("meetingRequested", parsed.data.employeeId);
   revalidatePath("/employer", "layout");
   return ok(undefined);
 }
@@ -103,6 +105,12 @@ export async function respondToMeeting(input: unknown): Promise<ActionResult> {
     p_slot: parsed.data.slot,
   });
   if (error) return dbFail("respond-meeting", error);
+  const { data: meeting } = await supabase
+    .from("meeting_requests")
+    .select("employer_id")
+    .eq("id", parsed.data.requestId)
+    .maybeSingle();
+  if (meeting) notifyUser("meetingAnswered", meeting.employer_id);
   revalidatePath("/employee", "layout");
   return ok(undefined);
 }
