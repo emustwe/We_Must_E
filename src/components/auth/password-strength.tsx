@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { passwordStrength } from "@/lib/password-strength";
+import { passwordStrength, strengthTip } from "@/lib/password-strength";
 import { cn } from "@/lib/utils";
 
 const BAR_COLORS = [
@@ -16,6 +16,7 @@ export function PasswordStrength({ value }: { value: string }) {
   const t = useTranslations("password");
   if (!value) return null;
   const score = passwordStrength(value);
+  const tip = strengthTip(value);
   const level = t(`strength${score}`);
 
   return (
@@ -31,7 +32,10 @@ export function PasswordStrength({ value }: { value: string }) {
           />
         ))}
       </div>
-      <p className="text-xs text-muted-foreground">{t("strengthLabel", { level })}</p>
+      <p className="text-xs text-muted-foreground">
+        {t("strengthLabel", { level })}
+        {tip ? ` · ${t(tip === "mix" ? "tipMix" : "tipLonger")}` : ""}
+      </p>
     </div>
   );
 }

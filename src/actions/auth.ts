@@ -2,7 +2,11 @@
 
 import type { AuthError, EmailOtpType } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
-import { readPendingEmail, rememberPendingEmail } from "@/lib/auth/pending-email";
+import {
+  clearPendingEmail,
+  readPendingEmail,
+  rememberPendingEmail,
+} from "@/lib/auth/pending-email";
 import { clientEnv } from "@/lib/env";
 import { CONSENT_VERSIONS } from "@/lib/legal";
 import { logError } from "@/lib/log";
@@ -12,6 +16,7 @@ import { getClientIp, hmac } from "@/lib/security/ip";
 import { withinRateLimit } from "@/lib/security/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import {
+  emailCodeSchema,
   employeeSignupSchema,
   forgotPasswordSchema,
   loginSchema,
@@ -98,7 +103,11 @@ export async function signIn(input: unknown): Promise<ActionResult> {
     options: { captchaToken },
   });
   if (error) {
-    if (error.code === "email_not_confirmed") await rememberPendingEmail(email);
+    if (error.code === "email_not_confirmed") {
+      // Correct password, not activated yet: continue with the code screen.
+      await rememberPendingEmail(email);
+      redirect("/verify-email?unconfirmed=1");
+    }
     return mapAuthError(error, "sign-in");
   }
 
@@ -186,4 +195,47 @@ export async function resendVerification(input: unknown): Promise<ActionResult> 
   if (error?.code === "over_email_send_rate_limit") return fail("rateLimited");
   if (error) logError("resend-verification", error);
   return ok(undefined);
+}
+
+// Activates the account with the 6-digit code from the signup email.
+export async function verifySignupCode(input: unknown): Promise<ActionResult> {
+  const parsed = emailCodeSchema.safeParse(input);
+  if (!parsed.success) return fail("invalidInput", toFieldErrors(parsed.error));
+  const email = await readPendingEmail();
+  if (!email) return fail("sessionExpired");
+
+  const ip = await getClientIp();
+  const [ipOk, emailOk] = await Promise.all([
+    withinRateLimit("codePerIp", ip),
+    withinRateLimit("codePerEmail", email),
+  ]);
+  if (!ipOk || !emailOk) return fail("rateLimited");
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.verifyOtp({
+    email,
+    token: parsed.data.code,
+    type: "email",
+  });
+  if (error || !data.user) {
+    if (error?.code === "over_request_rate_limit") return fail("rateLimited");
+    if (error && error.code !== "otp_expired" && error.code !== "invalid_credentials")
+      logError("verify-signup-code", error);
+    return fail("invalidCode", { code: "validation.emailCodeWrong" });
+  }
+
+  await clearPendingEmail();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", data.user.id)
+    .single();
+  // New job seekers go straight into building their profile.
+  redirect(
+    profile?.role === "employee"
+      ? "/employee/onboarding"
+      : profile
+        ? HOME_BY_ROLE[profile.role]
+        : "/",
+  );
 }

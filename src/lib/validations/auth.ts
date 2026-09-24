@@ -60,6 +60,13 @@ export const resendVerificationSchema = z.strictObject({
   captchaToken: captchaTokenSchema,
 });
 
+export const emailCodeSchema = z.strictObject({
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, { error: "validation.emailCode" }),
+});
+
 export const mfaCodeSchema = z.strictObject({
   code: z
     .string()

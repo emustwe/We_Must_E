@@ -20,7 +20,8 @@ export type ActionError =
   | "timeExpired"
   | "incomplete"
   | "inUse"
-  | "meetingOpen";
+  | "meetingOpen"
+  | "invalidCode";
 
 export type ActionResult<T = undefined> =
   { ok: true; data: T } | { ok: false; error: ActionError; fieldErrors?: Record<string, string> };

@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { expect, test } from "@playwright/test";
-import { activate, unique } from "./helpers";
+import { enterSignupCode, unique } from "./helpers";
 
 const PASSWORD = "Tulip-Harbor-Vessel-92";
 
@@ -20,10 +20,10 @@ test("onboarding: basics → survey → test → video → CV → submit → req
   const since = new Date(Date.now() - 1000);
   await page.getByRole("button", { name: "Create account" }).click();
   await expect(page).toHaveURL(/\/verify-email$/);
-  await activate(page, email, since);
-  await expect(page).toHaveURL(/\/employee$/);
-
-  // Unfinished profiles are nudged from the map.
+  await enterSignupCode(page, email, since);
+  // New job seekers start in the wizard; the map also nudges unfinished profiles.
+  await expect(page).toHaveURL(/\/employee\/onboarding\/basics$/);
+  await page.goto("/employee");
   await page.getByRole("link", { name: /Finish your profile to send job requests/ }).click();
   await expect(page).toHaveURL(/\/employee\/onboarding\/basics$/);
   await expect(page.getByText("Step 1 of 6")).toBeVisible();

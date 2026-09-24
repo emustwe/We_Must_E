@@ -16,10 +16,16 @@ Requirements: Node 22+, Docker (for the local Supabase stack).
 npm install
 npx supabase start          # local Postgres, Auth, Storage and a mail inbox; applies migrations
 cp .env.example .env.local  # then fill in the values printed by `supabase status`
-npm run dev                 # http://localhost:3000
+npm run dev                 # http://localhost:3100
 ```
 
-Emails sent locally (verification, password reset) land in the Mailpit inbox at http://localhost:54324.
+**Emails are not delivered to real inboxes locally.** Signup codes, password resets and app emails all
+land in the local Mailpit inbox at http://localhost:54324. Real delivery needs Resend configured on the
+hosted project (see below).
+
+Signup is verified with a **6-digit code** from the email (`supabase/templates/confirmation.html` uses
+`{{ .Token }}`), entered on `/verify-email`; wrong codes are rate-limited per address and IP. Password
+reset still uses an emailed link.
 
 The local seed (`supabase/seed.sql`, local only) creates three logins, all with the password
 `Wemuste-Local-2026!`, plus `[SAMPLE]` jobs around Dubai and sample onboarding content:
@@ -93,7 +99,10 @@ password at first login. Under the hood the service role creates the user with
 
 - **Auth > URL configuration:** Site URL = production origin. Redirect URLs (exact, no wildcards):
   `https://<domain>/auth/confirm?type=email` and `https://<domain>/auth/confirm?type=recovery`.
-- **Auth > Email templates:** paste `supabase/templates/*.html` (token_hash links that work across devices).
+  Locally the app runs on port 3100 (`site_url` in `supabase/config.toml`).
+- **Auth > Email templates:** paste `supabase/templates/*.html`. "Confirm signup" shows the 6-digit
+  code (`{{ .Token }}`); reset and email change use token_hash links that work across devices. Keep
+  Auth > Providers > Email > "Email OTP length" at 6.
 - **Auth > Providers > Email:** confirm email ON, minimum password length 10, leaked password protection ON.
 - **Auth > Attack protection:** CAPTCHA ON with Cloudflare Turnstile.
 - **Auth > Rate limits:** review the defaults. The app adds its own limits on signup, login and reset.

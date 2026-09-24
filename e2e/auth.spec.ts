@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { activate, login, signOut, unique } from "./helpers";
+import { activate, enterSignupCode, login, signOut, unique } from "./helpers";
 
 const PASSWORD = "Tulip-Harbor-Vessel-92";
 
@@ -62,17 +62,23 @@ test("employee: validation, signup, email activation, logout, login", async ({ p
   const since = new Date(Date.now() - 1000);
   await page.getByRole("button", { name: "Create account" }).click();
   await expect(page).toHaveURL(/\/verify-email$/);
-  await expect(page.getByText(/We sent a link to e•+@example\.test/)).toBeVisible();
+  await expect(page.getByText(/We sent a 6-digit code to e•+@example\.test/)).toBeVisible();
 
+  // Logging in before activating leads to the code screen, not into the app.
   const other = await page.context().browser()!.newPage();
   await login(other, email, PASSWORD);
-  await expect(other.getByText(/Please activate your account first/)).toBeVisible();
+  await expect(other).toHaveURL(/\/verify-email\?unconfirmed=1$/);
+  await expect(other.getByText(/Your account isn't active yet/)).toBeVisible();
   await other.close();
 
-  await activate(page, email, since);
-  await expect(page).toHaveURL(/\/employee$/);
-  await expect(page.getByRole("link", { name: "Map" })).toHaveAttribute("aria-current", "page");
+  // A wrong code is refused; the real one activates and opens the profile wizard.
+  await page.getByLabel("6-digit code").fill("000000");
+  await expect(page.getByText("That code is wrong or has expired.")).toBeVisible();
+  await enterSignupCode(page, email, since);
+  await expect(page).toHaveURL(/\/employee\/onboarding\/basics$/);
 
+  await page.goto("/employee");
+  await expect(page.getByRole("link", { name: "Map" })).toHaveAttribute("aria-current", "page");
   await page.getByRole("link", { name: "Profile", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Hi Maria" })).toBeVisible();
   await expect(page.getByText("Not finished")).toBeVisible();
@@ -102,8 +108,8 @@ test("password reset: email link, new password, signed out everywhere", async ({
   let since = new Date(Date.now() - 1000);
   await page.getByRole("button", { name: "Create account" }).click();
   await expect(page).toHaveURL(/\/verify-email$/);
-  await activate(page, email, since);
-  await expect(page).toHaveURL(/\/employee$/);
+  await enterSignupCode(page, email, since);
+  await expect(page).toHaveURL(/\/employee\/onboarding\/basics$/);
   await page.goto("/employee/profile");
   await signOut(page);
 

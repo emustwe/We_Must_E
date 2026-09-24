@@ -79,18 +79,25 @@
     "strength1": "Weak",
     "strength2": "Fair",
     "strength3": "Good",
-    "strength4": "Strong"
+    "strength4": "Strong",
+    "tipMix": "add a capital letter, a number or a symbol",
+    "tipLonger": "make it a little longer"
   },
   "verify": {
     "title": "Check your email",
-    "body": "We sent a link to {email}. Tap the link to activate your account.",
-    "bodyNoEmail": "We sent you a link. Tap the link in the email to activate your account.",
+    "body": "We sent a 6-digit code to {email}.",
+    "bodyNoEmail": "We sent you a 6-digit code by email.",
     "tip": "Can't find it? Check your spam or junk folder.",
-    "resend": "Resend email",
+    "resend": "Resend code",
     "resendIn": "Resend in {seconds}s",
-    "resent": "Done. If the account needs activating, a new email is on its way.",
+    "resent": "A new code is on its way.",
     "wrongEmail": "Used the wrong email?",
-    "startOver": "Sign up again"
+    "startOver": "Sign up again",
+    "unconfirmed": "Your account isn't active yet. Enter the code from your email.",
+    "codeLabel": "6-digit code",
+    "submit": "Activate account",
+    "noPending": "Start again by signing up or logging in.",
+    "startLink": "Log in"
   },
   "forgot": {
     "title": "Reset your password",
@@ -161,7 +168,9 @@
     "slotRequired": "Add at least one time.",
     "slotMax": "Offer up to 3 times.",
     "slotFuture": "Times must be at least 30 minutes from now.",
-    "meetingLink": "Paste a full link starting with https://"
+    "meetingLink": "Paste a full link starting with https://",
+    "emailCode": "Enter the 6-digit code from the email.",
+    "emailCodeWrong": "That code is wrong or has expired."
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",
@@ -171,7 +180,7 @@
     "emailNotConfirmed": "Please activate your account first. Check your email for the link.",
     "weakPassword": "Please choose a stronger password.",
     "captchaFailed": "We couldn't confirm you're human. Please try again.",
-    "sessionExpired": "Your session has expired. Please request a new link.",
+    "sessionExpired": "Your session has expired. Please start again.",
     "samePassword": "Please choose a new password.",
     "captchaRequired": "Please complete the security check.",
     "notFound": "This is no longer available.",
@@ -188,7 +197,8 @@
     "fileTooBig": "This file is too big. The limit is 5 MB.",
     "fileType": "Please choose a PDF or Word (.docx) file.",
     "inUse": "Someone already answered this question, so it can't be deleted. Create a new survey version instead.",
-    "meetingOpen": "You already have a meeting request waiting for this person."
+    "meetingOpen": "You already have a meeting request waiting for this person.",
+    "invalidCode": "That code didn't work. Check the latest email, or tap Resend code."
   },
   "employee": {
     "welcome": "Hi {name}",

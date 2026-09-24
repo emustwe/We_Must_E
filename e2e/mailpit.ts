@@ -45,3 +45,11 @@ export async function waitForEmail(to: string, subject: RegExp, since: Date, tim
   }
   throw new Error(`No email "${subject}" for ${to}`);
 }
+
+// The 6-digit activation code from the newest signup email.
+export async function waitForSignupCode(to: string, since: Date) {
+  const email = await waitForEmail(to, /activation code/i, since);
+  const match = email.text.match(/\b(\d{6})\b/);
+  if (!match) throw new Error("No 6-digit code in the email");
+  return match[1];
+}

@@ -23,3 +23,7 @@ export function maskEmail(email: string) {
   if (!local || !domain) return null;
   return `${local.slice(0, 1)}${"•".repeat(Math.max(local.length - 1, 2))}@${domain}`;
 }
+
+export async function clearPendingEmail() {
+  (await cookies()).delete(PENDING_EMAIL_COOKIE);
+}
