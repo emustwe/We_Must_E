@@ -1,41 +1,36 @@
 import { describe, expect, it } from "vitest";
-import { createEmployerSchema, jobSchema } from "./jobs";
+import { createEmployerSchema, jobSchema, jobStatusSchema } from "./jobs";
 
 const job = {
   title: "Weekend barista",
   description: "Make coffee and serve customers.",
-  category: "hospitality",
-  schedule: ["weekends", "weekends"],
-  payMin: "30",
-  payMax: "",
-  payPeriod: "hour",
-  spots: "1",
-  cityEmirate: "Dubai",
-  areaLabel: "Dubai Marina",
+  locationLabel: "Dubai Marina, Dubai",
   lat: 25.08,
   lng: 55.14,
-  startsOn: "",
-  expiresInDays: "30",
 };
 
 describe("jobSchema", () => {
-  it("treats a blank maximum as no maximum (not 0)", () => {
-    const parsed = jobSchema.parse(job);
-    expect(parsed.payMax).toBeUndefined();
-    expect(parsed.payMin).toBe(30);
+  it("accepts exactly the three fields", () => {
+    expect(jobSchema.parse({ ...job, title: "  Weekend barista " }).title).toBe("Weekend barista");
   });
-  it("rejects a maximum below the minimum", () => {
-    const result = jobSchema.safeParse({ ...job, payMax: "20" });
-    expect(result.error?.issues[0]?.path).toEqual(["payMax"]);
+  it("requires a picked point", () => {
+    expect(jobSchema.safeParse({ ...job, lat: undefined }).success).toBe(false);
   });
-  it("de-duplicates schedules", () => {
-    expect(jobSchema.parse(job).schedule).toEqual(["weekends"]);
+  it("rejects extra fields such as status, employer or exact public pins", () => {
+    for (const extra of [{ status: "hidden" }, { employer_id: "x" }, { publicLat: 1 }]) {
+      expect(jobSchema.safeParse({ ...job, ...extra }).success).toBe(false);
+    }
   });
-  it("keeps pins inside the UAE", () => {
-    expect(jobSchema.safeParse({ ...job, lat: 51.5, lng: -0.12 }).success).toBe(false);
+  it("limits the description to 3000 characters", () => {
+    expect(jobSchema.safeParse({ ...job, description: "x".repeat(3001) }).success).toBe(false);
   });
-  it("rejects unknown keys such as employer_id", () => {
-    expect(jobSchema.safeParse({ ...job, employer_id: "x" }).success).toBe(false);
+});
+
+describe("jobStatusSchema", () => {
+  it("lets employers only close a job", () => {
+    const jobId = "00000000-0000-4000-8000-000000000000";
+    expect(jobStatusSchema.safeParse({ jobId, status: "closed" }).success).toBe(true);
+    expect(jobStatusSchema.safeParse({ jobId, status: "hidden" }).success).toBe(false);
   });
 });
 

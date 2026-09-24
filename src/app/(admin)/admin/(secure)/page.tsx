@@ -10,7 +10,7 @@ export default async function AdminHome() {
   const count = { count: "exact" as const, head: true };
   const [employers, jobs] = await Promise.all([
     supabase.from("employer_profiles").select("user_id", count),
-    supabase.from("jobs").select("id", count).eq("status", "open"),
+    supabase.from("jobs").select("id", count).eq("status", "published"),
   ]);
   const cards = [
     {

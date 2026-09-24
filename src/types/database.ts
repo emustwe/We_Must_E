@@ -117,77 +117,56 @@ export type Database = {
       }
       jobs: {
         Row: {
-          address: string | null
-          area_label: string
-          category: Database["public"]["Enums"]["job_category"]
-          city_emirate: string
+          closed_at: string | null
           created_at: string
-          currency: string
           description: string
           employer_id: string
-          expires_at: string
           id: string
           lat: number
           lng: number
-          pay_max: number | null
-          pay_min: number
-          pay_period: Database["public"]["Enums"]["pay_period"]
+          location_label: string
           public_lat: number
           public_lng: number
-          schedule: Database["public"]["Enums"]["availability"][]
-          spots: number
-          starts_on: string | null
+          published_at: string
           status: Database["public"]["Enums"]["job_status"]
+          survey_id: string | null
+          test_id: string | null
           title: string
           updated_at: string
         }
         Insert: {
-          address?: string | null
-          area_label: string
-          category: Database["public"]["Enums"]["job_category"]
-          city_emirate: string
+          closed_at?: string | null
           created_at?: string
-          currency?: string
           description: string
           employer_id: string
-          expires_at?: string
           id?: string
           lat: number
           lng: number
-          pay_max?: number | null
-          pay_min: number
-          pay_period: Database["public"]["Enums"]["pay_period"]
+          location_label: string
           public_lat?: number
           public_lng?: number
-          schedule: Database["public"]["Enums"]["availability"][]
-          spots?: number
-          starts_on?: string | null
+          published_at?: string
           status?: Database["public"]["Enums"]["job_status"]
+          survey_id?: string | null
+          test_id?: string | null
           title: string
           updated_at?: string
         }
         Update: {
-          address?: string | null
-          area_label?: string
-          category?: Database["public"]["Enums"]["job_category"]
-          city_emirate?: string
+          closed_at?: string | null
           created_at?: string
-          currency?: string
           description?: string
           employer_id?: string
-          expires_at?: string
           id?: string
           lat?: number
           lng?: number
-          pay_max?: number | null
-          pay_min?: number
-          pay_period?: Database["public"]["Enums"]["pay_period"]
+          location_label?: string
           public_lat?: number
           public_lng?: number
-          schedule?: Database["public"]["Enums"]["availability"][]
-          spots?: number
-          starts_on?: string | null
+          published_at?: string
           status?: Database["public"]["Enums"]["job_status"]
+          survey_id?: string | null
+          test_id?: string | null
           title?: string
           updated_at?: string
         }
@@ -198,6 +177,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "employer_profiles"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "jobs_survey_id_fkey"
+            columns: ["survey_id"]
+            isOneToOne: false
+            referencedRelation: "surveys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "tests"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -476,10 +469,26 @@ export type Database = {
         Returns: boolean
       }
       complete_password_change: { Args: never; Returns: undefined }
+      get_public_jobs: {
+        Args: {
+          max_lat: number
+          max_lng: number
+          min_lat: number
+          min_lng: number
+        }
+        Returns: {
+          description: string
+          id: string
+          location_label: string
+          public_lat: number
+          public_lng: number
+          published_at: string
+          title: string
+        }[]
+      }
       record_account_deletion: { Args: never; Returns: undefined }
     }
     Enums: {
-      application_status: "pending" | "accepted" | "declined" | "withdrawn"
       availability:
         | "evenings"
         | "weekends"
@@ -487,20 +496,7 @@ export type Database = {
         | "full_time"
         | "flexible"
       employer_status: "pending" | "approved" | "suspended"
-      job_category:
-        | "hospitality"
-        | "retail"
-        | "delivery"
-        | "cleaning"
-        | "construction"
-        | "office"
-        | "tech"
-        | "care"
-        | "events"
-        | "beauty"
-        | "other"
-      job_status: "open" | "paused" | "closed" | "removed"
-      pay_period: "hour" | "day" | "week" | "month" | "fixed"
+      job_status: "published" | "hidden" | "closed" | "removed"
       question_type:
         | "single_choice"
         | "multi_choice"
@@ -637,7 +633,6 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      application_status: ["pending", "accepted", "declined", "withdrawn"],
       availability: [
         "evenings",
         "weekends",
@@ -646,21 +641,7 @@ export const Constants = {
         "flexible",
       ],
       employer_status: ["pending", "approved", "suspended"],
-      job_category: [
-        "hospitality",
-        "retail",
-        "delivery",
-        "cleaning",
-        "construction",
-        "office",
-        "tech",
-        "care",
-        "events",
-        "beauty",
-        "other",
-      ],
-      job_status: ["open", "paused", "closed", "removed"],
-      pay_period: ["hour", "day", "week", "month", "fixed"],
+      job_status: ["published", "hidden", "closed", "removed"],
       question_type: [
         "single_choice",
         "multi_choice",

@@ -9,6 +9,11 @@ const serverSchema = z.object({
   EMAIL_FROM: z.string().min(3).default("Wemuste <no-reply@wemuste.example>"),
   // Local development only: deliver app emails to Mailpit instead of Resend.
   SMTP_URL: z.url().optional(),
+  // Where jobs may be placed: "south,west,north,east". Default: the UAE.
+  JOB_AREA_BOUNDS: z
+    .string()
+    .regex(/^-?\d+(\.\d+)?(,-?\d+(\.\d+)?){3}$/)
+    .default("22.5,51.0,26.5,56.6"),
 });
 
 const parsed = serverSchema.safeParse({
@@ -17,6 +22,7 @@ const parsed = serverSchema.safeParse({
   RESEND_API_KEY: process.env.RESEND_API_KEY || undefined,
   EMAIL_FROM: process.env.EMAIL_FROM || undefined,
   SMTP_URL: process.env.SMTP_URL || undefined,
+  JOB_AREA_BOUNDS: process.env.JOB_AREA_BOUNDS || undefined,
 });
 
 if (!parsed.success) {

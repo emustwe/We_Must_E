@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/session";
 import { dbFail } from "@/lib/db-errors";
+import { jobAreaBounds } from "@/lib/jobs/area";
+import { isInside } from "@/lib/jobs/meta";
 import { logError } from "@/lib/log";
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { withinRateLimit } from "@/lib/security/rate-limit";
@@ -16,29 +18,31 @@ import {
   setInitialPasswordSchema,
 } from "@/lib/validations/jobs";
 
-function toRow(job: ReturnType<typeof jobSchema.parse>) {
+type JobData = ReturnType<typeof jobSchema.parse>;
+
+// The three employer fields. The point must be inside the service area.
+function toRow(job: JobData) {
   return {
     title: job.title,
     description: job.description,
-    category: job.category,
-    schedule: job.schedule,
-    pay_min: job.payMin,
-    pay_max: job.payMax ?? null,
-    pay_period: job.payPeriod,
-    spots: job.spots,
-    city_emirate: job.cityEmirate,
-    area_label: job.areaLabel,
-    address: job.address || null,
+    location_label: job.locationLabel,
     lat: job.lat,
     lng: job.lng,
-    starts_on: job.startsOn ?? null,
-    expires_at: new Date(Date.now() + job.expiresInDays * 86_400_000).toISOString(),
   };
 }
 
-export async function createJob(input: unknown): Promise<ActionResult> {
+function parseJob(input: unknown): { error: ActionResult } | { data: JobData } {
   const parsed = jobSchema.safeParse(input);
-  if (!parsed.success) return fail("invalidInput", toFieldErrors(parsed.error));
+  if (!parsed.success) return { error: fail("invalidInput", toFieldErrors(parsed.error)) };
+  if (!isInside(jobAreaBounds(), parsed.data.lat, parsed.data.lng)) {
+    return { error: fail("invalidInput", { lat: "validation.locationUae" }) };
+  }
+  return { data: parsed.data };
+}
+
+export async function createJob(input: unknown): Promise<ActionResult> {
+  const parsed = parseJob(input);
+  if ("error" in parsed) return parsed.error;
   const profile = await requireRole("employer");
   if (!(await withinRateLimit("jobPostPerEmployer", profile.id))) return fail("rateLimited");
 
@@ -46,20 +50,22 @@ export async function createJob(input: unknown): Promise<ActionResult> {
   // employer_id comes from the session; RLS also requires it to match auth.uid().
   const { data, error } = await supabase
     .from("jobs")
-    .insert({ ...toRow(parsed.data), employer_id: profile.id, status: "open" })
+    .insert({ ...toRow(parsed.data), employer_id: profile.id })
     .select("id")
     .single();
   if (error) return dbFail("create-job", error);
 
+  // Live immediately: refresh the employer list and the public map.
   revalidatePath("/employer");
+  revalidatePath("/");
   redirect(`/employer/jobs/${data.id}?posted=1`);
 }
 
 export async function updateJob(jobId: unknown, input: unknown): Promise<ActionResult> {
   const id = idSchema.safeParse(jobId);
-  const parsed = jobSchema.safeParse(input);
   if (!id.success) return fail("invalidInput");
-  if (!parsed.success) return fail("invalidInput", toFieldErrors(parsed.error));
+  const parsed = parseJob(input);
+  if ("error" in parsed) return parsed.error;
   await requireRole("employer");
 
   const supabase = await createClient();
@@ -72,10 +78,12 @@ export async function updateJob(jobId: unknown, input: unknown): Promise<ActionR
   if (!data?.length) return fail("notFound");
 
   revalidatePath(`/employer/jobs/${id.data}`);
+  revalidatePath("/");
   redirect(`/employer/jobs/${id.data}?saved=1`);
 }
 
-export async function setJobStatus(input: unknown): Promise<ActionResult> {
+// Employers can only close a published job (the database enforces this too).
+export async function closeJob(input: unknown): Promise<ActionResult> {
   const parsed = jobStatusSchema.safeParse(input);
   if (!parsed.success) return fail("invalidInput");
   await requireRole("employer");
@@ -90,6 +98,7 @@ export async function setJobStatus(input: unknown): Promise<ActionResult> {
   if (!data?.length) return fail("notFound");
   revalidatePath(`/employer/jobs/${parsed.data.jobId}`);
   revalidatePath("/employer");
+  revalidatePath("/");
   return ok(undefined);
 }
 

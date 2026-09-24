@@ -3,7 +3,7 @@ import { idSchema } from "@/lib/validations/jobs";
 
 export const adminJobStatusSchema = z.strictObject({
   jobId: idSchema,
-  status: z.enum(["open", "removed"]),
+  status: z.enum(["published", "hidden", "closed", "removed"]),
 });
 
 const title = z

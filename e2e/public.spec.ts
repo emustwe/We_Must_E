@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("landing page sends security headers", async ({ page }) => {
+test("the public map page sends security headers", async ({ page }) => {
   const response = await page.goto("/");
   const headers = response!.headers();
   expect(headers["content-security-policy"]).toMatch(
@@ -10,8 +10,13 @@ test("landing page sends security headers", async ({ page }) => {
   expect(headers["strict-transport-security"]).toContain("max-age=63072000");
   expect(headers["x-content-type-options"]).toBe("nosniff");
   expect(headers["x-powered-by"]).toBeUndefined();
-  await page.getByRole("link", { name: /I'm hiring/ }).click();
-  await expect(page).toHaveURL(/\/for-employers$/);
+  // Map tiles and place search come only from MapTiler; location only for this site.
+  expect(headers["content-security-policy"]).toMatch(
+    /connect-src [^;]*https:\/\/api\.maptiler\.com/,
+  );
+  expect(headers["permissions-policy"]).toContain("geolocation=(self)");
+  await page.getByRole("link", { name: "Employer login" }).click();
+  await expect(page).toHaveURL(/\/login$/);
 });
 
 test("job seekers no longer have accounts", async ({ page }) => {

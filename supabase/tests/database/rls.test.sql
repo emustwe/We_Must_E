@@ -146,6 +146,68 @@ select is((select metadata::text from audit_logs where action = 'account.deleted
   'deletion leaves a pseudonymous audit entry');
 
 -- ---------------------------------------------------------------------------
+-- Jobs: employers post 3 fields; the public only sees get_public_jobs()
+-- ---------------------------------------------------------------------------
+select tests.run_as(:AD, format('select admin_set_employer_status(%L, ''approved'')', :E3), 'aal2');
+select tests.run_as(:E1, $$insert into jobs (employer_id, title, description, location_label, lat, lng)
+  values (auth.uid(), 'Weekend barista', 'Make coffee for our customers.', 'Dubai Marina, Dubai', 25.080512, 55.140311)$$);
+select tests.run_as(:E1, $$insert into jobs (employer_id, title, description, location_label, lat, lng)
+  values (auth.uid(), 'Flyer helper', 'Hand out flyers at the mall.', 'Al Nahda, Sharjah', 25.30, 55.37)$$);
+\set JA '(select id from jobs where title = ''Weekend barista'')'
+\set JB '(select id from jobs where title = ''Flyer helper'')'
+
+select is((select status::text from jobs where id = :JA), 'published', 'a new job is live immediately');
+select ok((select abs(public_lat - lat) <= 0.00136 and abs(public_lng - lng) <= 0.0016
+             and (public_lat, public_lng) <> (lat, lng) from jobs where id = :JA),
+  'the public pin is rounded to about 300 m');
+select ok(tests.denied_as(:E2, $$insert into jobs (employer_id, title, description, location_label, lat, lng)
+  values (auth.uid(), 'Nope', 'Pending employers cannot post.', 'Dubai', 25.2, 55.3)$$), 'pending employer cannot post');
+select ok(tests.denied_as(:E1, format($$insert into jobs (employer_id, title, description, location_label, lat, lng)
+  values (%L, 'Spoof', 'Posting for someone else.', 'Dubai', 25.2, 55.3)$$, :E3)), 'employer cannot post for another employer');
+select ok(tests.denied_as(:E1, $$insert into jobs (employer_id, title, description, location_label, lat, lng, status)
+  values (auth.uid(), 'Hidden', 'Choosing the status is not allowed.', 'Dubai', 25.2, 55.3, 'hidden')$$), 'employer cannot choose the status');
+select ok(tests.denied_as(:E1, format('update jobs set public_lat = lat where id = %s', :'JA')), 'employer cannot set the public pin');
+
+-- Anonymous visitors: only the RPC, and it never exposes the exact point or the employer.
+select is(tests.rows_as(null, 'select * from get_public_jobs(22.5, 51, 26.5, 56.6)'), 2, 'anon sees published jobs through get_public_jobs');
+select is((select array_agg(a order by a) from unnest((select proargnames from pg_proc where proname = 'get_public_jobs')) a
+            where a in ('lat', 'lng', 'employer_id', 'test_id', 'survey_id')), null,
+  'get_public_jobs returns no exact coordinates or employer id');
+select is(tests.rows_as(null, 'select * from get_public_jobs(24, 54, 24.1, 54.1)'), 0, 'get_public_jobs is limited to the bounding box');
+select ok(tests.denied_as(null, format('select admin_set_job_status(%s, ''hidden'')', :'JA')), 'anon cannot moderate jobs');
+
+-- Employers only touch their own jobs, and may only close them.
+select is(tests.rows_as(:E3, 'select 1 from jobs'), 0, 'employer cannot read another employer''s jobs');
+select ok(tests.denied_as(:E3, format('update jobs set title = ''Hacked'' where id = %s', :'JA')), 'employer cannot edit another employer''s job');
+select ok(tests.denied_as(:E1, format('update jobs set status = ''hidden'' where id = %s', :'JA')), 'employer cannot hide a job');
+select ok(tests.denied_as(:E1, format('update jobs set status = ''removed'' where id = %s', :'JA')), 'employer cannot remove a job');
+select tests.run_as(:E1, format('update jobs set title = ''Weekend barista'', location_label = ''JBR, Dubai'' where id = %s', :'JA'));
+select is((select location_label from jobs where id = :JA), 'JBR, Dubai', 'employer edits their own job');
+select tests.run_as(:E1, format('update jobs set status = ''closed'' where id = %s', :'JB'));
+select ok((select closed_at is not null from jobs where id = :JB), 'employer closes their own job');
+select ok(tests.denied_as(:E1, format('update jobs set status = ''published'' where id = %s', :'JB')), 'employer cannot re-open a closed job');
+select is(tests.rows_as(null, 'select * from get_public_jobs(22.5, 51, 26.5, 56.6)'), 1, 'closed jobs leave the public map');
+
+-- Admin moderation: MFA only, audited.
+select ok(tests.denied_as(:AD, format('select admin_set_job_status(%s, ''hidden'')', :'JA')), 'admin without MFA cannot moderate');
+select ok(tests.denied_as(:E1, format('select admin_set_job_status(%s, ''published'')', :'JB')), 'employers cannot use admin moderation');
+select tests.run_as(:AD, format('select admin_set_job_status(%s, ''hidden'')', :'JA'), 'aal2');
+select is(tests.rows_as(null, 'select * from get_public_jobs(22.5, 51, 26.5, 56.6)'), 0, 'hidden jobs leave the public map');
+select ok(tests.denied_as(:E1, format('update jobs set title = ''Back'' where id = %s', :'JA')), 'employer cannot edit a hidden job');
+select is((select metadata::text from audit_logs where action = 'job.status_changed' and target_id = :JA),
+  '{"to": "hidden", "from": "published"}', 'moderation is audited with the change');
+select tests.run_as(:AD, format('select admin_set_job_status(%s, ''published'')', :'JA'), 'aal2');
+select is(tests.rows_as(:AD, 'select 1 from jobs', 'aal2'), 2, 'MFA admin reads all jobs');
+select is(tests.rows_as(:AD, 'select 1 from jobs'), 0, 'admin without MFA reads no jobs');
+
+-- A suspended employer's jobs disappear from the map, and they lose access.
+select tests.run_as(:AD, format('select admin_set_employer_status(%L, ''suspended'')', :E1), 'aal2');
+select is(tests.rows_as(null, 'select * from get_public_jobs(22.5, 51, 26.5, 56.6)'), 0, 'suspended employer''s jobs are hidden');
+select is(tests.rows_as(:E1, 'select 1 from jobs'), 0, 'suspended employer cannot read their jobs');
+select ok(tests.denied_as(:E1, $$insert into jobs (employer_id, title, description, location_label, lat, lng)
+  values (auth.uid(), 'Again', 'Suspended employers cannot post.', 'Dubai', 25.2, 55.3)$$), 'suspended employer cannot post');
+
+-- ---------------------------------------------------------------------------
 -- audit_logs is append-only
 -- ---------------------------------------------------------------------------
 select ok((select count(*) from audit_logs where actor_id = :AD) >= 1, 'admin actions are audited with the admin as actor');

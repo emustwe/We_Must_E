@@ -36,6 +36,7 @@ export async function adminSetJobStatus(input: unknown): Promise<ActionResult> {
   });
   if (error) return dbFail("admin-job-status", error);
   revalidatePath("/admin/jobs");
+  revalidatePath("/");
   return ok(undefined);
 }
 

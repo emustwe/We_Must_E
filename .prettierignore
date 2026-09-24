@@ -9,4 +9,3 @@ supabase/templates
 .husky/_
 AGENTS.md
 CLAUDE.md
-public/vendor
