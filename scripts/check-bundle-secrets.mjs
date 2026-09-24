@@ -6,12 +6,19 @@ import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 const ROOT = ".next/static";
-const SECRET_ENV = ["SUPABASE_SERVICE_ROLE_KEY", "IP_HASH_SECRET", "RESEND_API_KEY"];
+const SECRET_ENV = [
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "IP_HASH_SECRET",
+  "RESEND_API_KEY",
+  "APP_TOKEN_SECRET",
+  "CRON_SECRET",
+  "TURNSTILE_SECRET_KEY",
+];
 const PATTERNS = [
   { name: "Supabase secret key", re: /sb_secret_[A-Za-z0-9_-]{16,}/ },
   {
     name: "server env variable name",
-    re: /\b(SUPABASE_SERVICE_ROLE_KEY|IP_HASH_SECRET|RESEND_API_KEY)\b/,
+    re: /\b(SUPABASE_SERVICE_ROLE_KEY|IP_HASH_SECRET|RESEND_API_KEY|APP_TOKEN_SECRET|CRON_SECRET|TURNSTILE_SECRET_KEY)\b/,
   },
 ];
 

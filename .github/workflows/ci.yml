@@ -20,6 +20,9 @@ jobs:
       SUPABASE_SERVICE_ROLE_KEY: ci-service-role-placeholder-9f8e7d6c5b4a
       IP_HASH_SECRET: ci-ip-hash-secret-placeholder-0123456789abcdef
       RESEND_API_KEY: re_ci_placeholder_0123456789
+      APP_TOKEN_SECRET: ci-app-token-secret-placeholder-0123456789abcdef
+      CRON_SECRET: ci-cron-secret-placeholder-0123
+      NEXT_PUBLIC_GEOCODING_API_KEY: ci-maptiler-placeholder
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -73,6 +76,10 @@ jobs:
             echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
             echo "IP_HASH_SECRET=$(openssl rand -base64 48)"
             echo "SMTP_URL=smtp://127.0.0.1:54325"
+            echo "APP_TOKEN_SECRET=$(openssl rand -base64 48)"
+            echo "CRON_SECRET=$(openssl rand -hex 24)"
+            echo "ADMIN_NOTIFY_EMAIL=admin@wemuste.local"
+            echo "NEXT_PUBLIC_GEOCODING_API_KEY=ci-maptiler-placeholder"
           } > .env.local
       - run: npx playwright install --with-deps chromium
       - name: End-to-end tests (all three roles)
