@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { employeeSignupSchema, employerSignupSchema, resetPasswordSchema } from "./auth";
+import { employeeSignupSchema, resetPasswordSchema } from "./auth";
 
 const employee = {
   fullName: "Maria Santos",
@@ -25,23 +25,6 @@ describe("employeeSignupSchema", () => {
     expect(employeeSignupSchema.safeParse({ ...employee, password: "short1!" }).success).toBe(
       false,
     );
-  });
-});
-
-describe("employerSignupSchema", () => {
-  const employer = {
-    companyName: "Acme LLC",
-    contactPerson: "Omar Ali",
-    email: "omar@acme.ae",
-    phone: "+971 50 123 4567",
-    password: "tulip-harbor-9",
-    acceptTerms: true,
-  };
-  it("accepts a valid employer without trade license", () => {
-    expect(employerSignupSchema.safeParse(employer).success).toBe(true);
-  });
-  it("rejects invalid phone numbers", () => {
-    expect(employerSignupSchema.safeParse({ ...employer, phone: "call me" }).success).toBe(false);
   });
 });
 

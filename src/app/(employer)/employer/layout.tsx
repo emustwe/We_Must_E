@@ -1,12 +1,12 @@
 import { AppHeader } from "@/components/layout/app-header";
-import { requireRole } from "@/lib/auth/session";
+import { getEmployerAccount } from "@/lib/auth/employer";
 
 export default async function EmployerLayout({ children }: LayoutProps<"/employer">) {
-  await requireRole("employer");
+  const { employer } = await getEmployerAccount();
   return (
     <div className="flex min-h-dvh flex-col">
-      <AppHeader homeHref="/employer" />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6">{children}</main>
+      <AppHeader homeHref="/employer" subtitle={employer?.company_name} />
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pt-4 pb-16 sm:px-6">{children}</main>
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import { ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Field } from "@/components/forms/field";
 import { FormAlert } from "@/components/forms/form-alert";
 import { SubmitButton } from "@/components/forms/submit-button";
@@ -25,9 +25,12 @@ export function MfaForm({ verifiedFactorId }: { verifiedFactorId: string | null 
   const [formError, setFormError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  // Enrollment must run exactly once per visit: React runs effects twice in
+  // development, and two concurrent enrollments collide.
+  const enrollStarted = useRef(false);
   useEffect(() => {
-    if (verifiedFactorId) return;
-    let cancelled = false;
+    if (verifiedFactorId || enrollStarted.current) return;
+    enrollStarted.current = true;
     (async () => {
       const supabase = createClient();
       // Remove abandoned, unverified factors so enrollment can restart cleanly.
@@ -37,17 +40,16 @@ export function MfaForm({ verifiedFactorId }: { verifiedFactorId: string | null 
           await supabase.auth.mfa.unenroll({ factorId: factor.id });
         }
       }
-      const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp" });
-      if (cancelled) return;
+      const { data, error } = await supabase.auth.mfa.enroll({
+        factorType: "totp",
+        friendlyName: `Wemuste admin ${new Date().toISOString()}`,
+      });
       if (error || !data) {
         setFormError(te("generic"));
         return;
       }
       setEnrollment({ factorId: data.id, qrCode: data.totp.qr_code, secret: data.totp.secret });
     })();
-    return () => {
-      cancelled = true;
-    };
   }, [verifiedFactorId, te]);
 
   const factorId = verifiedFactorId ?? enrollment?.factorId;

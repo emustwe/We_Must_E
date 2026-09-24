@@ -10,6 +10,8 @@ export const LIMITS = {
   resetPerIp: { max: 5, windowSeconds: 3600 },
   resetPerEmail: { max: 3, windowSeconds: 3600 },
   resendPerIp: { max: 5, windowSeconds: 3600 },
+  jobRequestPerUser: { max: 30, windowSeconds: 86400 },
+  jobPostPerEmployer: { max: 20, windowSeconds: 86400 },
 } as const;
 
 /**

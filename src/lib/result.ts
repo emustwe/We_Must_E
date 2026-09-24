@@ -9,7 +9,13 @@ export type ActionError =
   | "weakPassword"
   | "captchaFailed"
   | "sessionExpired"
-  | "samePassword";
+  | "samePassword"
+  | "notFound"
+  | "forbidden"
+  | "profileIncomplete"
+  | "alreadyRequested"
+  | "tooManyPending"
+  | "emailTaken";
 
 export type ActionResult<T = undefined> =
   { ok: true; data: T } | { ok: false; error: ActionError; fieldErrors?: Record<string, string> };

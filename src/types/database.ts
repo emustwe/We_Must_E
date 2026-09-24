@@ -273,9 +273,12 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           company_name: string
+          contact_email: string | null
           contact_person: string | null
           contact_phone: string | null
           created_at: string
+          created_by: string | null
+          must_change_password: boolean
           status: Database["public"]["Enums"]["employer_status"]
           trade_license_no: string | null
           updated_at: string
@@ -286,9 +289,12 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           company_name?: string
+          contact_email?: string | null
           contact_person?: string | null
           contact_phone?: string | null
           created_at?: string
+          created_by?: string | null
+          must_change_password?: boolean
           status?: Database["public"]["Enums"]["employer_status"]
           trade_license_no?: string | null
           updated_at?: string
@@ -299,9 +305,12 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           company_name?: string
+          contact_email?: string | null
           contact_person?: string | null
           contact_phone?: string | null
           created_at?: string
+          created_by?: string | null
+          must_change_password?: boolean
           status?: Database["public"]["Enums"]["employer_status"]
           trade_license_no?: string | null
           updated_at?: string
@@ -317,11 +326,162 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "employer_profiles_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "employer_profiles_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_applications: {
+        Row: {
+          created_at: string
+          employee_id: string
+          employer_id: string
+          id: string
+          job_id: string
+          message: string | null
+          responded_at: string | null
+          status: Database["public"]["Enums"]["application_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          employer_id: string
+          id?: string
+          job_id: string
+          message?: string | null
+          responded_at?: string | null
+          status?: Database["public"]["Enums"]["application_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          employer_id?: string
+          id?: string
+          job_id?: string
+          message?: string | null
+          responded_at?: string | null
+          status?: Database["public"]["Enums"]["application_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_applications_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employee_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "job_applications_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employer_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "job_applications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jobs: {
+        Row: {
+          address: string | null
+          area_label: string
+          category: Database["public"]["Enums"]["job_category"]
+          city_emirate: string
+          created_at: string
+          currency: string
+          description: string
+          employer_id: string
+          expires_at: string
+          id: string
+          lat: number
+          lng: number
+          pay_max: number | null
+          pay_min: number
+          pay_period: Database["public"]["Enums"]["pay_period"]
+          public_lat: number
+          public_lng: number
+          schedule: Database["public"]["Enums"]["availability"][]
+          spots: number
+          starts_on: string | null
+          status: Database["public"]["Enums"]["job_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          area_label: string
+          category: Database["public"]["Enums"]["job_category"]
+          city_emirate: string
+          created_at?: string
+          currency?: string
+          description: string
+          employer_id: string
+          expires_at?: string
+          id?: string
+          lat: number
+          lng: number
+          pay_max?: number | null
+          pay_min: number
+          pay_period: Database["public"]["Enums"]["pay_period"]
+          public_lat?: number
+          public_lng?: number
+          schedule: Database["public"]["Enums"]["availability"][]
+          spots?: number
+          starts_on?: string | null
+          status?: Database["public"]["Enums"]["job_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          area_label?: string
+          category?: Database["public"]["Enums"]["job_category"]
+          city_emirate?: string
+          created_at?: string
+          currency?: string
+          description?: string
+          employer_id?: string
+          expires_at?: string
+          id?: string
+          lat?: number
+          lng?: number
+          pay_max?: number | null
+          pay_min?: number
+          pay_period?: Database["public"]["Enums"]["pay_period"]
+          public_lat?: number
+          public_lng?: number
+          schedule?: Database["public"]["Enums"]["availability"][]
+          spots?: number
+          starts_on?: string | null
+          status?: Database["public"]["Enums"]["job_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jobs_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employer_profiles"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -830,9 +990,33 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_set_job_status: {
+        Args: {
+          p_job_id: string
+          p_status: Database["public"]["Enums"]["job_status"]
+        }
+        Returns: undefined
+      }
       check_rate_limit: {
         Args: { p_key: string; p_max: number; p_window_seconds: number }
         Returns: boolean
+      }
+      complete_password_change: { Args: never; Returns: undefined }
+      employee_list_job_requests: {
+        Args: never
+        Returns: {
+          area_label: string
+          category: Database["public"]["Enums"]["job_category"]
+          city_emirate: string
+          company_name: string
+          created_at: string
+          id: string
+          job_id: string
+          job_status: Database["public"]["Enums"]["job_status"]
+          responded_at: string
+          status: Database["public"]["Enums"]["application_status"]
+          title: string
+        }[]
       }
       employee_list_meeting_requests: {
         Args: never
@@ -844,6 +1028,27 @@ export type Database = {
           meeting_link: string
           proposed_slots: Json
           status: Database["public"]["Enums"]["meeting_status"]
+        }[]
+      }
+      employer_list_applications: {
+        Args: { p_job_id: string }
+        Returns: {
+          availability: Database["public"]["Enums"]["availability"][]
+          city_emirate: string
+          created_at: string
+          email: string
+          employee_id: string
+          full_name: string
+          headline: string
+          id: string
+          languages: string[]
+          message: string
+          phone: string
+          skills: string[]
+          status: Database["public"]["Enums"]["application_status"]
+          test_score: number
+          video_count: number
+          whatsapp: string
         }[]
       }
       employer_list_candidates: {
@@ -861,6 +1066,10 @@ export type Database = {
           total_count: number
         }[]
       }
+      employer_respond_to_application: {
+        Args: { p_accept: boolean; p_application_id: string }
+        Returns: undefined
+      }
       employer_update_meeting_request: {
         Args: {
           p_meeting_link?: string
@@ -869,9 +1078,67 @@ export type Database = {
         }
         Returns: undefined
       }
+      get_job: {
+        Args: { p_job_id: string }
+        Returns: {
+          area_label: string
+          category: Database["public"]["Enums"]["job_category"]
+          city_emirate: string
+          company_name: string
+          currency: string
+          description: string
+          exact_address: string
+          exact_lat: number
+          exact_lng: number
+          expires_at: string
+          id: string
+          lat: number
+          lng: number
+          my_request_id: string
+          my_request_status: Database["public"]["Enums"]["application_status"]
+          pay_max: number
+          pay_min: number
+          pay_period: Database["public"]["Enums"]["pay_period"]
+          schedule: Database["public"]["Enums"]["availability"][]
+          spots: number
+          starts_on: string
+          title: string
+        }[]
+      }
+      list_open_jobs: {
+        Args: {
+          p_east?: number
+          p_north?: number
+          p_south?: number
+          p_west?: number
+        }
+        Returns: {
+          area_label: string
+          category: Database["public"]["Enums"]["job_category"]
+          city_emirate: string
+          company_name: string
+          created_at: string
+          currency: string
+          id: string
+          lat: number
+          lng: number
+          my_request_status: Database["public"]["Enums"]["application_status"]
+          pay_max: number
+          pay_min: number
+          pay_period: Database["public"]["Enums"]["pay_period"]
+          schedule: Database["public"]["Enums"]["availability"][]
+          spots: number
+          starts_on: string
+          title: string
+        }[]
+      }
       log_candidate_access: {
         Args: { p_employee_id: string; p_ip_hash?: string; p_scope: string }
         Returns: undefined
+      }
+      request_job: {
+        Args: { p_job_id: string; p_message?: string }
+        Returns: string
       }
       respond_to_meeting_request: {
         Args: { p_accept: boolean; p_request_id: string; p_slot?: number }
@@ -891,8 +1158,13 @@ export type Database = {
         Args: { p_attempt_id: string }
         Returns: undefined
       }
+      withdraw_job_request: {
+        Args: { p_application_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
+      application_status: "pending" | "accepted" | "declined" | "withdrawn"
       availability:
         | "evenings"
         | "weekends"
@@ -902,12 +1174,26 @@ export type Database = {
       consent_type: "terms" | "privacy" | "data_sharing"
       employee_status: "draft" | "submitted" | "approved" | "hidden"
       employer_status: "pending" | "approved" | "suspended"
+      job_category:
+        | "hospitality"
+        | "retail"
+        | "delivery"
+        | "cleaning"
+        | "construction"
+        | "office"
+        | "tech"
+        | "care"
+        | "events"
+        | "beauty"
+        | "other"
+      job_status: "open" | "paused" | "closed" | "removed"
       meeting_status:
         | "requested"
         | "accepted"
         | "declined"
         | "cancelled"
         | "completed"
+      pay_period: "hour" | "day" | "week" | "month" | "fixed"
       question_type:
         | "single_choice"
         | "multi_choice"
@@ -1045,6 +1331,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      application_status: ["pending", "accepted", "declined", "withdrawn"],
       availability: [
         "evenings",
         "weekends",
@@ -1055,6 +1342,20 @@ export const Constants = {
       consent_type: ["terms", "privacy", "data_sharing"],
       employee_status: ["draft", "submitted", "approved", "hidden"],
       employer_status: ["pending", "approved", "suspended"],
+      job_category: [
+        "hospitality",
+        "retail",
+        "delivery",
+        "cleaning",
+        "construction",
+        "office",
+        "tech",
+        "care",
+        "events",
+        "beauty",
+        "other",
+      ],
+      job_status: ["open", "paused", "closed", "removed"],
       meeting_status: [
         "requested",
         "accepted",
@@ -1062,6 +1363,7 @@ export const Constants = {
         "cancelled",
         "completed",
       ],
+      pay_period: ["hour", "day", "week", "month", "fixed"],
       question_type: [
         "single_choice",
         "multi_choice",

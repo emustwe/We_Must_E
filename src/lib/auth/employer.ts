@@ -8,7 +8,7 @@ export const getEmployerAccount = cache(async () => {
   const supabase = await createClient();
   const { data } = await supabase
     .from("employer_profiles")
-    .select("company_name, status")
+    .select("company_name, status, must_change_password")
     .eq("user_id", profile.id)
     .single();
   return { profile, employer: data };

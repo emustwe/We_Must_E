@@ -1,7 +1,8 @@
-import { ArrowRight, BriefcaseBusiness, Lock, Search } from "lucide-react";
+import { ArrowRight, BriefcaseBusiness, Lock } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Logo } from "@/components/brand/logo";
+import { MapBackdrop } from "@/components/map/map-backdrop";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -11,143 +12,107 @@ export default async function LandingPage() {
   const tb = await getTranslations("brand");
 
   const steps = [
-    { title: t("step1Title"), body: t("step1Body") },
-    { title: t("step2Title"), body: t("step2Body") },
-    { title: t("step3Title"), body: t("step3Body") },
-  ];
-  const roles = [
-    {
-      href: "/signup/employee",
-      icon: Search,
-      title: t("employeeCardTitle"),
-      body: t("employeeCardBody"),
-      tone: "bg-primary text-primary-foreground",
-    },
-    {
-      href: "/signup/employer",
-      icon: BriefcaseBusiness,
-      title: t("employerCardTitle"),
-      body: t("employerCardBody"),
-      tone: "bg-brand-accent text-brand-accent-foreground",
-    },
+    { emoji: "🙋", label: t("step1") },
+    { emoji: "📍", label: t("step2") },
+    { emoji: "🤝", label: t("step3") },
   ];
 
   return (
-    <div className="flex min-h-dvh flex-col">
-      <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-5 sm:px-6">
+    <div className="relative flex min-h-dvh flex-col">
+      <MapBackdrop alt={t("mapAlt")} />
+      {/* Mobile: soften the top of the map behind the floating header. */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-background/70 to-transparent" />
+
+      <header className="relative z-10 flex items-center justify-between px-4 pt-4 sm:px-6 sm:pt-6">
         <Link
           href="/"
           aria-label={tb("home")}
-          className="rounded-lg focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+          className="shadow-float rounded-full bg-background py-1.5 ps-1.5 pe-4 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
         >
           <Logo />
         </Link>
         <Link
           href="/login"
-          className={cn(buttonVariants({ variant: "ghost", size: "touch" }), "text-sm")}
+          className={cn(
+            buttonVariants({ variant: "outline", size: "pill" }),
+            "shadow-float border-transparent",
+          )}
         >
           {tc("logIn")}
         </Link>
       </header>
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-12 sm:px-6">
-        <section className="pt-6 pb-8 text-center sm:pt-12 sm:pb-10">
-          <p className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+      <main className="relative z-10 mt-auto flex flex-1 items-end sm:items-center sm:px-6 lg:px-12">
+        <section className="animate-sheet shadow-float w-full rounded-t-[2rem] bg-background px-5 pt-3 pb-6 sm:max-w-lg sm:rounded-[2rem] sm:p-8">
+          <div
+            className="mx-auto mb-5 h-1.5 w-10 rounded-full bg-border sm:hidden"
+            aria-hidden="true"
+          />
+          <p className="inline-flex items-center gap-1.5 rounded-full bg-success/10 px-3 py-1 text-xs font-semibold text-success">
             <Lock className="size-3.5" aria-hidden="true" />
             {t("eyebrow")}
           </p>
-          <h1 className="mx-auto max-w-2xl text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
+          <h1 className="mt-3 text-[1.9rem] leading-[1.05] font-extrabold tracking-tight text-balance sm:mt-4 sm:text-5xl">
             {t("headline")}
           </h1>
-          <p className="mx-auto mt-4 max-w-xl text-lg leading-relaxed text-pretty text-muted-foreground">
+          <p className="mt-3 text-base leading-relaxed text-muted-foreground sm:text-lg">
             {t("subhead")}
           </p>
-        </section>
 
-        <section aria-labelledby="how-title" className="mb-10">
-          <h2 id="how-title" className="sr-only">
-            {t("howTitle")}
-          </h2>
-          <ol className="grid gap-3 sm:grid-cols-3">
+          <ol className="mt-5 grid grid-cols-3 gap-2" aria-label={t("howTitle")}>
             {steps.map((step, i) => (
-              <li
-                key={step.title}
-                className="flex gap-3 rounded-xl bg-muted/60 p-4 sm:flex-col sm:gap-2"
-              >
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-background text-sm font-semibold text-primary ring-1 ring-border">
-                  {i + 1}
+              <li key={step.label} className="rounded-2xl bg-muted/70 px-2.5 py-3 text-center">
+                <span className="block text-xl" aria-hidden="true">
+                  {step.emoji}
                 </span>
-                <span>
-                  <span className="block text-sm font-semibold">{step.title}</span>
-                  <span className="block text-sm leading-relaxed text-muted-foreground">
-                    {step.body}
-                  </span>
+                <span className="mt-1 block text-xs leading-snug font-semibold">
+                  <span className="sr-only">{i + 1}. </span>
+                  {step.label}
                 </span>
               </li>
             ))}
           </ol>
-        </section>
 
-        <section aria-labelledby="choose-title">
-          <h2
-            id="choose-title"
-            className="mb-4 text-center text-base font-medium text-muted-foreground"
-          >
-            {t("chooseTitle")}
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {roles.map((role) => (
-              <Link
-                key={role.href}
-                href={role.href}
-                className="group flex items-center gap-4 rounded-2xl border bg-card p-5 shadow-sm transition-[box-shadow,border-color,transform] duration-150 hover:border-primary/40 hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none active:scale-[0.99] sm:flex-col sm:items-start sm:p-7"
-              >
-                <span
-                  className={cn(
-                    "flex size-12 shrink-0 items-center justify-center rounded-xl sm:size-14",
-                    role.tone,
-                  )}
-                >
-                  <role.icon className="size-6" aria-hidden="true" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-lg font-semibold sm:text-xl">{role.title}</span>
-                  <span className="mt-1 block text-sm leading-relaxed text-muted-foreground sm:text-base">
-                    {role.body}
-                  </span>
-                </span>
-                <ArrowRight
-                  className="size-5 shrink-0 text-muted-foreground transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-primary sm:self-end rtl:-scale-x-100"
-                  aria-hidden="true"
-                />
-              </Link>
-            ))}
-          </div>
-          <p className="mt-6 text-center text-sm text-muted-foreground">
-            {t("haveAccount")}{" "}
-            <Link href="/login" className="font-medium text-primary hover:underline">
-              {tc("logIn")}
+          <div className="mt-5 grid grid-cols-[1fr_auto] gap-2.5 sm:mt-6 sm:grid-cols-1 sm:gap-3">
+            <Link
+              href="/signup/employee"
+              className={cn(buttonVariants({ size: "touch" }), "w-full text-base")}
+            >
+              {t("findWork")}
+              <ArrowRight
+                className="hidden size-4 min-[400px]:block rtl:-scale-x-100"
+                aria-hidden="true"
+              />
             </Link>
-          </p>
+            <Link
+              href="/for-employers"
+              className={cn(buttonVariants({ variant: "secondary", size: "touch" }), "w-full")}
+            >
+              <BriefcaseBusiness className="size-4" aria-hidden="true" />
+              {t("hiring")}
+            </Link>
+          </div>
+          <p className="mt-2 text-center text-xs text-muted-foreground">{t("free")}</p>
+
+          <div className="mt-4 flex flex-col items-center gap-2 border-t pt-3 text-center text-sm">
+            <p className="text-muted-foreground">
+              {t("haveAccount")}{" "}
+              <Link href="/login" className="font-semibold text-primary hover:underline">
+                {tc("logIn")}
+              </Link>
+            </p>
+            <p className="hidden text-xs text-muted-foreground sm:block">{t("trustLine")}</p>
+            <nav className="flex gap-5 text-xs text-muted-foreground">
+              <Link href="/privacy" className="hover:text-foreground">
+                {tc("privacy")}
+              </Link>
+              <Link href="/terms" className="hover:text-foreground">
+                {tc("terms")}
+              </Link>
+            </nav>
+          </div>
         </section>
       </main>
-
-      <footer className="border-t">
-        <div className="mx-auto flex w-full max-w-5xl flex-col items-center gap-3 px-4 py-6 text-center text-xs text-muted-foreground sm:flex-row sm:justify-between sm:px-6 sm:text-start">
-          <p className="inline-flex items-center gap-1.5">
-            <Lock className="size-3.5" aria-hidden="true" />
-            {t("trustLine")}
-          </p>
-          <nav className="flex gap-5">
-            <Link href="/privacy" className="hover:text-foreground">
-              {tc("privacy")}
-            </Link>
-            <Link href="/terms" className="hover:text-foreground">
-              {tc("terms")}
-            </Link>
-          </nav>
-        </div>
-      </footer>
     </div>
   );
 }

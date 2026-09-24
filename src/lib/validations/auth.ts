@@ -22,11 +22,6 @@ const fullNameSchema = z
   .min(2, { error: "validation.nameRequired" })
   .max(120, { error: "validation.nameTooLong" });
 
-const phoneSchema = z
-  .string()
-  .trim()
-  .regex(/^\+?[0-9][0-9 ()-]{6,19}$/, { error: "validation.phoneInvalid" });
-
 const captchaTokenSchema = z.string().max(4096).optional();
 
 const mustBeChecked = (message: string) => z.boolean().refine((value) => value, { error: message });
@@ -37,22 +32,6 @@ export const employeeSignupSchema = z.strictObject({
   password: newPasswordSchema,
   acceptTerms: mustBeChecked("validation.acceptTerms"),
   acceptDataSharing: mustBeChecked("validation.acceptDataSharing"),
-  captchaToken: captchaTokenSchema,
-});
-
-export const employerSignupSchema = z.strictObject({
-  companyName: z
-    .string()
-    .trim()
-    .min(2, { error: "validation.companyRequired" })
-    .max(160, { error: "validation.companyTooLong" }),
-  contactPerson: fullNameSchema,
-  email: emailSchema,
-  phone: phoneSchema,
-  password: newPasswordSchema,
-  // Optional at MVP; the admin checks it during review.
-  tradeLicenseNo: z.string().trim().max(64, { error: "validation.licenseTooLong" }).optional(),
-  acceptTerms: mustBeChecked("validation.acceptTerms"),
   captchaToken: captchaTokenSchema,
 });
 
@@ -89,7 +68,6 @@ export const mfaCodeSchema = z.strictObject({
 });
 
 export type EmployeeSignupInput = z.input<typeof employeeSignupSchema>;
-export type EmployerSignupInput = z.input<typeof employerSignupSchema>;
 export type LoginInput = z.input<typeof loginSchema>;
 export type ForgotPasswordInput = z.input<typeof forgotPasswordSchema>;
 export type ResetPasswordInput = z.input<typeof resetPasswordSchema>;

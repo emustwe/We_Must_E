@@ -7,8 +7,8 @@ export async function SignOutEverywhereCard({ body }: { body: string }) {
   const t = await getTranslations("employee");
   const tc = await getTranslations("common");
   return (
-    <section className="rounded-2xl border p-5">
-      <h2 className="flex items-center gap-2 text-base font-semibold">
+    <section className="shadow-float rounded-3xl bg-card p-5">
+      <h2 className="flex items-center gap-2 text-base font-bold">
         <ShieldAlert className="size-4" aria-hidden="true" />
         {t("securityTitle")}
       </h2>

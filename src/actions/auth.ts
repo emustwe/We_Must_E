@@ -13,7 +13,6 @@ import { withinRateLimit } from "@/lib/security/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import {
   employeeSignupSchema,
-  employerSignupSchema,
   forgotPasswordSchema,
   loginSchema,
   resendVerificationSchema,
@@ -74,41 +73,6 @@ export async function signUpEmployee(input: unknown): Promise<ActionResult> {
   // An existing address is treated as success so signup cannot reveal it.
   if (error && error.code !== "user_already_exists" && error.code !== "email_exists") {
     return mapAuthError(error, "signup-employee");
-  }
-
-  await rememberPendingEmail(email);
-  redirect("/verify-email");
-}
-
-export async function signUpEmployer(input: unknown): Promise<ActionResult> {
-  const parsed = employerSignupSchema.safeParse(input);
-  if (!parsed.success) return fail("invalidInput", toFieldErrors(parsed.error));
-  const { companyName, contactPerson, email, phone, password, tradeLicenseNo, captchaToken } =
-    parsed.data;
-
-  const ip = await getClientIp();
-  if (!(await withinRateLimit("signupPerIp", ip))) return fail("rateLimited");
-
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      captchaToken,
-      emailRedirectTo: confirmUrl("email"),
-      data: {
-        role: "employer",
-        full_name: contactPerson,
-        company_name: companyName,
-        contact_phone: phone,
-        trade_license_no: tradeLicenseNo || null,
-        consents: { terms: CONSENT_VERSIONS.terms, privacy: CONSENT_VERSIONS.privacy },
-        ip_hash: hmac(ip),
-      },
-    },
-  });
-  if (error && error.code !== "user_already_exists" && error.code !== "email_exists") {
-    return mapAuthError(error, "signup-employer");
   }
 
   await rememberPendingEmail(email);

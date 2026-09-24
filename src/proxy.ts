@@ -4,6 +4,8 @@ import { GUEST_ONLY_PATHS, HOME_BY_ROLE, PROTECTED_PREFIXES, matchesPrefix } fro
 import { createProxyClient } from "@/lib/supabase/proxy";
 
 const TURNSTILE_ORIGIN = "https://challenges.cloudflare.com";
+// OpenFreeMap: map styles, vector tiles, fonts and sprites.
+const TILES_ORIGIN = "https://tiles.openfreemap.org";
 
 function buildCsp(nonce: string) {
   const supabase = new URL(clientEnv.NEXT_PUBLIC_SUPABASE_URL);
@@ -13,9 +15,9 @@ function buildCsp(nonce: string) {
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${TURNSTILE_ORIGIN}${isDev ? " 'unsafe-eval'" : ""}`,
     // Inline style attributes (Radix, Sonner, Turnstile) cannot carry a nonce.
     "style-src 'self' 'unsafe-inline'",
-    `img-src 'self' blob: data: ${supabase.origin}`,
+    `img-src 'self' blob: data: ${supabase.origin} ${TILES_ORIGIN}`,
     "font-src 'self'",
-    `connect-src 'self' ${supabase.origin} wss://${supabase.host} ${TURNSTILE_ORIGIN}`,
+    `connect-src 'self' ${supabase.origin} wss://${supabase.host} ${TURNSTILE_ORIGIN} ${TILES_ORIGIN}`,
     `media-src 'self' blob: ${supabase.origin}`,
     `frame-src ${TURNSTILE_ORIGIN}`,
     "worker-src 'self' blob:",

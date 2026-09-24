@@ -1,121 +1,96 @@
-import { CheckCircle2, Lock, ShieldCheck, UserCheck } from "lucide-react";
+import { Lock, ShieldCheck, UserCheck } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { Logo } from "@/components/brand/logo";
+import { MapBackdrop } from "@/components/map/map-backdrop";
 
-type Audience = "employee" | "employer";
-
-// Premium auth layout: brand panel + form card on desktop, full-screen form
-// with a brand header on mobile.
+// Auth screens float over the map like the app itself: a bottom sheet on
+// phones, a card beside a trust panel on desktop.
 export async function AuthShell({
   title,
   subtitle,
-  audience = "employee",
   children,
   footer,
 }: {
   title: string;
   subtitle?: string;
-  audience?: Audience;
   children: ReactNode;
   footer?: ReactNode;
 }) {
   const t = await getTranslations("authShell");
   const tc = await getTranslations("common");
   const tb = await getTranslations("brand");
-
-  const copy =
-    audience === "employer"
-      ? {
-          title: t("employerValueTitle"),
-          body: t("employerValueBody"),
-          points: [t("employerTrust1"), t("employerTrust2"), t("employerTrust3")],
-        }
-      : {
-          title: t("valueTitle"),
-          body: t("valueBody"),
-          points: [t("trust1"), t("trust2"), t("trust3")],
-        };
-  const icons = [Lock, ShieldCheck, UserCheck];
+  const tl = await getTranslations("landing");
+  const points = [
+    { icon: Lock, text: t("trust1") },
+    { icon: ShieldCheck, text: t("trust2") },
+    { icon: UserCheck, text: t("trust3") },
+  ];
 
   return (
-    <div className="flex min-h-dvh flex-1 flex-col lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
-      <aside className="bg-brand-mesh relative hidden overflow-hidden p-10 text-white lg:flex lg:flex-col xl:p-14">
+    <div className="relative flex min-h-dvh flex-col">
+      <MapBackdrop alt={tl("mapAlt")} pins={false} />
+      <div className="pointer-events-none absolute inset-0 bg-background/10 lg:bg-transparent" />
+
+      <header className="relative z-10 flex items-center justify-between px-4 pt-4 sm:px-6 sm:pt-6">
         <Link
           href="/"
           aria-label={tb("home")}
-          className="w-fit rounded-lg focus-visible:ring-3 focus-visible:ring-white/60 focus-visible:outline-none"
+          className="shadow-float rounded-full bg-background py-1.5 ps-1.5 pe-4 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
         >
-          <Logo inverted />
+          <Logo />
         </Link>
-        <div className="my-auto max-w-md space-y-6 py-12">
-          <h2 className="text-3xl leading-tight font-semibold tracking-tight text-balance xl:text-4xl">
-            {copy.title}
+        <span className="shadow-float inline-flex items-center gap-1.5 rounded-full bg-background px-3 py-2 text-xs font-semibold">
+          <Lock className="size-3.5 text-success" aria-hidden="true" />
+          {tc("neverPublic")}
+        </span>
+      </header>
+
+      <div className="relative z-10 mt-6 flex flex-1 items-end justify-center gap-10 sm:mt-0 sm:items-center sm:px-6 sm:py-10 lg:justify-end lg:px-16">
+        <aside className="shadow-float hidden max-w-sm rounded-[2rem] bg-background/95 p-7 backdrop-blur lg:block">
+          <h2 className="text-2xl leading-tight font-extrabold tracking-tight">
+            {t("valueTitle")}
           </h2>
-          <p className="text-base leading-relaxed text-white/80">{copy.body}</p>
-          <ul className="space-y-4 pt-2">
-            {copy.points.map((point, i) => {
-              const Icon = icons[i] ?? CheckCircle2;
-              return (
-                <li key={point} className="flex items-start gap-3">
-                  <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/15">
-                    <Icon className="size-4" aria-hidden="true" />
-                  </span>
-                  <span className="pt-1 text-sm leading-relaxed text-white/90">{point}</span>
-                </li>
-              );
-            })}
+          <ul className="mt-5 space-y-3">
+            {points.map(({ icon: Icon, text }) => (
+              <li key={text} className="flex items-center gap-3 text-sm font-medium">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Icon className="size-4" aria-hidden="true" />
+                </span>
+                {text}
+              </li>
+            ))}
           </ul>
-        </div>
-        <p className="text-xs text-white/60">
-          {tc("copyright", { year: new Date().getFullYear() })}
-        </p>
-      </aside>
+        </aside>
 
-      <main className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between px-4 pt-5 sm:px-8 lg:hidden">
-          <Link
-            href="/"
-            aria-label={tb("home")}
-            className="rounded-lg focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-          >
-            <Logo />
-          </Link>
-          <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Lock className="size-3.5" aria-hidden="true" />
-            {audience === "employer" ? t("employerBadge") : tc("neverPublic")}
-          </span>
-        </header>
-
-        <div className="flex flex-1 items-start justify-center px-4 py-8 sm:px-8 sm:py-12 lg:items-center">
-          <div className="animate-in-fast w-full max-w-md">
-            <div className="mb-7 space-y-2">
-              <h1 className="text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
-                {title}
-              </h1>
-              {subtitle ? (
-                <p className="text-base leading-relaxed text-muted-foreground">{subtitle}</p>
-              ) : null}
-            </div>
-            <div className="sm:rounded-2xl sm:border sm:bg-card sm:p-8 sm:shadow-sm">
-              {children}
-            </div>
-            {footer ? (
-              <div className="mt-6 text-center text-sm text-muted-foreground">{footer}</div>
+        <main className="animate-sheet shadow-float w-full rounded-t-[2rem] bg-background px-5 pt-3 pb-6 sm:max-w-md sm:rounded-[2rem] sm:p-8">
+          <div
+            className="mx-auto mb-5 h-1.5 w-10 rounded-full bg-border sm:hidden"
+            aria-hidden="true"
+          />
+          <div className="mb-6 space-y-1.5">
+            <h1 className="text-[1.75rem] leading-tight font-extrabold tracking-tight text-balance">
+              {title}
+            </h1>
+            {subtitle ? (
+              <p className="text-base leading-relaxed text-muted-foreground">{subtitle}</p>
             ) : null}
           </div>
-        </div>
-
-        <footer className="flex justify-center gap-5 px-4 pb-6 text-xs text-muted-foreground">
-          <Link href="/privacy" className="hover:text-foreground">
-            {tc("privacy")}
-          </Link>
-          <Link href="/terms" className="hover:text-foreground">
-            {tc("terms")}
-          </Link>
-        </footer>
-      </main>
+          {children}
+          {footer ? (
+            <div className="mt-6 text-center text-sm text-muted-foreground">{footer}</div>
+          ) : null}
+          <nav className="mt-6 flex justify-center gap-5 border-t pt-4 text-xs text-muted-foreground">
+            <Link href="/privacy" className="hover:text-foreground">
+              {tc("privacy")}
+            </Link>
+            <Link href="/terms" className="hover:text-foreground">
+              {tc("terms")}
+            </Link>
+          </nav>
+        </main>
+      </div>
     </div>
   );
 }

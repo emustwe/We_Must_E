@@ -5,3 +5,6 @@ export const CONSENT_VERSIONS = {
   privacy: "2026-09-24",
   data_sharing: "2026-09-24",
 } as const;
+
+// PLACEHOLDER — client to replace with the real support address.
+export const SUPPORT_EMAIL = "hello@wemuste.example";

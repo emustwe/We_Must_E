@@ -26,7 +26,7 @@ export default async function EmployeeSignupPage() {
           </p>
           <p>
             {t("hiring")}{" "}
-            <Link href="/signup/employer" className="font-medium text-primary hover:underline">
+            <Link href="/for-employers" className="font-medium text-primary hover:underline">
               {t("employerLink")}
             </Link>
           </p>

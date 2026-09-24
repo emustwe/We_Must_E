@@ -32,8 +32,10 @@ const buttonVariants = cva(
           "size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
         "icon-lg": "size-9",
         // 44px minimum tap target for primary actions on mobile.
-        touch: "h-11 gap-2 rounded-xl px-5 text-base has-data-[icon=inline-end]:pe-4 has-data-[icon=inline-start]:ps-4",
-        "icon-touch": "size-11 rounded-xl",
+        touch:
+          "h-12 gap-2 rounded-full px-6 text-base font-semibold has-data-[icon=inline-end]:pe-5 has-data-[icon=inline-start]:ps-5",
+        pill: "h-10 gap-1.5 rounded-full px-4 text-sm font-semibold",
+        "icon-touch": "size-11 rounded-full",
       },
     },
     defaultVariants: {

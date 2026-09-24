@@ -1,7 +1,9 @@
 # Wemuste
 
-A private platform that connects employees (job seekers) with employers. Wemuste owns and controls all
-employee data: nothing is public, and employers see only what an admin has explicitly granted.
+A private, map-first job platform for the UAE. Verified employers post jobs that appear as pins on a map;
+signed-in job seekers tap a job and send a request. Wemuste owns and controls all employee data: nothing
+is public, employers are created by the Wemuste team, and an employer only sees people who requested one
+of their jobs (or whom an admin granted).
 
 Stack: Next.js 16 (App Router, TypeScript strict) · Tailwind CSS 4 + shadcn/ui · Supabase (Postgres, Auth,
 Storage, RLS) · Zod · React Hook Form · next-intl · Resend · Vercel.
@@ -18,6 +20,23 @@ npm run dev                 # http://localhost:3000
 ```
 
 Emails sent locally (verification, password reset) land in the Mailpit inbox at http://localhost:54324.
+
+The local seed (`supabase/seed.sql`, local only) creates three logins, all with the password
+`Wemuste-Local-2026!`, plus `[SAMPLE]` jobs around Dubai and sample onboarding content:
+
+| Login                    | Role                                                   |
+| ------------------------ | ------------------------------------------------------ |
+| `admin@wemuste.local`    | Admin (enroll an authenticator app on first login)     |
+| `employer@wemuste.local` | Approved employer "Sample Cafe Group"                  |
+| `worker@wemuste.local`   | Job seeker with a finished profile (can send requests) |
+
+### Tests
+
+```bash
+npm test                 # unit tests (Vitest)
+npx supabase test db     # RLS / privilege tests (pgTAP, supabase/tests/database)
+npm run test:e2e         # browser tests for all three roles (Playwright, port 3100)
+```
 
 ### Environment variables
 
@@ -49,15 +68,18 @@ npm run db:types                    # regenerate src/types/database.ts from the 
 ### Creating the first admin
 
 Admins are never created through signup. Create the user in the Supabase dashboard (Auth > Users > Add
-user), then run in the SQL editor (it has no JWT, which is the only context where roles can change):
-
-```sql
-update public.profiles set role = 'admin' where id = (select id from auth.users where email = 'admin@example.com');
-delete from public.employee_profiles where user_id = (select id from auth.users where email = 'admin@example.com');
-```
+user, auto-confirm), then edit the email in `supabase/scripts/create-admin.sql` and run it in the SQL
+editor (it has no JWT, which is the only context where roles can change).
 
 On first login the admin is sent to `/admin/mfa` to enroll an authenticator app; admin pages and admin RLS
-policies require MFA (`aal2`). Phase 2 turns this into `supabase/scripts/create-admin.sql`.
+policies require MFA (`aal2`).
+
+### Creating employers
+
+Employers cannot sign up. An admin creates them at **Admin > Employers > Create employer**. The app
+generates a temporary password, shown once, to hand over securely; the employer must choose their own
+password at first login. Under the hood the service role creates the user with
+`app_metadata.wemuste_role = 'employer'`, which users can never set themselves.
 
 ### Hosted Supabase project settings (dashboard, not in migrations)
 
@@ -76,9 +98,13 @@ policies require MFA (`aal2`). Phase 2 turns this into `supabase/scripts/create-
 - Three roles, stored in `public.profiles.role`, never in `user_metadata`. Signup can only create employees
   or employers (employers start `pending`). Column privileges and a trigger block role/status changes from the API.
 - Default deny: `anon` has no table privileges; every table has RLS enabled and forced.
-- Employers see employee data only through `access_grants`, checked by `private.has_active_grant()`:
-  approved employer + approved employee + unrevoked + unexpired + the requested scope
-  (`profile`, `survey`, `test`, `video`, `cv`, `contact`).
+- Employers see employee data only through `private.has_active_grant()`, which allows either
+  - an admin grant (`access_grants`: approved employer + approved employee + unrevoked + unexpired + scope), or
+  - the employee's own job request: while pending, the employer sees `profile`, `test` and `video`;
+    after they accept, also `contact` and `cv`. Withdrawn/declined requests or a suspended employer end it.
+- Jobs: employees never read the `jobs` table. They use `list_open_jobs()` / `get_job()`, which return a
+  pin offset 250-600 m from the real spot (derived from a secret, so it can't be averaged or reversed).
+  The exact address is returned only after the employer accepts that employee's request.
 - Status changes, grants, grading and meeting responses run in `SECURITY DEFINER` functions that check the
   caller and write `audit_logs` (append-only) in the same transaction.
 - Test answer keys have no RLS policies at all; only the grading function reads them.
@@ -87,6 +113,13 @@ policies require MFA (`aal2`). Phase 2 turns this into `supabase/scripts/create-
   user-scoped client so RLS applies, and return generic errors.
 - Nonce-based CSP, HSTS, `nosniff`, strict referrer policy and a camera/microphone-only permissions policy.
 - CI fails if a secret value appears in `.next/static` (`npm run check:bundle`) or gitleaks finds a secret.
+
+## Maps
+
+MapLibre GL with free OpenFreeMap vector tiles (no API key), tinted pastel in `src/components/map/tint.ts`.
+The worker files are copied to `public/vendor/maplibre` on install (`scripts/copy-maplibre-worker.mjs`).
+Landing/auth backgrounds are static renders of the same map (`public/brand/map-*.jpg`). Map data ©
+OpenStreetMap contributors; the attribution stays visible on every map.
 
 ## Data residency
 
