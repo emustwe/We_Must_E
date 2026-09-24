@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  app:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+    env:
+      # Placeholders only: the build needs values, never real secrets.
+      NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key-placeholder-0123456789
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      SUPABASE_SERVICE_ROLE_KEY: ci-service-role-placeholder-9f8e7d6c5b4a
+      IP_HASH_SECRET: ci-ip-hash-secret-placeholder-0123456789abcdef
+      RESEND_API_KEY: re_ci_placeholder_0123456789
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run format:check
+      - run: npm test
+      - run: npm run build
+      - name: Fail if any secret reached the client bundle
+        run: npm run check:bundle
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Phase 2 adds the RLS policy test job (supabase start + pgTAP).

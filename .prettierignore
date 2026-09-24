@@ -1,0 +1,11 @@
+.next
+node_modules
+package-lock.json
+src/types/database.ts
+supabase/migrations
+src/components/ui
+supabase/.temp
+supabase/templates
+.husky/_
+AGENTS.md
+CLAUDE.md

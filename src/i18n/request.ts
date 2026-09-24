@@ -1,0 +1,15 @@
+import { getRequestConfig } from "next-intl/server";
+
+// English only for now. Adding Arabic/Urdu/Hindi means adding messages/<locale>.json
+// and choosing the locale here (cookie or Accept-Language); layouts already use
+// logical (start/end) properties so RTL works without restyling.
+export const locales = ["en"] as const;
+export const rtlLocales: readonly string[] = ["ar", "ur"];
+
+export default getRequestConfig(async () => {
+  const locale = "en";
+  return {
+    locale,
+    messages: (await import(`../../messages/${locale}.json`)).default,
+  };
+});

@@ -1,0 +1,6 @@
+# Block commits that contain secrets. CI runs the same scan on every push.
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --staged --redact --no-banner
+else
+  echo "pre-commit: gitleaks is not installed (brew install gitleaks). CI will still scan this commit." >&2
+fi
