@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { StatusBadge } from "@/components/jobs/job-card";
+import { MeetingInvite } from "@/components/meetings/meeting-invite";
+import type { Slot } from "@/components/meetings/slot-label";
 import { buttonVariants } from "@/components/ui/button";
 import { requireRole } from "@/lib/auth/session";
 import { CATEGORY_META } from "@/lib/jobs/meta";
@@ -20,12 +22,39 @@ export default async function RequestsPage() {
   const t = await getTranslations("requests");
   const format = await getFormatter();
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("employee_list_job_requests");
+  const [{ data, error }, { data: invites }] = await Promise.all([
+    supabase.rpc("employee_list_job_requests"),
+    supabase.rpc("employee_list_meeting_requests"),
+  ]);
   if (error) logError("employee-requests", error);
   const requests = data ?? [];
+  const tm = await getTranslations("meetings");
+  const openInvites = (invites ?? []).filter(
+    (m) => m.status === "requested" || m.status === "accepted",
+  );
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 pt-6 pb-28 sm:px-6">
+      {openInvites.length ? (
+        <section className="mb-8">
+          <h2 className="mb-3 text-xl font-extrabold tracking-tight">{tm("employeeTitle")}</h2>
+          <ul className="space-y-3">
+            {openInvites.map((m) => (
+              <MeetingInvite
+                key={m.id}
+                invite={{
+                  id: m.id,
+                  company: m.company_name,
+                  slots: m.proposed_slots as Slot[],
+                  chosen: m.chosen_slot,
+                  link: m.meeting_link,
+                  status: m.status,
+                }}
+              />
+            ))}
+          </ul>
+        </section>
+      ) : null}
       <h1 className="text-3xl font-extrabold tracking-tight">{t("title")}</h1>
       {requests.length === 0 ? (
         <div className="mt-10 flex flex-col items-center gap-4 rounded-[2rem] border border-dashed p-10 text-center">

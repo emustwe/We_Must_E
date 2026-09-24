@@ -19,7 +19,8 @@ export type ActionError =
   | "invalidFile"
   | "timeExpired"
   | "incomplete"
-  | "inUse";
+  | "inUse"
+  | "meetingOpen";
 
 export type ActionResult<T = undefined> =
   { ok: true; data: T } | { ok: false; error: ActionError; fieldErrors?: Record<string, string> };

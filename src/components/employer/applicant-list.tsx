@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2, Mail, MessageCircle, Phone, Video } from "lucide-react";
+import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -12,6 +13,7 @@ import { cn } from "@/lib/utils";
 
 export type Applicant = {
   id: string;
+  employeeId: string;
   status: ApplicationStatus;
   message: string | null;
   createdAt: string;
@@ -62,7 +64,12 @@ export function ApplicantList({ applicants }: { applicants: Applicant[] }) {
         <li key={a.id} className="shadow-float rounded-3xl bg-card p-4 sm:p-5">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="font-bold">{a.fullName ?? a.headline ?? "—"}</p>
+              <Link
+                href={`/employer/candidates/${a.employeeId}`}
+                className="font-bold hover:underline"
+              >
+                {a.fullName ?? a.headline ?? "—"}
+              </Link>
               {a.fullName && a.headline ? (
                 <p className="text-sm text-muted-foreground">{a.headline}</p>
               ) : null}

@@ -21,6 +21,7 @@ export async function listApplicants(jobId: string): Promise<Applicant[]> {
   }
   return (data ?? []).map((row) => ({
     id: row.id,
+    employeeId: row.employee_id,
     status: row.status,
     message: row.message,
     createdAt: row.created_at,

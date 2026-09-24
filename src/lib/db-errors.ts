@@ -18,6 +18,8 @@ const KNOWN: Record<string, ActionError> = {
   employee_not_approved: "invalidInput",
   invalid_expiry: "invalidInput",
   invalid_option: "invalidInput",
+  invalid_slot: "invalidInput",
+  invalid_transition: "invalidInput",
 };
 
 export function dbFail(context: string, error: PostgrestError): ActionResult<never> {

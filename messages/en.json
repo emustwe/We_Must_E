@@ -155,7 +155,12 @@
     "pickScopes": "Choose what the employer can see.",
     "promptRequired": "Write the question.",
     "twoOptions": "Add at least two answers.",
-    "pickCorrect": "Mark the correct answer."
+    "pickCorrect": "Mark the correct answer.",
+    "slotOrder": "The end time must be after the start time.",
+    "slotRequired": "Add at least one time.",
+    "slotMax": "Offer up to 3 times.",
+    "slotFuture": "Times must be at least 30 minutes from now.",
+    "meetingLink": "Paste a full link starting with https://"
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",
@@ -181,7 +186,8 @@
     "uploadFailed": "The upload stopped. Check your connection and tap Try again.",
     "fileTooBig": "This file is too big. The limit is 5 MB.",
     "fileType": "Please choose a PDF or Word (.docx) file.",
-    "inUse": "Someone already answered this question, so it can't be deleted. Create a new survey version instead."
+    "inUse": "Someone already answered this question, so it can't be deleted. Create a new survey version instead.",
+    "meetingOpen": "You already have a meeting request waiting for this person."
   },
   "employee": {
     "welcome": "Hi {name}",
@@ -435,7 +441,9 @@
     "jobsAdmin": "Jobs",
     "grants": "Access",
     "content": "Content",
-    "audit": "Audit log"
+    "audit": "Audit log",
+    "candidates": "Candidates",
+    "meetings": "Meetings"
   },
   "categories": {
     "hospitality": "Hospitality",
@@ -679,5 +687,78 @@
       "toMap": "Open the job map",
       "edit": "Edit"
     }
+  },
+  "candidates": {
+    "title": "Candidates",
+    "body": "People our team shared with you, plus everyone who requested your jobs (see each job).",
+    "empty": "No candidates shared yet. When our team shares job seekers with you, they appear here.",
+    "shared": "Shared {date}",
+    "expires": "until {date}",
+    "open": "View",
+    "prev": "Previous",
+    "next": "Next",
+    "back": "Back",
+    "anonymous": "Candidate",
+    "nameHidden": "Name and contact are shared when our team or the job seeker allows it.",
+    "profile": "Profile",
+    "languages": "Languages",
+    "skills": "Skills",
+    "availability": "Availability",
+    "pay": "Expected pay",
+    "test": "Test",
+    "testScore": "{score}% · pass mark {pass}%",
+    "videos": "Video answers",
+    "play": "Play video",
+    "cv": "CV",
+    "openCv": "Open CV",
+    "linkNote": "Links work for 5 minutes. Every view is recorded.",
+    "survey": "Survey answers",
+    "contact": "Contact",
+    "call": "Call",
+    "whatsapp": "WhatsApp",
+    "email": "Email",
+    "yourJobs": "Requested your jobs",
+    "privacyNote": "This profile is private. Don't copy or share it outside Wemuste."
+  },
+  "meetings": {
+    "title": "Meetings",
+    "request": "Request a meeting",
+    "requestTitle": "Suggest times",
+    "requestBody": "Offer up to 3 times. The job seeker picks one.",
+    "slot": "Time {n}",
+    "start": "Start",
+    "duration": "Length",
+    "minutes": "{count} min",
+    "addSlot": "Add another time",
+    "remove": "Remove",
+    "send": "Send request",
+    "sent": "Meeting request sent.",
+    "cancel": "Cancel",
+    "empty": "No meetings yet.",
+    "with": "with {name}",
+    "status": {
+      "requested": "Waiting for reply",
+      "accepted": "Accepted",
+      "declined": "Declined",
+      "cancelled": "Cancelled",
+      "completed": "Done"
+    },
+    "chosen": "Chosen time:",
+    "proposed": "Proposed times",
+    "link": "Meeting link",
+    "linkPlaceholder": "https://meet.google.com/…",
+    "saveLink": "Save link",
+    "linkSaved": "Link saved.",
+    "join": "Join meeting",
+    "markDone": "Mark as done",
+    "cancelMeeting": "Cancel meeting",
+    "cancelConfirm": "Cancel this meeting?",
+    "employeeTitle": "Meeting invites",
+    "employeeBody": "{company} wants to meet you. Pick a time that works.",
+    "pick": "Pick this time",
+    "decline": "Decline",
+    "accepted": "Accepted. The employer will share the meeting link here.",
+    "declined": "You declined this invite.",
+    "noLinkYet": "The employer hasn't added the link yet."
   }
 }

@@ -13,6 +13,8 @@ export const LIMITS = {
   jobRequestPerUser: { max: 30, windowSeconds: 86400 },
   jobPostPerEmployer: { max: 20, windowSeconds: 86400 },
   uploadPerUser: { max: 30, windowSeconds: 86400 },
+  meetingPerEmployer: { max: 30, windowSeconds: 86400 },
+  mediaViewPerEmployer: { max: 300, windowSeconds: 3600 },
 } as const;
 
 /**
