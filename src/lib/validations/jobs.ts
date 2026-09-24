@@ -2,7 +2,9 @@ import { z } from "zod";
 import { AVAILABILITY, CITIES, JOB_CATEGORIES, PAY_PERIODS } from "@/lib/jobs/meta";
 import { emailSchema, newPasswordSchema } from "@/lib/validations/auth";
 
-export const idSchema = z.uuid({ error: "validation.invalid" });
+// Any well-formed UUID. z.uuid() also enforces the RFC version/variant bits,
+// which hand-written seed IDs don't have; the database checks existence anyway.
+export const idSchema = z.guid({ error: "validation.invalid" });
 
 export const jobRequestSchema = z.strictObject({
   jobId: idSchema,

@@ -269,6 +269,33 @@ select is(tests.rows_as(:B, 'select * from list_open_jobs()'), 0, 'removed jobs 
 select ok(tests.denied_as(:E1, $$update jobs set status = 'open'$$), 'employer cannot undo an admin removal');
 
 -- ---------------------------------------------------------------------------
+-- Onboarding writes as a real employee (regression: policy recursion)
+-- ---------------------------------------------------------------------------
+insert into surveys (id, title, is_active) values ('00000000-0000-0000-0000-00000000aa01', '[SAMPLE] Survey', true);
+insert into survey_questions (id, survey_id, type, prompt, options, position) values
+  ('00000000-0000-0000-0000-00000000aa02', '00000000-0000-0000-0000-00000000aa01', 'single_choice', '[SAMPLE] Q', '["a","b"]', 0);
+select lives_ok(format($$select tests.run_as(%L, 'insert into survey_responses (employee_id, survey_id)
+  values (auth.uid(), ''00000000-0000-0000-0000-00000000aa01'')')$$, :C),
+  'employee can start the active survey');
+select lives_ok(format($$select tests.run_as(%L, 'insert into survey_answers (response_id, question_id, answer)
+  values ((select id from survey_responses where employee_id = auth.uid()), ''00000000-0000-0000-0000-00000000aa02'', ''"a"'')')$$, :C),
+  'employee can save a survey answer');
+select ok(tests.denied_as(:B, $$insert into survey_answers (response_id, question_id, answer)
+  values ((select id from survey_responses where employee_id = '00000000-0000-0000-0000-0000000000c1'), '00000000-0000-0000-0000-00000000aa02', '"b"')$$),
+  'employee cannot answer on someone else''s response');
+select lives_ok(format($$select tests.run_as(%L, 'insert into video_resumes (employee_id, prompt_id, storage_path, duration_seconds)
+  values (auth.uid(), ''00000000-0000-0000-0000-00000000f001'', ''00000000-0000-0000-0000-0000000000c1/x.webm'', 20)')$$, :C),
+  'employee can register a video answer');
+select ok(tests.denied_as(:C, $$insert into video_resumes (employee_id, prompt_id, storage_path, duration_seconds)
+  values (auth.uid(), '00000000-0000-0000-0000-00000000f001', '00000000-0000-0000-0000-0000000000a1/y.webm', 20)$$),
+  'video path must be inside the employee''s own folder');
+select ok(tests.denied_as(:C, $$insert into video_resumes (employee_id, prompt_id, storage_path, duration_seconds)
+  values (auth.uid(), '00000000-0000-0000-0000-00000000f001', '00000000-0000-0000-0000-0000000000c1/z.webm', 999)$$),
+  'video longer than the prompt limit is rejected');
+select is(tests.rows_as(:C, 'select 1 from video_prompts'), 1, 'employee reads the active prompt');
+select is(tests.rows_as(:E2, 'select 1 from video_prompts'), 0, 'pending employer reads no prompts');
+
+-- ---------------------------------------------------------------------------
 -- 7. Test answer keys are unreadable
 -- ---------------------------------------------------------------------------
 insert into tests (id, title, time_limit_seconds, pass_score, is_active)

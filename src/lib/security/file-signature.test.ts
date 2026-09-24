@@ -1,0 +1,17 @@
+import { describe, expect, it } from "vitest";
+import { detectFileKind } from "./file-signature";
+
+const bytes = (...values: number[]) => new Uint8Array([...values, ...new Array(16).fill(0)]);
+
+describe("detectFileKind", () => {
+  it("recognises PDF, DOCX (zip), MP4 and WebM", () => {
+    expect(detectFileKind(bytes(0x25, 0x50, 0x44, 0x46, 0x2d, 0x31))).toBe("pdf");
+    expect(detectFileKind(bytes(0x50, 0x4b, 0x03, 0x04))).toBe("zip");
+    expect(detectFileKind(bytes(0, 0, 0, 0x20, 0x66, 0x74, 0x79, 0x70))).toBe("mp4");
+    expect(detectFileKind(bytes(0x1a, 0x45, 0xdf, 0xa3))).toBe("webm");
+  });
+  it("rejects anything else, e.g. HTML renamed to .pdf", () => {
+    const html = new TextEncoder().encode("<html><script>alert(1)</script>");
+    expect(detectFileKind(html)).toBeNull();
+  });
+});

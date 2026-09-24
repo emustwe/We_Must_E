@@ -15,7 +15,10 @@ export type ActionError =
   | "profileIncomplete"
   | "alreadyRequested"
   | "tooManyPending"
-  | "emailTaken";
+  | "emailTaken"
+  | "invalidFile"
+  | "timeExpired"
+  | "incomplete";
 
 export type ActionResult<T = undefined> =
   { ok: true; data: T } | { ok: false; error: ActionError; fieldErrors?: Record<string, string> };

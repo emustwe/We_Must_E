@@ -73,7 +73,7 @@ test("employee: validation, signup, email activation, logout, login", async ({ p
   await expect(page).toHaveURL(/\/employee$/);
   await expect(page.getByRole("link", { name: "Map" })).toHaveAttribute("aria-current", "page");
 
-  await page.getByRole("link", { name: "Profile" }).click();
+  await page.getByRole("link", { name: "Profile", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Hi Maria" })).toBeVisible();
   await expect(page.getByText("Not finished")).toBeVisible();
 

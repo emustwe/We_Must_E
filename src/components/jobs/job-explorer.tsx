@@ -1,6 +1,7 @@
 "use client";
 
-import { ChevronDown, SearchX } from "lucide-react";
+import { ChevronDown, ClipboardList, SearchX } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
@@ -22,6 +23,7 @@ import { cn } from "@/lib/utils";
 // the bottom (a list panel on desktop), and a detail sheet.
 export function JobExplorer({ jobs, profileReady }: { jobs: JobSummary[]; profileReady: boolean }) {
   const t = useTranslations("map");
+  const to = useTranslations("onboarding");
   const tc = useTranslations("categories");
   const te = useTranslations("errors");
   const router = useRouter();
@@ -128,6 +130,18 @@ export function JobExplorer({ jobs, profileReady }: { jobs: JobSummary[]; profil
             {t("jobsCount", { count: visible.length })}
           </span>
         </div>
+        {!profileReady ? (
+          <Link
+            href="/employee/onboarding"
+            className="shadow-float pointer-events-auto flex items-center gap-3 rounded-2xl bg-primary p-3 text-primary-foreground lg:max-w-md"
+          >
+            <ClipboardList className="size-5 shrink-0" aria-hidden="true" />
+            <span className="flex-1 text-sm leading-snug font-semibold">{to("startBanner")}</span>
+            <span className="rounded-full bg-primary-foreground px-3 py-1.5 text-xs font-bold text-primary">
+              {to("startCta")}
+            </span>
+          </Link>
+        ) : null}
         {categoriesHere.length > 1 ? (
           <div className="pointer-events-auto -mx-3 flex scrollbar-none gap-2 overflow-x-auto px-3 pb-1">
             <Chip active={!category} onClick={() => setCategory(null)}>

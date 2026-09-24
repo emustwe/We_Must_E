@@ -10,6 +10,10 @@ const KNOWN: Record<string, ActionError> = {
   profile_incomplete: "profileIncomplete",
   already_requested: "alreadyRequested",
   too_many_pending: "tooManyPending",
+  time_expired: "timeExpired",
+  incomplete: "incomplete",
+  already_submitted: "incomplete",
+  invalid_answer: "invalidInput",
 };
 
 export function dbFail(context: string, error: PostgrestError): ActionResult<never> {

@@ -80,7 +80,7 @@ test("admin creates employer → employer posts job → worker requests → empl
   await sheet.getByRole("button", { name: "Close" }).click();
   await page.getByRole("link", { name: "Requests" }).click();
   await expect(page.getByText(jobTitle).first()).toBeVisible();
-  await page.getByRole("link", { name: "Profile" }).click();
+  await page.getByRole("link", { name: "Profile", exact: true }).click();
   await signOut(page);
 
   // --- Employer: limited profile before accepting, contact after ---

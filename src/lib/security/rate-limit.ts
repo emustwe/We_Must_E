@@ -12,6 +12,7 @@ export const LIMITS = {
   resendPerIp: { max: 5, windowSeconds: 3600 },
   jobRequestPerUser: { max: 30, windowSeconds: 86400 },
   jobPostPerEmployer: { max: 20, windowSeconds: 86400 },
+  uploadPerUser: { max: 30, windowSeconds: 86400 },
 } as const;
 
 /**

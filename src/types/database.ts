@@ -1158,6 +1158,7 @@ export type Database = {
         Args: { p_attempt_id: string }
         Returns: undefined
       }
+      test_question_count: { Args: { p_test_id: string }; Returns: number }
       withdraw_job_request: {
         Args: { p_application_id: string }
         Returns: undefined

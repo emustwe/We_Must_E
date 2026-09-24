@@ -1,5 +1,6 @@
 import { ClipboardList, Lock } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { signOut } from "@/actions/auth";
 import { SignOutEverywhereCard } from "@/components/layout/sign-out-everywhere";
@@ -23,6 +24,7 @@ export default async function EmployeeProfilePage() {
   const profile = await requireRole("employee");
   const t = await getTranslations("employee");
   const tc = await getTranslations("common");
+  const to = await getTranslations("onboarding");
   const status = await getEmployeeStatus(profile.id);
   const firstName = profile.full_name.split(" ")[0];
   const initials = profile.full_name
@@ -66,9 +68,12 @@ export default async function EmployeeProfilePage() {
             {t("nextTitle")}
           </h2>
           <p className="mt-1 text-sm leading-relaxed opacity-90">{t("nextBody")}</p>
-          <p className="mt-4 inline-block rounded-full bg-primary-foreground/15 px-3 py-1 text-sm font-semibold">
-            {t("comingSoon")}
-          </p>
+          <Link
+            href="/employee/onboarding"
+            className="mt-4 inline-flex h-11 items-center rounded-full bg-primary-foreground px-5 text-sm font-bold text-primary"
+          >
+            {to("startCta")}
+          </Link>
         </section>
       ) : null}
 

@@ -16,6 +16,11 @@ export default defineConfig({
   use: {
     baseURL: BASE_URL,
     trace: "retain-on-failure",
+    // A fake camera and microphone for the video-resume step.
+    permissions: ["camera", "microphone"],
+    launchOptions: {
+      args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"],
+    },
   },
   projects: [{ name: "mobile", use: { ...devices["Pixel 7"] } }],
   webServer: {
