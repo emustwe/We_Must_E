@@ -63,7 +63,8 @@ test("anyone can browse live jobs on the map and open one, without an account", 
   await expect(page).toHaveURL(/\?job=[0-9a-f-]{36}$/);
   await sheet.getByRole("link", { name: "Apply" }).click();
   await expect(page).toHaveURL(/\/apply\/[0-9a-f-]{36}$/);
-  await expect(page.getByRole("heading", { name: "[SAMPLE] Weekend barista" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Apply in 3 short steps" })).toBeVisible();
+  await expect(page.getByText("[SAMPLE] Weekend barista")).toBeVisible();
 
   // The public page never receives exact coordinates.
   const html = await (await page.request.get("/")).text();

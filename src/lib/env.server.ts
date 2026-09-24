@@ -14,6 +14,19 @@ const serverSchema = z.object({
     .string()
     .regex(/^-?\d+(\.\d+)?(,-?\d+(\.\d+)?){3}$/)
     .default("22.5,51.0,26.5,56.6"),
+  // Cloudflare Turnstile secret for public applications. Required in production.
+  TURNSTILE_SECRET_KEY: z.string().optional(),
+  // HMAC key for application draft tokens (stored hashed). At least 32 characters.
+  APP_TOKEN_SECRET: z.string().min(32),
+  // Vercel Cron sends it as a Bearer token to /api/cron/cleanup.
+  CRON_SECRET: z.string().min(16).optional(),
+  // Who is told about new applications (no personal data in the email).
+  ADMIN_NOTIFY_EMAIL: z.email().optional(),
+  // Ask applicants to confirm their phone with a code (needs an SMS provider).
+  REQUIRE_PHONE_OTP: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((v) => v === "true"),
 });
 
 const parsed = serverSchema.safeParse({
@@ -23,6 +36,11 @@ const parsed = serverSchema.safeParse({
   EMAIL_FROM: process.env.EMAIL_FROM || undefined,
   SMTP_URL: process.env.SMTP_URL || undefined,
   JOB_AREA_BOUNDS: process.env.JOB_AREA_BOUNDS || undefined,
+  TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY || undefined,
+  APP_TOKEN_SECRET: process.env.APP_TOKEN_SECRET,
+  CRON_SECRET: process.env.CRON_SECRET || undefined,
+  ADMIN_NOTIFY_EMAIL: process.env.ADMIN_NOTIFY_EMAIL || undefined,
+  REQUIRE_PHONE_OTP: process.env.REQUIRE_PHONE_OTP || undefined,
 });
 
 if (!parsed.success) {

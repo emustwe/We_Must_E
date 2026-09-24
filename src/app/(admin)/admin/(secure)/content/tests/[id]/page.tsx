@@ -28,7 +28,7 @@ export default async function TestEditorPage({ params }: PageProps<"/admin/conte
     supabase.rpc("admin_get_answer_keys", { p_test_id: id }),
   ]);
   if (!test) notFound();
-  const keyFor = new Map((keys ?? []).map((k) => [k.question_id, k.correct_option]));
+  const keyFor = new Map((keys ?? []).map((k) => [k.question_id, k.correct_options[0]]));
   return (
     <div className="space-y-5">
       <Link
@@ -50,7 +50,7 @@ export default async function TestEditorPage({ params }: PageProps<"/admin/conte
           test={{
             id: test.id,
             title: test.title,
-            minutes: Math.round(test.time_limit_seconds / 60),
+            minutes: Math.round((test.time_limit_seconds ?? 0) / 60),
             passScore: Number(test.pass_score),
           }}
         />

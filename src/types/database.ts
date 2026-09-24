@@ -7,8 +7,305 @@ export type Json =
   | Json[]
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
+      applicants: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          phone_e164: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          phone_e164: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          phone_e164?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      application_survey_answers: {
+        Row: {
+          answer: Json
+          application_id: string
+          question_id: string
+        }
+        Insert: {
+          answer: Json
+          application_id: string
+          question_id: string
+        }
+        Update: {
+          answer?: Json
+          application_id?: string
+          question_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_survey_answers_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_survey_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "survey_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      application_test_answers: {
+        Row: {
+          answer: Json
+          answered_at: string
+          application_id: string
+          graded_by: string | null
+          is_correct: boolean | null
+          points_awarded: number | null
+          question_id: string
+        }
+        Insert: {
+          answer: Json
+          answered_at?: string
+          application_id: string
+          graded_by?: string | null
+          is_correct?: boolean | null
+          points_awarded?: number | null
+          question_id: string
+        }
+        Update: {
+          answer?: Json
+          answered_at?: string
+          application_id?: string
+          graded_by?: string | null
+          is_correct?: boolean | null
+          points_awarded?: number | null
+          question_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_test_answers_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_test_answers_graded_by_fkey"
+            columns: ["graded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_test_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "test_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      application_videos: {
+        Row: {
+          application_id: string
+          duration_seconds: number
+          mime_type: string
+          question_id: string
+          size_bytes: number
+          storage_path: string
+          uploaded_at: string
+        }
+        Insert: {
+          application_id: string
+          duration_seconds: number
+          mime_type: string
+          question_id: string
+          size_bytes: number
+          storage_path: string
+          uploaded_at?: string
+        }
+        Update: {
+          application_id?: string
+          duration_seconds?: number
+          mime_type?: string
+          question_id?: string
+          size_bytes?: number
+          storage_path?: string
+          uploaded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_videos_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_videos_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "video_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      applications: {
+        Row: {
+          admin_notes: string | null
+          applicant_id: string | null
+          created_at: string
+          current_step: Database["public"]["Enums"]["application_step"]
+          draft_expires_at: string
+          draft_token_hash: string | null
+          id: string
+          ip_hash: string | null
+          job_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["application_status"]
+          submitted_at: string | null
+          survey_id: string | null
+          test_id: string | null
+          test_max_score: number | null
+          test_score: number | null
+          test_started_at: string | null
+          test_submitted_at: string | null
+          updated_at: string
+          video_set_id: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          applicant_id?: string | null
+          created_at?: string
+          current_step?: Database["public"]["Enums"]["application_step"]
+          draft_expires_at?: string
+          draft_token_hash?: string | null
+          id?: string
+          ip_hash?: string | null
+          job_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["application_status"]
+          submitted_at?: string | null
+          survey_id?: string | null
+          test_id?: string | null
+          test_max_score?: number | null
+          test_score?: number | null
+          test_started_at?: string | null
+          test_submitted_at?: string | null
+          updated_at?: string
+          video_set_id?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          applicant_id?: string | null
+          created_at?: string
+          current_step?: Database["public"]["Enums"]["application_step"]
+          draft_expires_at?: string
+          draft_token_hash?: string | null
+          id?: string
+          ip_hash?: string | null
+          job_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["application_status"]
+          submitted_at?: string | null
+          survey_id?: string | null
+          test_id?: string | null
+          test_max_score?: number | null
+          test_score?: number | null
+          test_started_at?: string | null
+          test_submitted_at?: string | null
+          updated_at?: string
+          video_set_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applications_applicant_id_fkey"
+            columns: ["applicant_id"]
+            isOneToOne: false
+            referencedRelation: "applicants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_survey_id_fkey"
+            columns: ["survey_id"]
+            isOneToOne: false
+            referencedRelation: "surveys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "tests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_video_set_id_fkey"
+            columns: ["video_set_id"]
+            isOneToOne: false
+            referencedRelation: "video_question_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -41,6 +338,38 @@ export type Database = {
           target_type?: string | null
         }
         Relationships: []
+      }
+      consents: {
+        Row: {
+          accepted_at: string
+          application_id: string
+          id: string
+          ip_hash: string | null
+          text_version: string
+        }
+        Insert: {
+          accepted_at?: string
+          application_id: string
+          id?: string
+          ip_hash?: string | null
+          text_version: string
+        }
+        Update: {
+          accepted_at?: string
+          application_id?: string
+          id?: string
+          ip_hash?: string | null
+          text_version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consents_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       employer_profiles: {
         Row: {
@@ -133,6 +462,7 @@ export type Database = {
           test_id: string | null
           title: string
           updated_at: string
+          video_set_id: string | null
         }
         Insert: {
           closed_at?: string | null
@@ -151,6 +481,7 @@ export type Database = {
           test_id?: string | null
           title: string
           updated_at?: string
+          video_set_id?: string | null
         }
         Update: {
           closed_at?: string | null
@@ -169,6 +500,7 @@ export type Database = {
           test_id?: string | null
           title?: string
           updated_at?: string
+          video_set_id?: string | null
         }
         Relationships: [
           {
@@ -190,6 +522,54 @@ export type Database = {
             columns: ["test_id"]
             isOneToOne: false
             referencedRelation: "tests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_video_set_id_fkey"
+            columns: ["video_set_id"]
+            isOneToOne: false
+            referencedRelation: "video_question_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      phone_verifications: {
+        Row: {
+          application_id: string
+          attempts: number
+          code_hash: string
+          created_at: string
+          expires_at: string
+          id: string
+          phone_e164: string
+          verified_at: string | null
+        }
+        Insert: {
+          application_id: string
+          attempts?: number
+          code_hash: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          phone_e164: string
+          verified_at?: string | null
+        }
+        Update: {
+          application_id?: string
+          attempts?: number
+          code_hash?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          phone_e164?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phone_verifications_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
             referencedColumns: ["id"]
           },
         ]
@@ -291,15 +671,15 @@ export type Database = {
       }
       test_answer_keys: {
         Row: {
-          correct_option: number
+          correct_options: number[]
           question_id: string
         }
         Insert: {
-          correct_option: number
+          correct_options: number[]
           question_id: string
         }
         Update: {
-          correct_option?: number
+          correct_options?: number[]
           question_id?: string
         }
         Relationships: [
@@ -317,27 +697,33 @@ export type Database = {
           created_at: string
           id: string
           options: Json
+          points: number
           position: number
           prompt: string
           test_id: string
+          type: Database["public"]["Enums"]["test_question_type"]
           updated_at: string
         }
         Insert: {
           created_at?: string
           id?: string
           options: Json
+          points?: number
           position: number
           prompt: string
           test_id: string
+          type?: Database["public"]["Enums"]["test_question_type"]
           updated_at?: string
         }
         Update: {
           created_at?: string
           id?: string
           options?: Json
+          points?: number
           position?: number
           prompt?: string
           test_id?: string
+          type?: Database["public"]["Enums"]["test_question_type"]
           updated_at?: string
         }
         Relationships: [
@@ -356,7 +742,7 @@ export type Database = {
           id: string
           is_active: boolean
           pass_score: number
-          time_limit_seconds: number
+          time_limit_seconds: number | null
           title: string
           updated_at: string
         }
@@ -365,7 +751,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           pass_score: number
-          time_limit_seconds: number
+          time_limit_seconds?: number | null
           title: string
           updated_at?: string
         }
@@ -374,13 +760,37 @@ export type Database = {
           id?: string
           is_active?: boolean
           pass_score?: number
-          time_limit_seconds?: number
+          time_limit_seconds?: number | null
           title?: string
           updated_at?: string
         }
         Relationships: []
       }
-      video_prompts: {
+      video_question_sets: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      video_questions: {
         Row: {
           created_at: string
           created_by: string | null
@@ -389,6 +799,7 @@ export type Database = {
           max_seconds: number
           position: number
           prompt: string
+          set_id: string
           updated_at: string
         }
         Insert: {
@@ -399,6 +810,7 @@ export type Database = {
           max_seconds?: number
           position?: number
           prompt: string
+          set_id: string
           updated_at?: string
         }
         Update: {
@@ -409,6 +821,7 @@ export type Database = {
           max_seconds?: number
           position?: number
           prompt?: string
+          set_id?: string
           updated_at?: string
         }
         Relationships: [
@@ -417,6 +830,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_questions_set_id_fkey"
+            columns: ["set_id"]
+            isOneToOne: false
+            referencedRelation: "video_question_sets"
             referencedColumns: ["id"]
           },
         ]
@@ -434,12 +854,12 @@ export type Database = {
       admin_get_answer_keys: {
         Args: { p_test_id: string }
         Returns: {
-          correct_option: number
+          correct_options: number[]
           question_id: string
         }[]
       }
       admin_set_answer_key: {
-        Args: { p_correct_option: number; p_question_id: string }
+        Args: { p_correct_options: number[]; p_question_id: string }
         Returns: undefined
       }
       admin_set_employer_status: {
@@ -462,6 +882,65 @@ export type Database = {
       }
       admin_swap_test_questions: {
         Args: { p_a: string; p_b: string }
+        Returns: undefined
+      }
+      app_cleanup: { Args: { p_application_ids: string[] }; Returns: number }
+      app_cleanup_candidates: {
+        Args: { p_hours: number }
+        Returns: {
+          application_id: string
+          storage_path: string
+        }[]
+      }
+      app_finish_videos: {
+        Args: { p_job_id: string; p_token_hash: string }
+        Returns: undefined
+      }
+      app_record_video: {
+        Args: {
+          p_duration_seconds: number
+          p_job_id: string
+          p_mime_type: string
+          p_question_id: string
+          p_size_bytes: number
+          p_storage_path: string
+          p_token_hash: string
+        }
+        Returns: string
+      }
+      app_save_test_answer: {
+        Args: {
+          p_answer: Json
+          p_job_id: string
+          p_question_id: string
+          p_token_hash: string
+        }
+        Returns: undefined
+      }
+      app_start: {
+        Args: { p_ip_hash: string; p_job_id: string; p_token_hash: string }
+        Returns: string
+      }
+      app_start_test: {
+        Args: { p_job_id: string; p_token_hash: string }
+        Returns: string
+      }
+      app_submit: {
+        Args: {
+          p_answers: Json
+          p_consent_version: string
+          p_email: string
+          p_full_name: string
+          p_ip_hash: string
+          p_job_id: string
+          p_phone_e164: string
+          p_phone_verified: boolean
+          p_token_hash: string
+        }
+        Returns: string
+      }
+      app_submit_test: {
+        Args: { p_job_id: string; p_token_hash: string }
         Returns: undefined
       }
       check_rate_limit: {
@@ -489,6 +968,8 @@ export type Database = {
       record_account_deletion: { Args: never; Returns: undefined }
     }
     Enums: {
+      application_status: "in_progress" | "submitted" | "approved" | "rejected"
+      application_step: "test" | "video" | "survey" | "submitted"
       availability:
         | "evenings"
         | "weekends"
@@ -504,6 +985,11 @@ export type Database = {
         | "long_text"
         | "number"
         | "scale"
+      test_question_type:
+        | "single_choice"
+        | "multi_choice"
+        | "short_text"
+        | "long_text"
       user_role: "employee" | "employer" | "admin"
       video_provider: "supabase" | "mux"
     }
@@ -631,8 +1117,13 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
+      application_status: ["in_progress", "submitted", "approved", "rejected"],
+      application_step: ["test", "video", "survey", "submitted"],
       availability: [
         "evenings",
         "weekends",
@@ -649,6 +1140,12 @@ export const Constants = {
         "long_text",
         "number",
         "scale",
+      ],
+      test_question_type: [
+        "single_choice",
+        "multi_choice",
+        "short_text",
+        "long_text",
       ],
       user_role: ["employee", "employer", "admin"],
       video_provider: ["supabase", "mux"],

@@ -22,7 +22,10 @@ export type ActionError =
   | "inUse"
   | "meetingOpen"
   | "invalidCode"
-  | "alreadyActive";
+  | "alreadyActive"
+  | "jobUnavailable"
+  | "phoneUnverified"
+  | "wrongStep";
 
 export type ActionResult<T = undefined> =
   { ok: true; data: T } | { ok: false; error: ActionError; fieldErrors?: Record<string, string> };

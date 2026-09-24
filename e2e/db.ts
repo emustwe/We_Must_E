@@ -17,7 +17,7 @@ export const psql = (sql: string) =>
     .toString()
     .trim();
 
-const env = Object.fromEntries(
+export const env: Record<string, string> = Object.fromEntries(
   readFileSync(".env.local", "utf8")
     .split("\n")
     .filter((line) => line.includes("="))

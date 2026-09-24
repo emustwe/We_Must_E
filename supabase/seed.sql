@@ -56,13 +56,18 @@ insert into public.test_questions (id, test_id, prompt, options, position) value
    '["Ignore it","Listen and apologise","Call the manager immediately"]', 0),
   ('20000000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000002',
    '[SAMPLE] Your shift starts at 9:00. When should you arrive?', '["9:15","9:00","8:50"]', 1);
-insert into public.test_answer_keys (question_id, correct_option) values
-  ('20000000-0000-0000-0000-000000000003', 1),
-  ('20000000-0000-0000-0000-000000000004', 2);
+insert into public.test_questions (id, test_id, type, prompt, options, position) values
+  ('20000000-0000-0000-0000-000000000005', '20000000-0000-0000-0000-000000000002', 'short_text',
+   '[SAMPLE] In one sentence: why do you want this job?', '[]', 2);
+insert into public.test_answer_keys (question_id, correct_options) values
+  ('20000000-0000-0000-0000-000000000003', '{1}'),
+  ('20000000-0000-0000-0000-000000000004', '{2}');
 
-insert into public.video_prompts (prompt, max_seconds, position) values
-  ('[SAMPLE] Introduce yourself in 30 seconds.', 45, 0),
-  ('[SAMPLE] Tell us about a time you helped a customer.', 90, 1);
+insert into public.video_question_sets (id, title, is_active)
+values ('20000000-0000-0000-0000-000000000006', '[SAMPLE] Video questions', true);
+insert into public.video_questions (set_id, prompt, max_seconds, position) values
+  ('20000000-0000-0000-0000-000000000006', '[SAMPLE] Introduce yourself in 30 seconds.', 45, 0),
+  ('20000000-0000-0000-0000-000000000006', '[SAMPLE] Tell us about a time you helped a customer.', 90, 1);
 
 -- [SAMPLE] jobs around Dubai (title, description, location only)
 insert into public.jobs (employer_id, title, description, location_label, lat, lng) values

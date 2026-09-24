@@ -200,7 +200,7 @@ export async function saveTestQuestion(input: unknown): Promise<ActionResult> {
   // Answer keys live in a table no client can read; only this RPC writes them.
   const { error: keyError } = await supabase.rpc("admin_set_answer_key", {
     p_question_id: questionId!,
-    p_correct_option: correctOption,
+    p_correct_options: [correctOption],
   });
   if (keyError) return dbFail("set-answer-key", keyError);
   revalidatePath(`/admin/content/tests/${testId}`);
@@ -238,18 +238,36 @@ export async function savePrompt(input: unknown): Promise<ActionResult> {
   const { id, prompt, maxSeconds, isActive } = parsed.data;
   const fields = { prompt, max_seconds: maxSeconds, is_active: isActive };
   if (id) {
-    const { error } = await supabase.from("video_prompts").update(fields).eq("id", id);
+    const { error } = await supabase.from("video_questions").update(fields).eq("id", id);
     if (error) return dbFail("update-prompt", error);
   } else {
     const { data: last } = await supabase
-      .from("video_prompts")
+      .from("video_questions")
       .select("position")
       .order("position", { ascending: false })
       .limit(1)
       .maybeSingle();
-    const { error } = await supabase
-      .from("video_prompts")
-      .insert({ ...fields, position: (last?.position ?? -1) + 1, created_by: profile.id });
+    // New questions join the active video question set.
+    let { data: set } = await supabase
+      .from("video_question_sets")
+      .select("id")
+      .eq("is_active", true)
+      .maybeSingle();
+    if (!set) {
+      const created = await supabase
+        .from("video_question_sets")
+        .insert({ title: "Video questions", is_active: true })
+        .select("id")
+        .single();
+      if (created.error) return dbFail("create-video-set", created.error);
+      set = created.data;
+    }
+    const { error } = await supabase.from("video_questions").insert({
+      ...fields,
+      set_id: set.id,
+      position: (last?.position ?? -1) + 1,
+      created_by: profile.id,
+    });
     if (error) return dbFail("create-prompt", error);
   }
   revalidatePath("/admin/content/prompts");

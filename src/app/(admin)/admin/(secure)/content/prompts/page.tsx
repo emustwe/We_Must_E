@@ -15,7 +15,7 @@ export default async function PromptsPage() {
   const t = await getTranslations("admin");
   const supabase = await createClient();
   const { data: prompts } = await supabase
-    .from("video_prompts")
+    .from("video_questions")
     .select("id, prompt, max_seconds, is_active")
     .order("position");
   return (

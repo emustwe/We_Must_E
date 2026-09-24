@@ -18,6 +18,11 @@ export const LIMITS = {
   uploadPerUser: { max: 30, windowSeconds: 86400 },
   meetingPerEmployer: { max: 30, windowSeconds: 86400 },
   mediaViewPerEmployer: { max: 300, windowSeconds: 3600 },
+  // Public applications (no account): per hashed IP.
+  applicationStartPerIp: { max: 5, windowSeconds: 3600 },
+  applicationStepPerIp: { max: 600, windowSeconds: 3600 },
+  videoUploadPerIp: { max: 40, windowSeconds: 3600 },
+  phoneCodePerIp: { max: 5, windowSeconds: 3600 },
 } as const;
 
 /**

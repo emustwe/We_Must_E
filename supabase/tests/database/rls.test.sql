@@ -65,7 +65,8 @@ end $$;
 -- ---------------------------------------------------------------------------
 delete from public.jobs;
 delete from public.tests;
-delete from public.video_prompts;
+delete from public.video_questions;
+delete from public.video_question_sets;
 delete from public.surveys;
 delete from auth.users;
 
@@ -206,6 +207,135 @@ select is(tests.rows_as(null, 'select * from get_public_jobs(22.5, 51, 26.5, 56.
 select is(tests.rows_as(:E1, 'select 1 from jobs'), 0, 'suspended employer cannot read their jobs');
 select ok(tests.denied_as(:E1, $$insert into jobs (employer_id, title, description, location_label, lat, lng)
   values (auth.uid(), 'Again', 'Suspended employers cannot post.', 'Dubai', 25.2, 55.3)$$), 'suspended employer cannot post');
+
+-- ---------------------------------------------------------------------------
+-- Public applications: only the server (service role) with the right token
+-- ---------------------------------------------------------------------------
+insert into tests (id, title, time_limit_seconds, pass_score, is_active)
+  values ('30000000-0000-0000-0000-000000000001', 'Test', 60, 50, true);
+insert into test_questions (id, test_id, type, prompt, options, position, points) values
+  ('30000000-0000-0000-0000-0000000000a1', '30000000-0000-0000-0000-000000000001', 'single_choice', 'Q1', '["a","b"]', 0, 1),
+  ('30000000-0000-0000-0000-0000000000a2', '30000000-0000-0000-0000-000000000001', 'multi_choice', 'Q2', '["a","b","c"]', 1, 2),
+  ('30000000-0000-0000-0000-0000000000a3', '30000000-0000-0000-0000-000000000001', 'long_text', 'Q3', '[]', 2, 1);
+insert into test_answer_keys (question_id, correct_options) values
+  ('30000000-0000-0000-0000-0000000000a1', '{1}'), ('30000000-0000-0000-0000-0000000000a2', '{0,2}');
+insert into video_question_sets (id, title, is_active) values ('30000000-0000-0000-0000-000000000002', 'Videos', true);
+insert into video_questions (id, set_id, prompt, max_seconds, position)
+  values ('30000000-0000-0000-0000-0000000000b1', '30000000-0000-0000-0000-000000000002', 'Say hi', 30, 0);
+insert into surveys (id, title, is_active) values ('30000000-0000-0000-0000-000000000003', 'Survey', true);
+insert into survey_questions (id, survey_id, type, prompt, options, required, position)
+  values ('30000000-0000-0000-0000-0000000000c1', '30000000-0000-0000-0000-000000000003', 'single_choice', 'Start?', '["now","later"]', true, 0);
+select tests.run_as(:E3, $$insert into jobs (employer_id, title, description, location_label, lat, lng)
+  values (auth.uid(), 'Apply here', 'A job open for applications.', 'Deira, Dubai', 25.27, 55.31),
+         (auth.uid(), 'Other job', 'Another open job for applications.', 'Karama, Dubai', 25.24, 55.30)$$);
+\set JC '(select id from jobs where title = ''Apply here'')'
+\set JD '(select id from jobs where title = ''Other job'')'
+\set TOKA '''token-a-0123456789-0123456789-0123456789'''
+\set TOKB '''token-b-0123456789-0123456789-0123456789'''
+\set VQ '''30000000-0000-0000-0000-0000000000b1'''
+\set SQ '''30000000-0000-0000-0000-0000000000c1'''
+
+select is((select video_set_id from jobs where id = :JC), '30000000-0000-0000-0000-000000000002'::uuid,
+  'new jobs use the active video question set');
+select ok(not has_function_privilege('anon', 'public.app_start(uuid, text, text)', 'execute')
+      and not has_function_privilege('authenticated', 'public.app_submit(uuid, text, text, text, text, jsonb, text, text, boolean)', 'execute')
+      and not has_function_privilege('authenticated', 'public.app_save_test_answer(uuid, text, uuid, jsonb)', 'execute')
+      and has_function_privilege('service_role', 'public.app_start(uuid, text, text)', 'execute'),
+  'application functions are for the server (service role) only');
+select ok(tests.denied_as(null, format('insert into applications (job_id) values (%s)', :'JC')), 'anon cannot create applications directly');
+select ok(tests.denied_as(:E3, format('insert into applications (job_id) values (%s)', :'JC')), 'employers cannot create applications');
+select throws_ok(format('select app_start(%s, %s, null)', :'JB', :'TOKA'), 'P0002', 'job_unavailable', 'a closed job takes no applications');
+
+select lives_ok(format('select app_start(%s, %s, ''iphash'')', :'JC', :'TOKA'), 'the server starts an application for a live job');
+\set AA '(select id from applications where draft_token_hash = ' :TOKA ')'
+select is((select current_step::text from applications where id = :AA), 'test', 'a new application starts at the test');
+select is((select test_id from applications where id = :AA), '30000000-0000-0000-0000-000000000001'::uuid, 'the application keeps the job''s question sets');
+
+-- Required test 2: a token only opens its own application.
+select throws_ok(format('select app_start_test(%s, %s)', :'JD', :'TOKA'), '28000', 'invalid_token', 'a token for job A cannot open an application for job B');
+select throws_ok(format('select app_start_test(%s, ''wrong-token-0123456789-0123456789'')', :'JC'), '28000', 'invalid_token', 'a wrong token opens nothing');
+
+select throws_ok(format($$select app_save_test_answer(%s, %s, '30000000-0000-0000-0000-0000000000a1', '{"options":[1]}')$$, :'JC', :'TOKA'),
+  '22023', 'wrong_step', 'answers are refused before the test starts');
+select ok((select app_start_test(:JC, :TOKA)) > now(), 'starting the test returns a future deadline');
+select lives_ok(format($$select app_save_test_answer(%s, %s, '30000000-0000-0000-0000-0000000000a1', '{"options":[1]}')$$, :'JC', :'TOKA'), 'a choice answer is saved');
+select lives_ok(format($$select app_save_test_answer(%s, %s, '30000000-0000-0000-0000-0000000000a2', '{"options":[2,0]}')$$, :'JC', :'TOKA'), 'a multi-choice answer is saved');
+select lives_ok(format($$select app_save_test_answer(%s, %s, '30000000-0000-0000-0000-0000000000a3', '{"text":"I like people"}')$$, :'JC', :'TOKA'), 'a written answer is saved');
+select throws_ok(format($$select app_save_test_answer(%s, %s, '30000000-0000-0000-0000-0000000000a1', '{"options":[0,1]}')$$, :'JC', :'TOKA'),
+  '22023', 'invalid_answer', 'two options for a single-choice question are refused');
+select throws_ok(format($$select app_save_test_answer(%s, %s, '30000000-0000-0000-0000-0000000000a1', '{"options":[7]}')$$, :'JC', :'TOKA'),
+  '22023', 'invalid_answer', 'an option that does not exist is refused');
+select throws_ok(format($$select app_save_test_answer(%s, %s, '30000000-0000-0000-0000-0000000000a3', '{"options":[0]}')$$, :'JC', :'TOKA'),
+  '22023', 'invalid_answer', 'a choice answer to a written question is refused');
+
+-- Required test 6: late answers are rejected.
+update applications set test_started_at = now() - interval '2 minutes' where id = :AA;
+select throws_ok(format($$select app_save_test_answer(%s, %s, '30000000-0000-0000-0000-0000000000a1', '{"options":[0]}')$$, :'JC', :'TOKA'),
+  '22023', 'time_expired', 'answers after the time limit are rejected');
+select lives_ok(format('select app_submit_test(%s, %s)', :'JC', :'TOKA'), 'the test can still be finished after the time limit');
+select is((select (test_score, test_max_score)::text from applications where id = :AA), '(3.00,4.00)',
+  'choice questions are graded on the server (written ones wait for the admin)');
+select is((select is_correct from application_test_answers where application_id = :AA
+            and question_id = '30000000-0000-0000-0000-0000000000a1'), true, 'the late answer did not replace the saved one');
+select is((select current_step::text from applications where id = :AA), 'video', 'after the test comes the video');
+
+select throws_ok(format('select app_record_video(%s, %s, %s, ''someone-else/x.webm'', 10, 1000, ''video/webm'')', :'JC', :'TOKA', :'VQ'),
+  '22023', 'invalid_video', 'a video path outside the application folder is refused');
+select throws_ok(format('select app_finish_videos(%s, %s)', :'JC', :'TOKA'), '22023', 'incomplete', 'every video question needs an answer');
+select lives_ok(format('select app_record_video(%s, %s, %s, %L, 12, 2000, ''video/webm'')', :'JC', :'TOKA', :'VQ',
+  (select id from applications where draft_token_hash = :TOKA) || '/' || :VQ || '/one.webm'), 'a video answer is recorded');
+select lives_ok(format('select app_finish_videos(%s, %s)', :'JC', :'TOKA'), 'the videos are done');
+
+select throws_ok(format($$select app_submit(%s, %s, 'Sara Ali', '+971501234567', '', '{}', 'v1', 'ip', true)$$, :'JC', :'TOKA'),
+  '22023', 'incomplete', 'required survey questions must be answered');
+select throws_ok(format($$select app_submit(%s, %s, 'Sara Ali', '+971501234567', '', '{"30000000-0000-0000-0000-0000000000ff":{"text":"x"}}', 'v1', 'ip', true)$$, :'JC', :'TOKA'),
+  '22023', 'invalid_answer', 'answers to unknown questions are refused');
+select throws_ok(format($$select app_submit(%s, %s, 'Sara Ali', '+971501234567', '', %L, 'v1', 'ip', true)$$, :'JC', :'TOKA',
+  jsonb_build_object(:SQ, '{"text":"now"}'::jsonb)), '22023', 'invalid_answer', 'a survey answer of the wrong shape is refused');
+select throws_ok(format($$select app_submit(%s, %s, 'Sara Ali', '+971501234567', '', %L, 'v1', 'ip', false)$$, :'JC', :'TOKA',
+  jsonb_build_object(:SQ, '{"options":[0]}'::jsonb)), '22023', 'phone_unverified', 'an unconfirmed phone is refused when codes are required');
+select lives_ok(format($$select app_submit(%s, %s, 'Sara Ali', '+971501234567', 'Sara@Example.com', %L, 'v1', 'ip', true)$$, :'JC', :'TOKA',
+  jsonb_build_object(:SQ, '{"options":[0]}'::jsonb)), 'the application is submitted');
+\set AA '(select a.id from applications a join jobs j on j.id = a.job_id where j.title = ''Apply here'')'
+select is((select (status, current_step, draft_token_hash is null)::text from applications where id = :AA),
+  '(submitted,submitted,t)', 'submitting ends the draft: status submitted, token cleared');
+select is((select count(*)::int from consents where application_id = :AA), 1, 'the consent is recorded');
+select is((select email from applicants where phone_e164 = '+971501234567'), 'sara@example.com', 'the applicant is stored by phone number');
+select throws_ok(format('select app_start_test(%s, %s)', :'JC', :'TOKA'), '28000', 'invalid_token', 'the token stops working after submitting');
+
+-- A second application from the same phone links to the same person.
+select app_start(:JD, :TOKB, 'ip');
+update applications set current_step = 'survey' where draft_token_hash = :TOKB;
+select app_submit(:JD, :TOKB, 'Sara A.', '+971501234567', '', jsonb_build_object(:SQ, '{"options":[1]}'::jsonb), 'v1', 'ip', true);
+select is((select count(*)::int from applicants), 1, 'repeat applicants are matched by phone number');
+select is((select count(distinct applicant_id)::int from applications where status = 'submitted'), 1, 'both applications belong to the same applicant');
+
+-- Reads: nobody but MFA admins (employers get approved ones in phase 6).
+select is(tests.rows_as(null, 'select 1 from applications'), -1, 'anon cannot read applications');
+select is(tests.rows_as(:E3, 'select 1 from applications'), 0, 'employers cannot see unreviewed applications, even for their own jobs');
+select is(tests.rows_as(:E3, 'select 1 from applicants'), 0, 'employers cannot see applicants');
+select is(tests.rows_as(:AD, 'select 1 from applications'), 0, 'admin without MFA reads no applications');
+select is(tests.rows_as(:AD, 'select 1 from applications', 'aal2'), 2, 'MFA admin reads applications');
+select is(tests.rows_as(:AD, 'select 1 from phone_verifications', 'aal2'), -1, 'phone codes are unreadable, even for admins');
+select ok(tests.denied_as(:AD, format('update applications set status = ''approved'' where id = %s', :'AA'), 'aal2'),
+  'applications are not edited directly (review goes through audited functions)');
+
+-- Storage: the bucket is private.
+insert into storage.objects (bucket_id, name) values ('application-videos', 'demo/one.webm');
+select is((select public from storage.buckets where id = 'application-videos'), false, 'the video bucket is private');
+select ok(tests.rows_as(null, $$select 1 from storage.objects where bucket_id = 'application-videos'$$) <= 0, 'anon cannot read videos');
+select is(tests.rows_as(:E3, $$select 1 from storage.objects where bucket_id = 'application-videos'$$), 0, 'employers cannot read unapproved videos');
+select is(tests.rows_as(:AD, $$select 1 from storage.objects where bucket_id = 'application-videos'$$, 'aal2'), 1, 'MFA admins can read videos');
+select ok(tests.denied_as(null, $$insert into storage.objects (bucket_id, name) values ('application-videos', 'x/y.webm')$$),
+  'nobody uploads without a server-signed upload URL');
+
+-- Cleanup: unfinished applications older than 48 h, never submitted ones.
+select app_start(:JD, 'token-c-0123456789-0123456789-0123456789', 'ip');
+update applications set created_at = now() - interval '49 hours' where status = 'in_progress';
+update applications set created_at = now() - interval '72 hours' where id = :AA;
+select is((select count(distinct application_id)::int from app_cleanup_candidates(48)), 1, 'only unfinished applications are cleaned up');
+select is(app_cleanup(array(select application_id from app_cleanup_candidates(48))), 1, 'the unfinished application is deleted');
+select is((select count(*)::int from applications), 2, 'submitted applications are kept');
 
 -- ---------------------------------------------------------------------------
 -- audit_logs is append-only

@@ -1,0 +1,376 @@
+"use client";
+
+import { Camera, CheckCircle2, Circle, RotateCcw, Square } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { confirmVideo, createVideoUpload, finishVideos } from "@/actions/apply";
+import { useStepAction } from "@/components/apply/use-step-action";
+import { FormAlert } from "@/components/forms/form-alert";
+import { Button } from "@/components/ui/button";
+import { clientEnv } from "@/lib/env";
+import { cn } from "@/lib/utils";
+import type { ApplyView } from "@/server/public-application";
+
+type VideoView = Extract<ApplyView, { stage: "video" }>;
+type Question = VideoView["questions"][number];
+
+// Recording format: the first one this browser supports (Safari records MP4).
+function pickFormat() {
+  if (typeof MediaRecorder === "undefined") return null;
+  const candidates = [
+    { type: "video/webm;codecs=vp9,opus", mime: "video/webm" as const },
+    { type: "video/webm;codecs=vp8,opus", mime: "video/webm" as const },
+    { type: "video/webm", mime: "video/webm" as const },
+    { type: "video/mp4", mime: "video/mp4" as const },
+  ];
+  return candidates.find((c) => MediaRecorder.isTypeSupported(c.type)) ?? null;
+}
+
+let cachedFormat: ReturnType<typeof pickFormat> | undefined;
+const getFormat = () => (cachedFormat === undefined ? (cachedFormat = pickFormat()) : cachedFormat);
+const noSubscribe = () => () => {};
+
+// PUT to the signed upload URL with progress (fetch has no upload progress).
+function uploadWithProgress(url: string, blob: Blob, onProgress: (percent: number) => void) {
+  return new Promise<void>((resolve, reject) => {
+    const body = new FormData();
+    body.append("cacheControl", "3600");
+    body.append("", blob);
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", url);
+    xhr.setRequestHeader("x-upsert", "false");
+    xhr.setRequestHeader("apikey", clientEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+    xhr.upload.onprogress = (e) =>
+      e.lengthComputable && onProgress(Math.round((e.loaded / e.total) * 100));
+    xhr.onload = () =>
+      xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(String(xhr.status)));
+    xhr.onerror = () => reject(new Error("network"));
+    xhr.send(body);
+  });
+}
+
+export function VideoStep({ jobId, view }: { jobId: string; view: VideoView }) {
+  const t = useTranslations("apply");
+  const { run, pending, error } = useStepAction();
+  const [recorded, setRecorded] = useState(
+    () => new Set(view.questions.filter((q) => q.recorded).map((q) => q.id)),
+  );
+  const firstOpen = view.questions.findIndex((q) => !q.recorded);
+  const [index, setIndex] = useState(firstOpen === -1 ? view.questions.length : firstOpen);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  // Stop the camera when leaving the step.
+  useEffect(() => () => streamRef.current?.getTracks().forEach((track) => track.stop()), []);
+
+  const allDone = view.questions.every((q) => recorded.has(q.id));
+
+  if (index >= view.questions.length) {
+    return (
+      <div className="flex flex-1 flex-col">
+        <h1 className="text-3xl font-extrabold tracking-tight">{t("videoTitle")}</h1>
+        <ul className="mt-5 space-y-2.5">
+          {view.questions.map((q, i) => (
+            <li key={q.id} className="flex items-center gap-3 rounded-2xl bg-muted/60 p-4">
+              {recorded.has(q.id) ? (
+                <CheckCircle2 className="size-5 shrink-0 text-success" aria-hidden="true" />
+              ) : (
+                <Circle className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+              )}
+              <span className="flex-1 text-sm font-semibold">{q.prompt}</span>
+              <Button variant="ghost" size="sm" onClick={() => setIndex(i)}>
+                {recorded.has(q.id) ? t("retake") : t("record")}
+              </Button>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-auto space-y-3 pt-8">
+          <FormAlert message={error} />
+          <Button
+            size="touch"
+            className="w-full"
+            disabled={pending || !allDone}
+            onClick={() => {
+              streamRef.current?.getTracks().forEach((track) => track.stop());
+              void run(() => finishVideos(jobId));
+            }}
+          >
+            {t("continue")}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <Recorder
+      key={view.questions[index].id}
+      jobId={jobId}
+      question={view.questions[index]}
+      number={index + 1}
+      total={view.questions.length}
+      stream={stream}
+      onStream={(s) => {
+        streamRef.current = s;
+        setStream(s);
+      }}
+      onDone={() => {
+        const id = view.questions[index].id;
+        const next = new Set(recorded).add(id);
+        setRecorded(next);
+        const open = view.questions.findIndex((q) => !next.has(q.id));
+        setIndex(open === -1 ? view.questions.length : open);
+      }}
+    />
+  );
+}
+
+type Phase = "camera" | "ready" | "countdown" | "recording" | "review" | "uploading";
+
+function Recorder({
+  jobId,
+  question,
+  number,
+  total,
+  stream,
+  onStream,
+  onDone,
+}: {
+  jobId: string;
+  question: Question;
+  number: number;
+  total: number;
+  stream: MediaStream | null;
+  onStream: (stream: MediaStream) => void;
+  onDone: () => void;
+}) {
+  const t = useTranslations("apply");
+  const te = useTranslations("errors");
+  const [phase, setPhase] = useState<Phase>(stream ? "ready" : "camera");
+  const [count, setCount] = useState(3);
+  const [elapsed, setElapsed] = useState(0);
+  const [clip, setClip] = useState<{ blob: Blob; url: string; seconds: number } | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const live = useRef<HTMLVideoElement>(null);
+  const recorder = useRef<MediaRecorder | null>(null);
+  const startedAt = useRef(0);
+  // undefined while rendering on the server, null if this browser can't record.
+  const format = useSyncExternalStore(noSubscribe, getFormat, () => undefined);
+
+  useEffect(() => {
+    if (live.current && stream) live.current.srcObject = stream;
+  }, [stream, phase]);
+
+  useEffect(
+    () => () => {
+      if (clip) URL.revokeObjectURL(clip.url);
+    },
+    [clip],
+  );
+
+  async function enableCamera() {
+    setError(null);
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: "user",
+          width: { ideal: 1280, max: 1280 },
+          height: { ideal: 720, max: 720 },
+        },
+        audio: true,
+      });
+      onStream(s);
+      setPhase("ready");
+    } catch {
+      setError(te("cameraBlocked"));
+    }
+  }
+
+  function begin() {
+    setPhase("countdown");
+    setCount(3);
+    let n = 3;
+    const id = window.setInterval(() => {
+      n -= 1;
+      setCount(n);
+      if (n === 0) {
+        window.clearInterval(id);
+        record();
+      }
+    }, 1000);
+  }
+
+  function record() {
+    const fmt = format;
+    if (!stream || !fmt) return;
+    const chunks: Blob[] = [];
+    const rec = new MediaRecorder(stream, { mimeType: fmt.type, videoBitsPerSecond: 1_500_000 });
+    rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+    rec.onstop = () => {
+      const seconds = Math.max(1, Math.round((Date.now() - startedAt.current) / 1000));
+      // Upload with the plain type (no codecs) so storage accepts it.
+      const blob = new Blob(chunks, { type: fmt.mime });
+      setClip({ blob, url: URL.createObjectURL(blob), seconds });
+      setPhase("review");
+    };
+    recorder.current = rec;
+    startedAt.current = Date.now();
+    setElapsed(0);
+    rec.start(1000);
+    setPhase("recording");
+  }
+
+  // Timer and auto-stop at the question's limit.
+  useEffect(() => {
+    if (phase !== "recording") return;
+    const id = window.setInterval(() => {
+      const s = Math.floor((Date.now() - startedAt.current) / 1000);
+      setElapsed(s);
+      if (s >= question.maxSeconds) recorder.current?.stop();
+    }, 250);
+    return () => window.clearInterval(id);
+  }, [phase, question.maxSeconds]);
+
+  async function upload() {
+    if (!clip || !format) return;
+    setError(null);
+    setPhase("uploading");
+    setProgress(0);
+    try {
+      const target = await createVideoUpload({ jobId, questionId: question.id, mime: format.mime });
+      if (!target.ok) throw new Error(target.error);
+      await uploadWithProgress(target.data.signedUrl, clip.blob, setProgress);
+      const confirmed = await confirmVideo({
+        jobId,
+        questionId: question.id,
+        path: target.data.path,
+        durationSeconds: Math.min(clip.seconds, question.maxSeconds),
+      });
+      if (!confirmed.ok) throw new Error(confirmed.error);
+      onDone();
+    } catch (e) {
+      const key = e instanceof Error ? e.message : "";
+      setError(
+        ["rateLimited", "sessionExpired", "invalidFile"].includes(key)
+          ? te(key as "invalidFile")
+          : t("uploadFailed"),
+      );
+      setPhase("review");
+    }
+  }
+
+  if (format === null) {
+    return <FormAlert message={t("noCamera")} />;
+  }
+
+  const remaining = Math.max(0, question.maxSeconds - elapsed);
+
+  return (
+    <div className="flex flex-1 flex-col">
+      <p className="text-sm font-semibold text-muted-foreground">
+        {t("videoQuestion", { current: number, total })} ·{" "}
+        {t("maxLength", { seconds: question.maxSeconds })}
+      </p>
+      <h1 className="mt-2 text-2xl font-extrabold tracking-tight">{question.prompt}</h1>
+
+      <div className="relative mt-4 aspect-[3/4] overflow-hidden rounded-[1.75rem] bg-foreground/90 sm:aspect-video">
+        {phase === "review" || phase === "uploading" ? (
+          <video src={clip?.url} controls playsInline className="size-full object-cover" />
+        ) : stream ? (
+          <video
+            ref={live}
+            autoPlay
+            muted
+            playsInline
+            className="size-full -scale-x-100 object-cover"
+          />
+        ) : (
+          <div className="flex size-full flex-col items-center justify-center gap-3 p-6 text-center text-background">
+            <Camera className="size-10" aria-hidden="true" />
+            <p className="text-sm">{t("cameraHint")}</p>
+          </div>
+        )}
+        {phase === "countdown" ? (
+          <div
+            className="absolute inset-0 flex items-center justify-center bg-black/40"
+            aria-live="assertive"
+          >
+            <span className="text-7xl font-extrabold text-white">{count}</span>
+            <span className="sr-only">{t("countdown", { n: count })}</span>
+          </div>
+        ) : null}
+        {phase === "recording" ? (
+          <p
+            className="absolute start-3 top-3 flex items-center gap-2 rounded-full bg-black/60 px-3 py-1 text-sm font-bold text-white tabular-nums"
+            aria-live="off"
+          >
+            <span className="size-2.5 animate-pulse rounded-full bg-red-500" aria-hidden="true" />
+            {t("recording")} {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}
+          </p>
+        ) : null}
+        {phase === "uploading" ? (
+          <div className="absolute inset-x-0 bottom-0 bg-black/60 p-3 text-white">
+            <p className="text-sm font-semibold" aria-live="polite">
+              {t("uploading", { percent: progress })}
+            </p>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/30">
+              <div className="h-full bg-white transition-all" style={{ width: `${progress}%` }} />
+            </div>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="mt-auto space-y-3 pt-6">
+        <FormAlert message={error} />
+        {phase === "camera" ? (
+          <Button size="touch" className="w-full" onClick={enableCamera}>
+            <Camera className="size-4" aria-hidden="true" />
+            {t("cameraOn")}
+          </Button>
+        ) : null}
+        {phase === "ready" ? (
+          <Button size="touch" className="w-full" onClick={begin}>
+            <Circle className="size-4 fill-current text-red-500" aria-hidden="true" />
+            {t("record")}
+          </Button>
+        ) : null}
+        {phase === "recording" ? (
+          <Button
+            size="touch"
+            variant="destructive"
+            className="w-full"
+            onClick={() => recorder.current?.stop()}
+          >
+            <Square className="size-4 fill-current" aria-hidden="true" />
+            {t("stop")}
+          </Button>
+        ) : null}
+        {phase === "review" || phase === "uploading" ? (
+          <div className="flex gap-3">
+            <Button
+              variant="secondary"
+              size="touch"
+              disabled={phase === "uploading"}
+              onClick={() => {
+                setClip(null);
+                setPhase(stream ? "ready" : "camera");
+              }}
+            >
+              <RotateCcw className="size-4" aria-hidden="true" />
+              {t("retake")}
+            </Button>
+            <Button
+              size="touch"
+              className={cn("flex-1")}
+              disabled={phase === "uploading"}
+              onClick={upload}
+            >
+              {error ? t("tryAgain") : t("useVideo")}
+            </Button>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}

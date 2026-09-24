@@ -36,6 +36,11 @@ export default defineConfig({
     // Never reuse whatever else happens to be listening on the port.
     reuseExistingServer: false,
     timeout: 120_000,
-    env: { NEXT_PUBLIC_SITE_URL: BASE_URL },
+    // No Turnstile in tests (the server skips the check without a secret in development).
+    env: {
+      NEXT_PUBLIC_SITE_URL: BASE_URL,
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: "",
+      TURNSTILE_SECRET_KEY: "",
+    },
   },
 });

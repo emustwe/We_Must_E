@@ -25,7 +25,7 @@ export default async function ContentPage() {
       .select("id, title, is_active, time_limit_seconds, test_questions(count)")
       .order("created_at", { ascending: false }),
     supabase
-      .from("video_prompts")
+      .from("video_questions")
       .select("id", { count: "exact", head: true })
       .eq("is_active", true),
   ]);
