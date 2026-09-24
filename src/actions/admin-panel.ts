@@ -15,6 +15,7 @@ import {
   swapSchema,
   testQuestionSchema,
   testSchema,
+  videoSetSchema,
 } from "@/lib/validations/admin";
 import { idSchema } from "@/lib/validations/jobs";
 
@@ -131,7 +132,7 @@ export async function createTest(input: unknown): Promise<ActionResult> {
     .from("tests")
     .insert({
       title: parsed.data.title,
-      time_limit_seconds: parsed.data.timeLimitMinutes * 60,
+      time_limit_seconds: parsed.data.timeLimitMinutes ? parsed.data.timeLimitMinutes * 60 : null,
       pass_score: parsed.data.passScore,
     })
     .select("id")
@@ -149,7 +150,7 @@ export async function updateTest(testId: unknown, input: unknown): Promise<Actio
     .from("tests")
     .update({
       title: parsed.data.title,
-      time_limit_seconds: parsed.data.timeLimitMinutes * 60,
+      time_limit_seconds: parsed.data.timeLimitMinutes ? parsed.data.timeLimitMinutes * 60 : null,
       pass_score: parsed.data.passScore,
     })
     .eq("id", id.data);
@@ -172,14 +173,12 @@ export async function saveTestQuestion(input: unknown): Promise<ActionResult> {
   const parsed = testQuestionSchema.safeParse(input);
   if (!parsed.success) return fail("invalidInput", toFieldErrors(parsed.error));
   const supabase = await admin();
-  const { id, testId, prompt, options, correctOption } = parsed.data;
+  const { id, testId, type, prompt, points, options, correctOptions } = parsed.data;
+  const fields = { type, prompt, points, options };
   let questionId = id;
 
   if (id) {
-    const { error } = await supabase
-      .from("test_questions")
-      .update({ prompt, options })
-      .eq("id", id);
+    const { error } = await supabase.from("test_questions").update(fields).eq("id", id);
     if (error) return dbFail("update-test-question", error);
   } else {
     const { data: last } = await supabase
@@ -191,7 +190,7 @@ export async function saveTestQuestion(input: unknown): Promise<ActionResult> {
       .maybeSingle();
     const { data, error } = await supabase
       .from("test_questions")
-      .insert({ test_id: testId, prompt, options, position: (last?.position ?? -1) + 1 })
+      .insert({ test_id: testId, ...fields, position: (last?.position ?? -1) + 1 })
       .select("id")
       .single();
     if (error) return dbFail("create-test-question", error);
@@ -200,7 +199,7 @@ export async function saveTestQuestion(input: unknown): Promise<ActionResult> {
   // Answer keys live in a table no client can read; only this RPC writes them.
   const { error: keyError } = await supabase.rpc("admin_set_answer_key", {
     p_question_id: questionId!,
-    p_correct_options: [correctOption],
+    p_correct_options: correctOptions,
   });
   if (keyError) return dbFail("set-answer-key", keyError);
   revalidatePath(`/admin/content/tests/${testId}`);
@@ -221,9 +220,15 @@ export async function swapQuestions(input: unknown): Promise<ActionResult> {
   const parsed = swapSchema.safeParse(input);
   if (!parsed.success) return fail("invalidInput");
   const supabase = await admin();
-  const fn =
-    parsed.data.kind === "survey" ? "admin_swap_survey_questions" : "admin_swap_test_questions";
-  const { error } = await supabase.rpc(fn, { p_a: parsed.data.a, p_b: parsed.data.b });
+  const fn = {
+    survey: "admin_swap_survey_questions",
+    test: "admin_swap_test_questions",
+    video: "admin_swap_video_questions",
+  } as const;
+  const { error } = await supabase.rpc(fn[parsed.data.kind], {
+    p_a: parsed.data.a,
+    p_b: parsed.data.b,
+  });
   if (error) return dbFail("swap-questions", error);
   revalidatePath("/admin/content", "layout");
   return ok(undefined);
@@ -235,41 +240,69 @@ export async function savePrompt(input: unknown): Promise<ActionResult> {
   if (!parsed.success) return fail("invalidInput", toFieldErrors(parsed.error));
   const profile = await requireAdminMfa();
   const supabase = await createClient();
-  const { id, prompt, maxSeconds, isActive } = parsed.data;
+  const { id, setId, prompt, maxSeconds, isActive } = parsed.data;
   const fields = { prompt, max_seconds: maxSeconds, is_active: isActive };
   if (id) {
-    const { error } = await supabase.from("video_questions").update(fields).eq("id", id);
+    const { error } = await supabase
+      .from("video_questions")
+      .update(fields)
+      .eq("id", id)
+      .eq("set_id", setId);
     if (error) return dbFail("update-prompt", error);
   } else {
     const { data: last } = await supabase
       .from("video_questions")
       .select("position")
+      .eq("set_id", setId)
       .order("position", { ascending: false })
       .limit(1)
       .maybeSingle();
-    // New questions join the active video question set.
-    let { data: set } = await supabase
-      .from("video_question_sets")
-      .select("id")
-      .eq("is_active", true)
-      .maybeSingle();
-    if (!set) {
-      const created = await supabase
-        .from("video_question_sets")
-        .insert({ title: "Video questions", is_active: true })
-        .select("id")
-        .single();
-      if (created.error) return dbFail("create-video-set", created.error);
-      set = created.data;
-    }
     const { error } = await supabase.from("video_questions").insert({
       ...fields,
-      set_id: set.id,
+      set_id: setId,
       position: (last?.position ?? -1) + 1,
       created_by: profile.id,
     });
     if (error) return dbFail("create-prompt", error);
   }
-  revalidatePath("/admin/content/prompts");
+  revalidatePath(`/admin/content/videos/${setId}`);
+  return ok(undefined);
+}
+
+// ---------------------------------------------------------------- video question sets
+export async function createVideoSet(input: unknown): Promise<ActionResult> {
+  const parsed = videoSetSchema.safeParse(input);
+  if (!parsed.success) return fail("invalidInput", toFieldErrors(parsed.error));
+  const supabase = await admin();
+  const { data, error } = await supabase
+    .from("video_question_sets")
+    .insert({ title: parsed.data.title })
+    .select("id")
+    .single();
+  if (error) return dbFail("create-video-set", error);
+  redirect(`/admin/content/videos/${data.id}`);
+}
+
+export async function renameVideoSet(setId: unknown, input: unknown): Promise<ActionResult> {
+  const id = idSchema.safeParse(setId);
+  const parsed = videoSetSchema.safeParse(input);
+  if (!id.success || !parsed.success) return fail("invalidInput");
+  const supabase = await admin();
+  const { error } = await supabase
+    .from("video_question_sets")
+    .update({ title: parsed.data.title })
+    .eq("id", id.data);
+  if (error) return dbFail("rename-video-set", error);
+  revalidatePath("/admin/content", "layout");
+  return ok(undefined);
+}
+
+export async function activateVideoSet(setId: unknown): Promise<ActionResult> {
+  const id = idSchema.safeParse(setId);
+  if (!id.success) return fail("invalidInput");
+  const supabase = await admin();
+  const { error } = await supabase.rpc("admin_activate_video_set", { p_set_id: id.data });
+  if (error) return dbFail("activate-video-set", error);
+  revalidatePath("/admin/content", "layout");
   return ok(undefined);
 }

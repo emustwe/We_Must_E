@@ -6,7 +6,10 @@ import { toast } from "sonner";
 import {
   activateSurvey,
   activateTest,
+  activateVideoSet,
   createSurvey,
+  createVideoSet,
+  renameVideoSet,
   createTest,
   savePrompt,
   updateSurvey,
@@ -81,7 +84,7 @@ export function TestMetaForm({
         <Input value={title} onChange={(e) => setTitle(e.target.value)} required />
       </label>
       <label className="block space-y-2">
-        <span className="text-sm font-medium">{t("timeLimit")}</span>
+        <span className="text-sm font-medium">{t("timeLimitOptional")}</span>
         <Input value={minutes} onChange={(e) => setMinutes(e.target.value)} inputMode="numeric" />
       </label>
       <label className="block space-y-2">
@@ -95,7 +98,7 @@ export function TestMetaForm({
   );
 }
 
-export function ActivateButton({ kind, id }: { kind: "survey" | "test"; id: string }) {
+export function ActivateButton({ kind, id }: { kind: "survey" | "test" | "video"; id: string }) {
   const t = useTranslations("admin");
   const { pending, run } = useRun();
   return (
@@ -103,7 +106,15 @@ export function ActivateButton({ kind, id }: { kind: "survey" | "test"; id: stri
       size="pill"
       disabled={pending}
       onClick={() =>
-        run(() => (kind === "survey" ? activateSurvey(id) : activateTest(id)), t("madeLive"))
+        run(
+          () =>
+            kind === "survey"
+              ? activateSurvey(id)
+              : kind === "test"
+                ? activateTest(id)
+                : activateVideoSet(id),
+          t("madeLive"),
+        )
       }
     >
       {t("makeLive")}
@@ -112,8 +123,10 @@ export function ActivateButton({ kind, id }: { kind: "survey" | "test"; id: stri
 }
 
 export function PromptForm({
+  setId,
   prompt,
 }: {
+  setId: string;
   prompt?: { id: string; prompt: string; maxSeconds: number; isActive: boolean };
 }) {
   const t = useTranslations("admin");
@@ -129,6 +142,7 @@ export function PromptForm({
         run(async () => {
           const result = await savePrompt({
             id: prompt?.id,
+            setId,
             prompt: text,
             maxSeconds: seconds,
             isActive: active,
@@ -157,6 +171,32 @@ export function PromptForm({
       </label>
       <Button size="touch" disabled={pending}>
         {prompt ? t("save") : t("newPrompt")}
+      </Button>
+    </form>
+  );
+}
+
+export function VideoSetForm({ set }: { set?: { id: string; title: string } }) {
+  const t = useTranslations("admin");
+  const [title, setTitle] = useState(set?.title ?? "");
+  const { pending, run } = useRun();
+  return (
+    <form
+      className="flex flex-col gap-2 sm:flex-row sm:items-end"
+      onSubmit={(e) => {
+        e.preventDefault();
+        run(
+          () => (set ? renameVideoSet(set.id, { title }) : createVideoSet({ title })),
+          set ? t("saved") : undefined,
+        );
+      }}
+    >
+      <label className="block flex-1 space-y-2">
+        <span className="text-sm font-medium">{t("title")}</span>
+        <Input value={title} onChange={(e) => setTitle(e.target.value)} required />
+      </label>
+      <Button size="touch" disabled={pending}>
+        {set ? t("save") : t("newVideoSet")}
       </Button>
     </form>
   );

@@ -325,9 +325,48 @@ insert into storage.objects (bucket_id, name) values ('application-videos', 'dem
 select is((select public from storage.buckets where id = 'application-videos'), false, 'the video bucket is private');
 select ok(tests.rows_as(null, $$select 1 from storage.objects where bucket_id = 'application-videos'$$) <= 0, 'anon cannot read videos');
 select is(tests.rows_as(:E3, $$select 1 from storage.objects where bucket_id = 'application-videos'$$), 0, 'employers cannot read unapproved videos');
-select is(tests.rows_as(:AD, $$select 1 from storage.objects where bucket_id = 'application-videos'$$, 'aal2'), 1, 'MFA admins can read videos');
+select is(tests.rows_as(:AD, $$select 1 from storage.objects where bucket_id = 'application-videos' and name like 'demo/%'$$, 'aal2'), 1, 'MFA admins can read videos');
 select ok(tests.denied_as(null, $$insert into storage.objects (bucket_id, name) values ('application-videos', 'x/y.webm')$$),
   'nobody uploads without a server-signed upload URL');
+
+-- Admin review (required test 7: admin writes fail without MFA).
+\set Q3 '''30000000-0000-0000-0000-0000000000a3'''
+select ok(tests.denied_as(:AD, format('select admin_review_application(%s, ''approved'', ''ok'')', :'AA')),
+  'admin without MFA cannot approve an application');
+select ok(tests.denied_as(:E3, format('select admin_review_application(%s, ''approved'', ''ok'')', :'AA'), 'aal2'),
+  'employers cannot approve applications');
+select ok(tests.denied_as(:AD, format('select admin_grade_answer(%s, %s, 1)', :'AA', :'Q3')),
+  'admin without MFA cannot grade');
+select ok(tests.denied_as(:AD, format('select admin_grade_answer(%s, %s, 5)', :'AA', :'Q3'), 'aal2'),
+  'a grade above the question''s points is refused');
+select ok(tests.denied_as(:AD, format('select admin_grade_answer(%s, ''30000000-0000-0000-0000-0000000000a1'', 1)', :'AA'), 'aal2'),
+  'choice questions are graded automatically, not by hand');
+select tests.run_as(:AD, format('select admin_grade_answer(%s, %s, 1)', :'AA', :'Q3'), 'aal2');
+select is((select (test_score, test_percent)::text from applications where id = :AA), '(4.00,100.0)',
+  'grading a written answer updates the score');
+select tests.run_as(:AD, format('select admin_review_application(%s, ''approved'', ''Great fit'')', :'AA'), 'aal2');
+select is((select (status, admin_notes, reviewed_by)::text from applications where id = :AA),
+  '(approved,"Great fit",00000000-0000-0000-0000-0000000000ad)', 'approval records the decision, notes and reviewer');
+select is((select metadata::text from audit_logs where action = 'application.reviewed' and target_id = :AA),
+  '{"to": "approved", "from": "submitted"}', 'the review is audited without personal data');
+select ok(exists (select 1 from audit_logs where action = 'application.graded' and target_id = :AA), 'grading is audited');
+select ok(tests.denied_as(:AD, format('select admin_review_application(%s, ''in_progress'', '''')', :'AA'), 'aal2'),
+  'an application cannot be sent back to in progress');
+
+-- Every video view is logged; only MFA admins may log (and so view).
+select ok(tests.denied_as(:AD, format('select log_video_view(%s, %s)', :'AA', :'VQ')), 'video views need MFA');
+select tests.run_as(:AD, format('select log_video_view(%s, %s)', :'AA', :'VQ'), 'aal2');
+select ok(exists (select 1 from audit_logs where action = 'application.video_viewed' and target_id = :AA
+                   and actor_id = :AD::uuid), 'opening a video is logged with the admin as actor');
+
+-- Content: video sets and written questions.
+select tests.run_as(:AD, $$insert into video_question_sets (id, title) values ('30000000-0000-0000-0000-000000000004', 'Empty')$$, 'aal2');
+select ok(tests.denied_as(:AD, $$insert into video_question_sets (title) values ('No MFA')$$), 'only MFA admins create video question sets');
+select ok(tests.denied_as(:E3, $$insert into video_question_sets (title) values ('Employer')$$, 'aal2'), 'employers cannot create video question sets');
+select ok(tests.denied_as(:AD, $$select admin_activate_video_set('30000000-0000-0000-0000-000000000004')$$, 'aal2'),
+  'a video set without questions cannot go live');
+select ok(tests.denied_as(:AD, format('select admin_set_answer_key(%s, ''{0}'')', :'Q3'), 'aal2'),
+  'written questions cannot have an answer key');
 
 -- Cleanup: unfinished applications older than 48 h, never submitted ones.
 select app_start(:JD, 'token-c-0123456789-0123456789-0123456789', 'ip');

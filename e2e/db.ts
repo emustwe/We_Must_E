@@ -63,3 +63,17 @@ export async function uploadObject(
   });
   if (!res.ok) throw new Error(`upload failed: ${res.status} ${await res.text()}`);
 }
+
+// Deletes storage objects with the service role (test cleanup only).
+export async function removeObjects(bucket: string, paths: string[]) {
+  if (!paths.length) return;
+  const res = await fetch(`${env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/${bucket}`, {
+    method: "DELETE",
+    headers: {
+      authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ prefixes: paths }),
+  });
+  if (!res.ok) throw new Error(`delete failed: ${res.status} ${await res.text()}`);
+}

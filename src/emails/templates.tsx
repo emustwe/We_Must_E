@@ -12,7 +12,7 @@ export const TEMPLATES = {
         heading="New application to review"
         body="Someone applied for a job on Wemuste. Log in to the admin area to review it."
         cta="Open applications"
-        href={`${site}/admin`}
+        href={`${site}/admin/applications`}
       />
     ),
   },

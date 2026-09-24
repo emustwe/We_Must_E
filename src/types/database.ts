@@ -209,6 +209,7 @@ export type Database = {
           survey_id: string | null
           test_id: string | null
           test_max_score: number | null
+          test_percent: number | null
           test_score: number | null
           test_started_at: string | null
           test_submitted_at: string | null
@@ -232,6 +233,7 @@ export type Database = {
           survey_id?: string | null
           test_id?: string | null
           test_max_score?: number | null
+          test_percent?: number | null
           test_score?: number | null
           test_started_at?: string | null
           test_submitted_at?: string | null
@@ -255,6 +257,7 @@ export type Database = {
           survey_id?: string | null
           test_id?: string | null
           test_max_score?: number | null
+          test_percent?: number | null
           test_score?: number | null
           test_started_at?: string | null
           test_submitted_at?: string | null
@@ -851,12 +854,32 @@ export type Database = {
         Returns: undefined
       }
       admin_activate_test: { Args: { p_test_id: string }; Returns: undefined }
+      admin_activate_video_set: {
+        Args: { p_set_id: string }
+        Returns: undefined
+      }
       admin_get_answer_keys: {
         Args: { p_test_id: string }
         Returns: {
           correct_options: number[]
           question_id: string
         }[]
+      }
+      admin_grade_answer: {
+        Args: {
+          p_application_id: string
+          p_points: number
+          p_question_id: string
+        }
+        Returns: undefined
+      }
+      admin_review_application: {
+        Args: {
+          p_application_id: string
+          p_decision: Database["public"]["Enums"]["application_status"]
+          p_notes: string
+        }
+        Returns: undefined
       }
       admin_set_answer_key: {
         Args: { p_correct_options: number[]; p_question_id: string }
@@ -881,6 +904,10 @@ export type Database = {
         Returns: undefined
       }
       admin_swap_test_questions: {
+        Args: { p_a: string; p_b: string }
+        Returns: undefined
+      }
+      admin_swap_video_questions: {
         Args: { p_a: string; p_b: string }
         Returns: undefined
       }
@@ -964,6 +991,10 @@ export type Database = {
           published_at: string
           title: string
         }[]
+      }
+      log_video_view: {
+        Args: { p_application_id: string; p_question_id: string }
+        Returns: undefined
       }
       record_account_deletion: { Args: never; Returns: undefined }
     }

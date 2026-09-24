@@ -51,9 +51,9 @@ export function Badge({
   );
 }
 
-export const EMPLOYEE_TONE = {
-  draft: "muted",
+export const APPLICATION_TONE = {
+  in_progress: "muted",
   submitted: "warning",
   approved: "success",
-  hidden: "danger",
+  rejected: "danger",
 } as const;

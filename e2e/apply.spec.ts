@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { env, psql } from "./db";
+import { env, psql, removeObjects } from "./db";
 import { waitForEmail } from "./mailpit";
 
 // A visitor with no account applies to a job: test, video (fake camera), survey.
@@ -17,7 +17,15 @@ async function recordAnswer(page: Page) {
   await page.getByRole("button", { name: "Use this video" }).click();
 }
 
-test.afterEach(() => {
+test.afterEach(async () => {
+  // Uploaded videos first (the rows point to them), then the rows.
+  const paths = psql(
+    `select o.name from storage.objects o join public.applications a on o.name like a.id || '/%'
+      where o.bucket_id = 'application-videos' and a.job_id = '${jobId()}'`,
+  )
+    .split("\n")
+    .filter(Boolean);
+  await removeObjects("application-videos", paths);
   psql(`delete from public.applicants where phone_e164 = '+971501112233'`);
   psql(`delete from public.applications where job_id = '${jobId()}'`);
 });

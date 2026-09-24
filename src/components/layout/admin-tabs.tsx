@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, FileClock, LayoutDashboard, ListChecks, MapPinned } from "lucide-react";
+import { Building2, FileClock, Inbox, LayoutDashboard, ListChecks, MapPinned } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { PillNav } from "@/components/layout/pill-nav";
 
@@ -11,6 +11,7 @@ export function AdminTabs() {
       label="Admin"
       tabs={[
         { href: "/admin", label: t("home"), icon: LayoutDashboard, exact: true },
+        { href: "/admin/applications", label: t("applications"), icon: Inbox },
         { href: "/admin/employers", label: t("employers"), icon: Building2 },
         { href: "/admin/jobs", label: t("jobsAdmin"), icon: MapPinned },
         { href: "/admin/content", label: t("content"), icon: ListChecks },

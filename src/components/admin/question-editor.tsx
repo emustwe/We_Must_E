@@ -23,7 +23,8 @@ export type EditableQuestion = {
   options: string[];
   type?: QType;
   required?: boolean;
-  correctOption?: number | null;
+  points?: number;
+  correctOptions?: number[];
 };
 
 const TYPES: QType[] = [
@@ -34,6 +35,7 @@ const TYPES: QType[] = [
   "number",
   "scale",
 ];
+const TEST_TYPES: QType[] = ["single_choice", "multi_choice", "short_text", "long_text"];
 const hasOptions = (type: QType) => type === "single_choice" || type === "multi_choice";
 
 // Shared editor for survey questions (typed) and test questions (options +
@@ -83,17 +85,21 @@ export function QuestionEditor({
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {q.type ? <Badge>{t(`types.${q.type}`)}</Badge> : null}
                     {q.required ? <Badge tone="primary">{t("requiredQuestion")}</Badge> : null}
-                    {q.options.map((o, oi) => (
-                      <Badge
-                        key={oi}
-                        tone={kind === "test" && q.correctOption === oi ? "success" : "muted"}
-                      >
-                        {kind === "test" && q.correctOption === oi ? "✓ " : ""}
-                        {o}
-                      </Badge>
-                    ))}
+                    {kind === "test" ? (
+                      <Badge tone="primary">{t("pointsCount", { count: q.points ?? 1 })}</Badge>
+                    ) : null}
+                    {q.options.map((o, oi) => {
+                      const right = kind === "test" && (q.correctOptions ?? []).includes(oi);
+                      return (
+                        <Badge key={oi} tone={right ? "success" : "muted"}>
+                          {right ? "✓ " : ""}
+                          {o}
+                        </Badge>
+                      );
+                    })}
                     {kind === "test" &&
-                    (q.correctOption === null || q.correctOption === undefined) ? (
+                    hasOptions(q.type ?? "single_choice") &&
+                    !q.correctOptions?.length ? (
                       <Badge tone="danger">{t("markCorrect")}</Badge>
                     ) : null}
                   </div>
@@ -187,14 +193,22 @@ function QuestionForm({
   const [options, setOptions] = useState<string[]>(
     initial?.options.length ? initial.options : ["", ""],
   );
-  const [correct, setCorrect] = useState<number | null>(initial?.correctOption ?? null);
+  const [correct, setCorrect] = useState<number[]>(initial?.correctOptions ?? []);
+  const [points, setPoints] = useState(String(initial?.points ?? 1));
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const showOptions = kind === "test" || hasOptions(type);
+  const showOptions = hasOptions(type);
+  const toggleCorrect = (i: number) =>
+    setCorrect((c) =>
+      type === "single_choice" ? [i] : c.includes(i) ? c.filter((x) => x !== i) : [...c, i].sort(),
+    );
 
   function save() {
     setError(null);
-    const cleaned = showOptions ? options.map((o) => o.trim()).filter(Boolean) : [];
+    // Keep the answer key aligned when empty options are dropped.
+    const kept = showOptions ? options.map((o, i) => ({ o: o.trim(), i })).filter((x) => x.o) : [];
+    const cleaned = kept.map((x) => x.o);
+    const keyIndexes = kept.flatMap((x, ni) => (correct.includes(x.i) ? [ni] : []));
     startTransition(async () => {
       const result =
         kind === "survey"
@@ -209,9 +223,11 @@ function QuestionForm({
           : await saveTestQuestion({
               id: initial?.id,
               testId: parentId,
+              type,
               prompt,
+              points,
               options: cleaned,
-              correctOption: correct ?? -1,
+              correctOptions: showOptions ? keyIndexes : [],
             });
       if (!result.ok) {
         const key = Object.values(result.fieldErrors ?? {})[0];
@@ -226,28 +242,33 @@ function QuestionForm({
       <label className="block space-y-2">
         <span className="text-sm font-medium">{t("questionPrompt")}</span>
         <textarea
+          aria-label={t("questionPrompt")}
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           rows={2}
           className="w-full rounded-xl border border-input bg-background px-4 py-3"
         />
       </label>
-      {kind === "survey" ? (
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-2 text-sm">
-            <span className="font-medium">{t("questionType")}</span>
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value as QType)}
-              className="h-10 rounded-xl border border-input bg-background px-3"
-            >
-              {TYPES.map((ty) => (
-                <option key={ty} value={ty}>
-                  {t(`types.${ty}`)}
-                </option>
-              ))}
-            </select>
-          </label>
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="flex items-center gap-2 text-sm">
+          <span className="font-medium">{t("questionType")}</span>
+          <select
+            aria-label={t("questionType")}
+            value={type}
+            onChange={(e) => {
+              setType(e.target.value as QType);
+              setCorrect([]);
+            }}
+            className="h-10 rounded-xl border border-input bg-background px-3"
+          >
+            {(kind === "test" ? TEST_TYPES : TYPES).map((ty) => (
+              <option key={ty} value={ty}>
+                {t(`types.${ty}`)}
+              </option>
+            ))}
+          </select>
+        </label>
+        {kind === "survey" ? (
           <label className="flex items-center gap-2 text-sm font-medium">
             <input
               type="checkbox"
@@ -257,22 +278,45 @@ function QuestionForm({
             />
             {t("requiredQuestion")}
           </label>
-        </div>
+        ) : (
+          <label className="flex items-center gap-2 text-sm">
+            <span className="font-medium">{t("points")}</span>
+            <Input
+              aria-label={t("points")}
+              type="number"
+              min={0}
+              max={100}
+              value={points}
+              onChange={(e) => setPoints(e.target.value)}
+              className="h-10 w-20"
+            />
+          </label>
+        )}
+      </div>
+      {kind === "test" && !showOptions ? (
+        <p className="text-sm text-muted-foreground">{t("writtenHint")}</p>
       ) : null}
       {showOptions ? (
         <fieldset className="space-y-2">
-          <legend className="text-sm font-medium">{t("options")}</legend>
+          <legend className="text-sm font-medium">
+            {t("options")}
+            {kind === "test" ? (
+              <span className="ms-2 font-normal text-muted-foreground">
+                {type === "multi_choice" ? t("markAllCorrect") : t("markOneCorrect")}
+              </span>
+            ) : null}
+          </legend>
           {options.map((o, i) => (
             <div key={i} className="flex items-center gap-2">
               {kind === "test" ? (
                 <button
                   type="button"
-                  onClick={() => setCorrect(i)}
-                  aria-pressed={correct === i}
+                  onClick={() => toggleCorrect(i)}
+                  aria-pressed={correct.includes(i)}
                   aria-label={t("markCorrect")}
                   className={cn(
                     "flex size-10 shrink-0 items-center justify-center rounded-full border-2",
-                    correct === i
+                    correct.includes(i)
                       ? "border-success bg-success text-success-foreground"
                       : "border-border",
                   )}
@@ -295,7 +339,7 @@ function QuestionForm({
                 disabled={options.length <= 2}
                 onClick={() => {
                   setOptions(options.filter((_, xi) => xi !== i));
-                  if (correct === i) setCorrect(null);
+                  setCorrect((c) => c.filter((x) => x !== i).map((x) => (x > i ? x - 1 : x)));
                 }}
               >
                 <X className="size-4" />

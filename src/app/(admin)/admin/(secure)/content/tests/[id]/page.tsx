@@ -21,14 +21,14 @@ export default async function TestEditorPage({ params }: PageProps<"/admin/conte
       .maybeSingle(),
     supabase
       .from("test_questions")
-      .select("id, prompt, options")
+      .select("id, type, points, prompt, options")
       .eq("test_id", id)
       .order("position"),
     // Answer keys are only readable through this admin-only RPC.
     supabase.rpc("admin_get_answer_keys", { p_test_id: id }),
   ]);
   if (!test) notFound();
-  const keyFor = new Map((keys ?? []).map((k) => [k.question_id, k.correct_options[0]]));
+  const keyFor = new Map((keys ?? []).map((k) => [k.question_id, k.correct_options]));
   return (
     <div className="space-y-5">
       <Link
@@ -62,7 +62,9 @@ export default async function TestEditorPage({ params }: PageProps<"/admin/conte
           id: q.id,
           prompt: q.prompt,
           options: Array.isArray(q.options) ? q.options.map(String) : [],
-          correctOption: keyFor.get(q.id) ?? null,
+          type: q.type,
+          points: q.points,
+          correctOptions: keyFor.get(q.id) ?? [],
         }))}
       />
     </div>

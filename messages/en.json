@@ -171,7 +171,8 @@
     "meetingLink": "Paste a full link starting with https://",
     "emailCode": "Enter the 6-digit code from the email.",
     "emailCodeWrong": "That code is wrong or has expired.",
-    "acceptConsent": "Please tick the box to agree before sending."
+    "acceptConsent": "Please tick the box to agree before sending.",
+    "notesTooLong": "Keep notes under 2000 characters."
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",
@@ -276,7 +277,8 @@
     "statCards": {
       "employers": "Employers",
       "jobs": "Live jobs",
-      "employees": "Job seekers"
+      "employees": "Job seekers",
+      "toReview": "Applications to review"
     },
     "needsAttention": "Needs your attention",
     "awaitingReview": "{count, plural, =0 {No profiles waiting} one {# profile waiting for review} other {# profiles waiting for review}}",
@@ -293,7 +295,7 @@
     "results": "{count, plural, =0 {No results} one {# job seeker} other {# job seekers}}",
     "prev": "Previous",
     "next": "Next",
-    "score": "Test {score}%",
+    "score": "Score",
     "noScore": "No test",
     "videosPending": "{count} to review",
     "employeeStatus": {
@@ -314,7 +316,7 @@
     "requestsSection": "Job requests",
     "grantsSection": "Access grants",
     "noAnswers": "No survey answers yet.",
-    "noVideos": "No videos yet.",
+    "noVideos": "No videos in this application.",
     "noCv": "No CV uploaded.",
     "openCv": "Open CV (link valid 5 minutes)",
     "approve": "Approve",
@@ -400,7 +402,7 @@
     "markCorrect": "Mark as the correct answer",
     "cancel": "Cancel",
     "samplesNote": "[SAMPLE] items are placeholders. The client provides the real questions.",
-    "promptsBody": "Job seekers record a short video for each active question.",
+    "promptsBody": "Applicants answer the questions of the live set in short videos. New jobs use the live set.",
     "newPrompt": "New video question",
     "maxSeconds": "Max length (seconds)",
     "active": "Active",
@@ -424,7 +426,67 @@
     "jobPublish": "Put back on map",
     "jobHide": "Hide",
     "jobClose": "Close",
-    "jobRemove": "Remove"
+    "jobRemove": "Remove",
+    "applicationsTitle": "Applications",
+    "applicationsBody": "Everyone who applied to a job. Review the test, videos and answers, then approve or reject. Employers only ever see approved applications for their own jobs.",
+    "applicationTitle": "Application",
+    "filterStatus": "Status",
+    "filterJob": "Job",
+    "anyJob": "Any job",
+    "filterEmployer": "Employer",
+    "anyEmployer": "Any employer",
+    "filterCity": "Area or city",
+    "cityPlaceholder": "e.g. Dubai Marina",
+    "filterFrom": "From",
+    "filterTo": "To",
+    "filterScore": "Minimum score (%)",
+    "clearFilters": "Clear",
+    "resultsCount": "{count, plural, =0 {No applications} one {# application} other {# applications}}",
+    "noApplications": "No applications match these filters.",
+    "pages": "Pages",
+    "appliedFor": "Applied for {job}",
+    "submittedAt": "Sent",
+    "consentGiven": "Consent given",
+    "applicationSections": "Application sections",
+    "tab": {
+      "test": "Test",
+      "video": "Video",
+      "survey": "Survey"
+    },
+    "reviewTitle": "Decision",
+    "reviewedBy": "Last decision by {name} on {date}",
+    "admin": "an admin",
+    "reviewNotes": "Notes",
+    "reviewNotesPlaceholder": "Why approve or reject? Visible to admins only.",
+    "reviewNotesHint": "Notes are for the Wemuste team only, never shown to employers or applicants.",
+    "approveConfirm": "Approve this application? The employer will be able to see it.",
+    "rejectConfirm": "Reject this application?",
+    "approvedToast": "Approved. The employer can now see this candidate.",
+    "rejectedToast": "Rejected.",
+    "approveNote": "Approving shares this application (survey, score and videos) with the employer who posted the job.",
+    "historyTitle": "Other applications from this person",
+    "noHistory": "This is their first application.",
+    "noTest": "This application had no test.",
+    "notAnswered": "Not answered",
+    "needsGrading": "Needs grading",
+    "correctAnswer": "Correct answer",
+    "wrongAnswer": "Wrong answer",
+    "theirAnswer": "Their answer",
+    "pointsOutOf": "Points (out of {max})",
+    "grade": "Save grade",
+    "regrade": "Update grade",
+    "graded": "Grade saved.",
+    "seconds": "{count, plural, one {# second} other {# seconds}}",
+    "playVideo": "Play video",
+    "viewLogged": "Opening a video is recorded in the audit log.",
+    "noSurvey": "This application had no survey questions.",
+    "pointsCount": "{count, plural, one {# point} other {# points}}",
+    "points": "Points",
+    "writtenHint": "Written answers are graded by an admin when reviewing each application.",
+    "markAllCorrect": "Tick every correct answer",
+    "markOneCorrect": "Tick the correct answer",
+    "timeLimitOptional": "Time limit (minutes, 0 = none)",
+    "newVideoSet": "New video question set"
   },
   "legal": {
     "placeholder": "PLACEHOLDER — client/lawyer to replace.",
@@ -452,20 +514,14 @@
     "haveLogin": "Already have an employer login?"
   },
   "tabs": {
-    "map": "Map",
-    "requests": "Requests",
-    "profile": "Profile",
     "jobs": "Jobs",
     "employers": "Employers",
     "home": "Home",
-    "employees": "Job seekers",
     "jobsAdmin": "Jobs",
-    "grants": "Access",
     "content": "Content",
     "audit": "Audit log",
-    "candidates": "Candidates",
-    "meetings": "Meetings",
-    "account": "Account"
+    "account": "Account",
+    "applications": "Applications"
   },
   "jobStatus": {
     "published": "Live",
@@ -644,5 +700,11 @@
     "moreJobs": "See more jobs",
     "jobClosedTitle": "This job isn't taking applications",
     "jobClosedBody": "It may have been filled or closed. Have a look at other jobs nearby."
+  },
+  "applicationStatus": {
+    "in_progress": "Unfinished",
+    "submitted": "To review",
+    "approved": "Approved",
+    "rejected": "Rejected"
   }
 }

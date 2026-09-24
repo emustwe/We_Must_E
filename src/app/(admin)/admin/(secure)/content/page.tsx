@@ -2,9 +2,8 @@ import { ChevronRight } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { SurveyMetaForm, TestMetaForm } from "@/components/admin/content-forms";
+import { SurveyMetaForm, TestMetaForm, VideoSetForm } from "@/components/admin/content-forms";
 import { Badge, Card, PageTitle } from "@/components/admin/ui";
-import { buttonVariants } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -15,7 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function ContentPage() {
   const t = await getTranslations("admin");
   const supabase = await createClient();
-  const [{ data: surveys }, { data: tests }, { count: prompts }] = await Promise.all([
+  const [{ data: surveys }, { data: tests }, { data: videoSets }] = await Promise.all([
     supabase
       .from("surveys")
       .select("id, title, is_active, survey_questions(count)")
@@ -25,9 +24,9 @@ export default async function ContentPage() {
       .select("id, title, is_active, time_limit_seconds, test_questions(count)")
       .order("created_at", { ascending: false }),
     supabase
-      .from("video_questions")
-      .select("id", { count: "exact", head: true })
-      .eq("is_active", true),
+      .from("video_question_sets")
+      .select("id, title, is_active, video_questions(count)")
+      .order("created_at", { ascending: false }),
   ]);
 
   const Row = ({
@@ -97,19 +96,23 @@ export default async function ContentPage() {
           <TestMetaForm />
         </Card>
       </div>
-      <Card className="mt-4 flex items-center justify-between gap-3">
+      <Card className="mt-4 space-y-4">
         <div>
           <h2 className="text-lg font-bold">{t("prompts")}</h2>
-          <p className="text-sm text-muted-foreground">
-            {t("questionsCount", { count: prompts ?? 0 })} · {t("promptsBody")}
-          </p>
+          <p className="text-sm text-muted-foreground">{t("promptsBody")}</p>
         </div>
-        <Link
-          href="/admin/content/prompts"
-          className={buttonVariants({ size: "pill", variant: "secondary" })}
-        >
-          {t("editQuestion")}
-        </Link>
+        <ul className="-mx-2">
+          {(videoSets ?? []).map((s) => (
+            <Row
+              key={s.id}
+              href={`/admin/content/videos/${s.id}`}
+              title={s.title}
+              live={s.is_active}
+              count={s.video_questions[0]?.count ?? 0}
+            />
+          ))}
+        </ul>
+        <VideoSetForm />
       </Card>
     </div>
   );
