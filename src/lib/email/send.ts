@@ -20,6 +20,8 @@ export async function sendEmail(kind: EmailKind, to: string) {
         headers: {
           authorization: `Bearer ${serverEnv.RESEND_API_KEY}`,
           "content-type": "application/json",
+          // Resend's edge rejects some default client user agents (Cloudflare 1010).
+          "user-agent": "wemuste-app/1.0",
         },
         body: JSON.stringify(message),
       });
