@@ -30,7 +30,11 @@ export function EmployerStatusButton({
         })
       }
     >
-      {next === "suspended" ? t("suspend") : t("reactivate")}
+      {next === "suspended"
+        ? t("suspend")
+        : status === "pending"
+          ? t("approveEmployer")
+          : t("reactivate")}
     </Button>
   );
 }

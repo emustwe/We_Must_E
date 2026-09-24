@@ -414,7 +414,8 @@
     "city": "Emirate",
     "contactEmail": "Email",
     "allEmployers": "All employers",
-    "allJobStatuses": "All statuses"
+    "allJobStatuses": "All statuses",
+    "approveEmployer": "Approve"
   },
   "legal": {
     "placeholder": "PLACEHOLDER — client/lawyer to replace.",
