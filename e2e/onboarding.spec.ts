@@ -75,7 +75,9 @@ test("onboarding: basics → survey → test → video → CV → submit → req
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Submit test" }).click();
 
-  // Graded on the server: both sample answers were correct.
+  // --- Video answers with the fake camera ---
+  await expect(page).toHaveURL(/\/onboarding\/video$/);
+  // Submitted and graded on the server (read only after the app moved on): both sample answers were correct.
   const score = execFileSync("docker", [
     "exec",
     "supabase_db_we_must_e",
@@ -91,8 +93,6 @@ test("onboarding: basics → survey → test → video → CV → submit → req
     .trim();
   expect(score).toBe("100.00");
 
-  // --- Video answers with the fake camera ---
-  await expect(page).toHaveURL(/\/onboarding\/video$/);
   for (let i = 0; i < 2; i++) {
     await page.getByRole("button", { name: "Record", exact: true }).first().click();
     await page.getByRole("button", { name: "Start recording" }).click();
