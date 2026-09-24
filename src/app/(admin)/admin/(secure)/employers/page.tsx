@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { EmployerStatusButton } from "@/components/admin/employer-status-button";
+import { ResendInviteButton } from "@/components/admin/resend-invite-button";
 import { buttonVariants } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
@@ -68,7 +69,10 @@ export default async function AdminEmployersPage() {
                   {[e.contact_person, e.contact_email, e.contact_phone].filter(Boolean).join(" · ")}
                 </p>
               </div>
-              <EmployerStatusButton employerId={e.user_id} status={e.status} />
+              <div className="flex flex-wrap gap-2">
+                {e.must_change_password ? <ResendInviteButton employerId={e.user_id} /> : null}
+                <EmployerStatusButton employerId={e.user_id} status={e.status} />
+              </div>
             </li>
           ))}
         </ul>

@@ -4,21 +4,17 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdminMfa } from "@/lib/auth/session";
 import { dbFail } from "@/lib/db-errors";
-import { notifyUser } from "@/lib/email/notify";
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { createClient } from "@/lib/supabase/server";
 import { toFieldErrors } from "@/lib/validations/auth";
 import {
   adminJobStatusSchema,
-  employeeStatusSchema,
-  grantSchema,
   promptSchema,
   surveyQuestionSchema,
   surveySchema,
   swapSchema,
   testQuestionSchema,
   testSchema,
-  videoStatusSchema,
 } from "@/lib/validations/admin";
 import { idSchema } from "@/lib/validations/jobs";
 
@@ -29,33 +25,7 @@ async function admin() {
   return createClient();
 }
 
-// ---------------------------------------------------------------- people
-export async function setEmployeeStatus(input: unknown): Promise<ActionResult> {
-  const parsed = employeeStatusSchema.safeParse(input);
-  if (!parsed.success) return fail("invalidInput");
-  const supabase = await admin();
-  const { error } = await supabase.rpc("admin_set_employee_status", {
-    p_employee_id: parsed.data.employeeId,
-    p_status: parsed.data.status,
-  });
-  if (error) return dbFail("admin-employee-status", error);
-  revalidatePath("/admin", "layout");
-  return ok(undefined);
-}
-
-export async function setVideoStatus(input: unknown): Promise<ActionResult> {
-  const parsed = videoStatusSchema.safeParse(input);
-  if (!parsed.success) return fail("invalidInput");
-  const supabase = await admin();
-  const { error } = await supabase.rpc("admin_set_video_status", {
-    p_video_id: parsed.data.videoId,
-    p_status: parsed.data.status,
-  });
-  if (error) return dbFail("admin-video-status", error);
-  revalidatePath("/admin", "layout");
-  return ok(undefined);
-}
-
+// ---------------------------------------------------------------- jobs
 export async function adminSetJobStatus(input: unknown): Promise<ActionResult> {
   const parsed = adminJobStatusSchema.safeParse(input);
   if (!parsed.success) return fail("invalidInput");
@@ -66,36 +36,6 @@ export async function adminSetJobStatus(input: unknown): Promise<ActionResult> {
   });
   if (error) return dbFail("admin-job-status", error);
   revalidatePath("/admin/jobs");
-  return ok(undefined);
-}
-
-// ---------------------------------------------------------------- grants
-export async function createGrant(input: unknown): Promise<ActionResult<{ count: number }>> {
-  const parsed = grantSchema.safeParse(input);
-  if (!parsed.success) return fail("invalidInput", toFieldErrors(parsed.error));
-  const supabase = await admin();
-  const { employerId, employeeIds, scopes, expiresAt, note } = parsed.data;
-  const { data, error } = await supabase.rpc("admin_grant_access", {
-    p_employer_id: employerId,
-    p_employee_ids: employeeIds,
-    p_scopes: scopes,
-    // End of the chosen day, UAE time.
-    p_expires_at: expiresAt ? new Date(`${expiresAt}T23:59:59+04:00`).toISOString() : undefined,
-    p_note: note || undefined,
-  });
-  if (error) return dbFail("admin-grant", error);
-  notifyUser("candidatesShared", employerId);
-  revalidatePath("/admin/grants");
-  return ok({ count: data ?? 0 });
-}
-
-export async function revokeGrant(grantId: unknown): Promise<ActionResult> {
-  const parsed = idSchema.safeParse(grantId);
-  if (!parsed.success) return fail("invalidInput");
-  const supabase = await admin();
-  const { error } = await supabase.rpc("admin_revoke_grant", { p_grant_id: parsed.data });
-  if (error) return dbFail("admin-revoke", error);
-  revalidatePath("/admin/grants");
   return ok(undefined);
 }
 

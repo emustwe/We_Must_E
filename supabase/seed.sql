@@ -6,7 +6,6 @@
 -- Local logins (password for all: Wemuste-Local-2026!)
 --   admin@wemuste.local     admin (enroll an authenticator app on first login)
 --   employer@wemuste.local  approved employer "Sample Cafe Group"
---   worker@wemuste.local    employee with a finished (approved) profile
 -- =============================================================================
 
 create or replace function pg_temp.seed_user(p_id uuid, p_email text, p_user_meta jsonb, p_app_meta jsonb)
@@ -29,8 +28,8 @@ begin
 end $$;
 
 select pg_temp.seed_user('10000000-0000-0000-0000-000000000001', 'admin@wemuste.local', '{}', '{}');
-update public.profiles set role = 'admin', full_name = 'Local Admin' where id = '10000000-0000-0000-0000-000000000001';
-delete from public.employee_profiles where user_id = '10000000-0000-0000-0000-000000000001';
+-- Admins get their profile from the create-admin script; do the same here.
+insert into public.profiles (id, role, full_name) values ('10000000-0000-0000-0000-000000000001', 'admin', 'Local Admin');
 
 select pg_temp.seed_user('10000000-0000-0000-0000-000000000002', 'employer@wemuste.local', '{}',
   '{"wemuste_role":"employer","company_name":"Sample Cafe Group","contact_person":"Omar Ali","contact_phone":"+971 50 000 0000"}');
@@ -38,16 +37,6 @@ update public.employer_profiles
    set status = 'approved', approved_at = now(), approved_by = '10000000-0000-0000-0000-000000000001',
        must_change_password = false
  where user_id = '10000000-0000-0000-0000-000000000002';
-
-select pg_temp.seed_user('10000000-0000-0000-0000-000000000003', 'worker@wemuste.local',
-  '{"full_name":"Maria Santos","consents":{"terms":"2026-09-24","privacy":"2026-09-24","data_sharing":"2026-09-24"}}', '{}');
-update public.employee_profiles
-   set status = 'approved', headline = 'Barista and cashier, 3 years experience', city_emirate = 'Dubai',
-       languages = '{English,Tagalog}', skills = '{Barista,Cashier,Customer service}',
-       availability = '{evenings,weekends}', onboarding_step = 6
- where user_id = '10000000-0000-0000-0000-000000000003';
-update public.employee_contacts set phone = '+971 55 000 0000', whatsapp = '+971 55 000 0000'
- where user_id = '10000000-0000-0000-0000-000000000003';
 
 -- [SAMPLE] onboarding content
 insert into public.surveys (id, title, version, is_active)

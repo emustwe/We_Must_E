@@ -4,14 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/session";
 import { dbFail } from "@/lib/db-errors";
-import { notifyUser } from "@/lib/email/notify";
 import { logError } from "@/lib/log";
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { withinRateLimit } from "@/lib/security/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { toFieldErrors } from "@/lib/validations/auth";
 import {
-  applicationResponseSchema,
   idSchema,
   jobSchema,
   jobStatusSchema,
@@ -92,29 +90,6 @@ export async function setJobStatus(input: unknown): Promise<ActionResult> {
   if (!data?.length) return fail("notFound");
   revalidatePath(`/employer/jobs/${parsed.data.jobId}`);
   revalidatePath("/employer");
-  return ok(undefined);
-}
-
-export async function respondToApplication(input: unknown): Promise<ActionResult> {
-  const parsed = applicationResponseSchema.safeParse(input);
-  if (!parsed.success) return fail("invalidInput");
-  await requireRole("employer");
-
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("employer_respond_to_application", {
-    p_application_id: parsed.data.applicationId,
-    p_accept: parsed.data.accept,
-  });
-  if (error) return dbFail("respond-application", error);
-  if (parsed.data.accept) {
-    const { data: application } = await supabase
-      .from("job_applications")
-      .select("employee_id")
-      .eq("id", parsed.data.applicationId)
-      .maybeSingle();
-    if (application) notifyUser("jobRequestAccepted", application.employee_id);
-  }
-  revalidatePath("/employer", "layout");
   return ok(undefined);
 }
 

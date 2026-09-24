@@ -164,6 +164,7 @@ site_url = "http://localhost:3100"
 additional_redirect_urls = [
   "http://localhost:3100/auth/confirm?type=email",
   "http://localhost:3100/auth/confirm?type=recovery",
+  "http://localhost:3100/auth/confirm?type=invite",
 ]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
@@ -177,7 +178,7 @@ enable_refresh_token_rotation = true
 # Requires enable_refresh_token_rotation = true.
 refresh_token_reuse_interval = 10
 # Allow/disallow new user signups to your project.
-enable_signup = true
+enable_signup = false
 # Allow/disallow anonymous sign-ins to your project.
 enable_anonymous_sign_ins = false
 # Allow/disallow testing manual linking of accounts
@@ -222,7 +223,8 @@ web3 = 30
 # secret = "env(TURNSTILE_SECRET_KEY)"
 
 [auth.email]
-# Allow/disallow new user signups via email to your project.
+# Keep true: false here disables email+password LOGIN entirely, not just signup.
+# Public signup is blocked by `enable_signup = false` under [auth].
 enable_signup = true
 # If enabled, a user will be required to confirm any email change on both the old, and new email
 # addresses. If disabled, only the new email is required to confirm.
@@ -236,7 +238,7 @@ max_frequency = "60s"
 # Number of characters used in the email OTP.
 otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
-otp_expiry = 3600
+otp_expiry = 86400
 
 # Use a production-ready SMTP server
 # [auth.email.smtp]
@@ -250,6 +252,10 @@ otp_expiry = 3600
 
 # token_hash links work across devices (the PKCE default needs the same browser).
 # Paste the same templates into the hosted project's Auth > Email Templates.
+[auth.email.template.invite]
+subject = "You're invited to Wemuste"
+content_path = "./supabase/templates/invite.html"
+
 [auth.email.template.confirmation]
 subject = "Your Wemuste activation code"
 content_path = "./supabase/templates/confirmation.html"

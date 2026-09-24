@@ -3,7 +3,7 @@ import { matchesPrefix, safeNextPath } from "./routes";
 
 describe("safeNextPath", () => {
   it("allows same-origin paths", () => {
-    expect(safeNextPath("/employee")).toBe("/employee");
+    expect(safeNextPath("/employer")).toBe("/employer");
   });
   it("rejects external and protocol-relative targets", () => {
     for (const bad of [
@@ -21,7 +21,7 @@ describe("safeNextPath", () => {
 describe("matchesPrefix", () => {
   it("matches the prefix and its children only", () => {
     expect(matchesPrefix("/admin", ["/admin"])).toBe(true);
-    expect(matchesPrefix("/admin/grants", ["/admin"])).toBe(true);
+    expect(matchesPrefix("/admin/jobs", ["/admin"])).toBe(true);
     expect(matchesPrefix("/administrator", ["/admin"])).toBe(false);
   });
 });

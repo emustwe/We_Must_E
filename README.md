@@ -71,7 +71,22 @@ npx supabase db push                # apply migrations to the linked hosted proj
 npm run db:types                    # regenerate src/types/database.ts from the linked project
 ```
 
-### Creating the first admin
+### Accounts (v2)
+
+Only **admins** and **employers** have accounts; job seekers apply per job without one. Public signup is
+off (`enable_signup = false` under `[auth]` in `supabase/config.toml`; in the hosted project turn off
+Authentication → Sign In / Providers → **Allow new users to sign up**, but keep **Enable email provider**
+on, otherwise nobody can log in).
+
+- **Admins:** `npm run create-admin -- you@example.com "Your Name"` (add `--prod` for the live project,
+  which reads `.env.production.local`). It prints a one-time password; MFA is set up on first login.
+- **Employers:** Admin → Employers → Create employer sends a Supabase invite email
+  (`supabase/templates/invite.html`, 24 h link). The employer sets their own password. "Resend invite"
+  is available until they do.
+- **Leftovers from v1:** `npx tsx scripts/cleanup-v1-job-seekers.mts` (dry run) / `--apply` removes old
+  job-seeker logins and the `cv-documents` / `video-resumes` buckets.
+
+### Creating the first admin (manual alternative)
 
 Admins are never created through signup. Create the user in the Supabase dashboard (Auth > Users > Add
 user, auto-confirm), then edit the email in `supabase/scripts/create-admin.sql` and run it in the SQL

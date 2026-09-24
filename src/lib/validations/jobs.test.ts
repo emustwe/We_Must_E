@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createEmployerSchema, jobRequestSchema, jobSchema } from "./jobs";
+import { createEmployerSchema, jobSchema } from "./jobs";
 
 const job = {
   title: "Weekend barista",
@@ -36,18 +36,6 @@ describe("jobSchema", () => {
   });
   it("rejects unknown keys such as employer_id", () => {
     expect(jobSchema.safeParse({ ...job, employer_id: "x" }).success).toBe(false);
-  });
-});
-
-describe("jobRequestSchema", () => {
-  it("requires a UUID and caps the message", () => {
-    expect(jobRequestSchema.safeParse({ jobId: "nope" }).success).toBe(false);
-    expect(
-      jobRequestSchema.safeParse({
-        jobId: "00000000-0000-4000-8000-000000000000",
-        message: "x".repeat(501),
-      }).success,
-    ).toBe(false);
   });
 });
 

@@ -2,12 +2,11 @@ import { ArrowLeft, Lock, MapPin, Pencil } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { ApplicantList } from "@/components/employer/applicant-list";
 import { JobStatusControls } from "@/components/employer/job-status-controls";
 import { PayLabelServer } from "@/components/employer/pay-label-server";
 import { FormAlert } from "@/components/forms/form-alert";
 import { buttonVariants } from "@/components/ui/button";
-import { getOwnJob, listApplicants } from "@/lib/jobs/employer-queries";
+import { getOwnJob } from "@/lib/jobs/employer-queries";
 import { CATEGORY_META } from "@/lib/jobs/meta";
 import { cn } from "@/lib/utils";
 import { idSchema } from "@/lib/validations/jobs";
@@ -22,7 +21,7 @@ export default async function EmployerJobPage({
   const { id } = await params;
   if (!idSchema.safeParse(id).success) notFound();
   const query = await searchParams;
-  const [job, applicants] = await Promise.all([getOwnJob(id), listApplicants(id)]);
+  const job = await getOwnJob(id);
   const t = await getTranslations("employerJob");
   const tj = await getTranslations("jobStatus");
   const ts = await getTranslations("schedule");
@@ -101,14 +100,6 @@ export default async function EmployerJobPage({
             </Link>
           ) : null}
         </div>
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-xl font-extrabold tracking-tight">
-          {t("applicantsTitle")}{" "}
-          <span className="text-muted-foreground">({applicants.length})</span>
-        </h2>
-        <ApplicantList applicants={applicants} />
       </section>
     </div>
   );

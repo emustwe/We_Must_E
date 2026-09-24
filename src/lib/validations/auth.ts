@@ -16,24 +16,7 @@ export const newPasswordSchema = z
   // bcrypt, used by Supabase Auth, ignores bytes beyond 72.
   .max(72, { error: "validation.passwordTooLong" });
 
-const fullNameSchema = z
-  .string()
-  .trim()
-  .min(2, { error: "validation.nameRequired" })
-  .max(120, { error: "validation.nameTooLong" });
-
 const captchaTokenSchema = z.string().max(4096).optional();
-
-const mustBeChecked = (message: string) => z.boolean().refine((value) => value, { error: message });
-
-export const employeeSignupSchema = z.strictObject({
-  fullName: fullNameSchema,
-  email: emailSchema,
-  password: newPasswordSchema,
-  acceptTerms: mustBeChecked("validation.acceptTerms"),
-  acceptDataSharing: mustBeChecked("validation.acceptDataSharing"),
-  captchaToken: captchaTokenSchema,
-});
 
 export const loginSchema = z.strictObject({
   email: emailSchema,
@@ -56,17 +39,6 @@ export const resetPasswordSchema = z
     path: ["confirmPassword"],
   });
 
-export const resendVerificationSchema = z.strictObject({
-  captchaToken: captchaTokenSchema,
-});
-
-export const emailCodeSchema = z.strictObject({
-  code: z
-    .string()
-    .trim()
-    .regex(/^\d{6}$/, { error: "validation.emailCode" }),
-});
-
 export const mfaCodeSchema = z.strictObject({
   code: z
     .string()
@@ -74,7 +46,6 @@ export const mfaCodeSchema = z.strictObject({
     .regex(/^\d{6}$/, { error: "validation.mfaCode" }),
 });
 
-export type EmployeeSignupInput = z.input<typeof employeeSignupSchema>;
 export type LoginInput = z.input<typeof loginSchema>;
 export type ForgotPasswordInput = z.input<typeof forgotPasswordSchema>;
 export type ResetPasswordInput = z.input<typeof resetPasswordSchema>;

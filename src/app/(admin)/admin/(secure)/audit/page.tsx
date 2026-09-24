@@ -11,18 +11,12 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 const ACTIONS = [
-  "candidate.viewed",
-  "grant.created",
-  "grant.revoked",
   "employer.status_changed",
-  "employee.status_changed",
-  "video.status_changed",
   "job.status_changed",
-  "application.accepted",
-  "application.declined",
   "survey.activated",
   "test.activated",
   "test.answer_key_set",
+  "account.deleted",
 ];
 const PAGE = 50;
 
@@ -130,7 +124,7 @@ export default async function AuditPage({ searchParams }: PageProps<"/admin/audi
                     <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{r.action}</code>
                   </td>
                   <td className="p-3 text-xs text-muted-foreground">
-                    {r.target_type === "employee" && r.target_id ? (
+                    {false ? (
                       <Link
                         href={`/admin/employees/${r.target_id}`}
                         className="text-primary hover:underline"

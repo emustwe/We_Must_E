@@ -20,19 +20,13 @@ export default async function EmployerJobsPage() {
   const tj = await getTranslations("jobStatus");
   const format = await getFormatter();
   const supabase = await createClient();
-  const [{ data: jobs }, { data: applications }] = await Promise.all([
-    supabase
-      .from("jobs")
-      .select(
-        "id, title, category, pay_min, pay_max, pay_period, currency, area_label, city_emirate, status, expires_at",
-      )
-      .eq("employer_id", profile.id)
-      .order("created_at", { ascending: false }),
-    supabase.from("job_applications").select("job_id").eq("status", "pending"),
-  ]);
-  const pendingByJob = new Map<string, number>();
-  for (const a of applications ?? [])
-    pendingByJob.set(a.job_id, (pendingByJob.get(a.job_id) ?? 0) + 1);
+  const { data: jobs } = await supabase
+    .from("jobs")
+    .select(
+      "id, title, category, pay_min, pay_max, pay_period, currency, area_label, city_emirate, status, expires_at",
+    )
+    .eq("employer_id", profile.id)
+    .order("created_at", { ascending: false });
 
   return (
     <div className="animate-in-fast space-y-6 pt-2">
@@ -58,7 +52,6 @@ export default async function EmployerJobsPage() {
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2">
           {jobs.map((job) => {
-            const pending = pendingByJob.get(job.id) ?? 0;
             const meta = CATEGORY_META[job.category];
             return (
               <li key={job.id}>
@@ -99,15 +92,7 @@ export default async function EmployerJobsPage() {
                       currency={job.currency}
                       className="mt-1 block text-sm font-bold"
                     />
-                    <span className="mt-2 flex items-center justify-between text-xs">
-                      <span
-                        className={cn(
-                          "font-semibold",
-                          pending ? "text-primary" : "text-muted-foreground",
-                        )}
-                      >
-                        {t("requestsCount", { count: pending })}
-                      </span>
+                    <span className="mt-2 flex items-center justify-end text-xs">
                       <span className="text-muted-foreground">
                         {t("expires", {
                           date: format.dateTime(new Date(job.expires_at), {

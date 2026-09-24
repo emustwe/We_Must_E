@@ -23,7 +23,7 @@ export default async function AdminJobsPage() {
   const { data: jobs } = await supabase
     .from("jobs")
     .select(
-      "id, title, category, status, pay_min, pay_max, pay_period, currency, area_label, city_emirate, created_at, employer_profiles(company_name), job_applications(count)",
+      "id, title, category, status, pay_min, pay_max, pay_period, currency, area_label, city_emirate, created_at, employer_profiles(company_name)",
     )
     .order("created_at", { ascending: false })
     .limit(200);
@@ -60,8 +60,7 @@ export default async function AdminJobsPage() {
                   </div>
                   <p className="truncate text-sm text-muted-foreground">
                     {job.employer_profiles?.company_name} · {job.area_label}, {job.city_emirate} ·{" "}
-                    {format.dateTime(new Date(job.created_at), { dateStyle: "medium" })} ·{" "}
-                    {job.job_applications[0]?.count ?? 0} ✋
+                    {format.dateTime(new Date(job.created_at), { dateStyle: "medium" })}
                   </p>
                   <PayLabelServer
                     min={job.pay_min}

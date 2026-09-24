@@ -1,31 +1,10 @@
 import { z } from "@/lib/validations/zod";
 import { idSchema } from "@/lib/validations/jobs";
 
-export const SCOPES = ["profile", "survey", "test", "video", "cv", "contact"] as const;
-
-export const employeeStatusSchema = z.strictObject({
-  employeeId: idSchema,
-  status: z.enum(["draft", "submitted", "approved", "hidden"]),
-});
-
-export const videoStatusSchema = z.strictObject({
-  videoId: idSchema,
-  status: z.enum(["approved", "rejected"]),
-});
-
 export const adminJobStatusSchema = z.strictObject({
   jobId: idSchema,
   status: z.enum(["open", "removed"]),
 });
-
-export const grantSchema = z.strictObject({
-  employerId: idSchema,
-  employeeIds: z.array(idSchema).min(1, { error: "validation.pickEmployees" }).max(100),
-  scopes: z.array(z.enum(SCOPES)).min(1, { error: "validation.pickScopes" }),
-  expiresAt: z.union([z.literal(""), z.iso.date()]).optional(),
-  note: z.string().trim().max(500).optional(),
-});
-export type GrantInput = z.input<typeof grantSchema>;
 
 const title = z
   .string()

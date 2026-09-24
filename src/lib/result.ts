@@ -21,7 +21,8 @@ export type ActionError =
   | "incomplete"
   | "inUse"
   | "meetingOpen"
-  | "invalidCode";
+  | "invalidCode"
+  | "alreadyActive";
 
 export type ActionResult<T = undefined> =
   { ok: true; data: T } | { ok: false; error: ActionError; fieldErrors?: Record<string, string> };

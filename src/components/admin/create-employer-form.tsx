@@ -1,12 +1,12 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Check, Copy, KeyRound } from "lucide-react";
+import { MailCheck } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { useForm, type Path } from "react-hook-form";
-import { createEmployer, type CreatedEmployer } from "@/actions/admin";
+import { createEmployer, type InvitedEmployer } from "@/actions/admin";
 import { Field } from "@/components/forms/field";
 import { FormAlert } from "@/components/forms/form-alert";
 import { SubmitButton } from "@/components/forms/submit-button";
@@ -17,9 +17,8 @@ import { createEmployerSchema, type CreateEmployerInput } from "@/lib/validation
 export function CreateEmployerForm() {
   const t = useTranslations("admin");
   const te = useTranslations("errors");
-  const [created, setCreated] = useState<CreatedEmployer | null>(null);
+  const [created, setCreated] = useState<InvitedEmployer | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
   const [pending, startTransition] = useTransition();
   const form = useForm<CreateEmployerInput>({
     resolver: zodResolver(createEmployerSchema),
@@ -52,53 +51,19 @@ export function CreateEmployerForm() {
   });
 
   if (created) {
-    const text = `Wemuste employer login\nEmail: ${created.email}\nTemporary password: ${created.temporaryPassword}`;
     return (
       <div className="animate-in-fast space-y-5" role="status">
         <span className="flex size-12 items-center justify-center rounded-full bg-success/15 text-success">
-          <KeyRound className="size-6" aria-hidden="true" />
+          <MailCheck className="size-6" aria-hidden="true" />
         </span>
         <div>
           <h2 className="text-xl font-extrabold">{t("createdTitle")}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {t("createdBody", { company: created.companyName })}
+            {t("createdBody", { email: created.email })}
           </p>
         </div>
-        <dl className="space-y-2 rounded-2xl bg-muted/70 p-4 font-mono text-sm">
-          <div>
-            <dt className="text-xs text-muted-foreground">{t("email")}</dt>
-            <dd className="font-semibold break-all">{created.email}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">Password</dt>
-            <dd className="text-lg font-bold tracking-wider" data-testid="temp-password">
-              {created.temporaryPassword}
-            </dd>
-          </div>
-        </dl>
         <div className="flex flex-wrap gap-2">
-          <Button
-            size="touch"
-            onClick={async () => {
-              await navigator.clipboard.writeText(text);
-              setCopied(true);
-            }}
-          >
-            {copied ? (
-              <Check className="size-4" aria-hidden="true" />
-            ) : (
-              <Copy className="size-4" aria-hidden="true" />
-            )}
-            {copied ? t("copied") : t("copy")}
-          </Button>
-          <Button
-            size="touch"
-            variant="secondary"
-            onClick={() => {
-              setCreated(null);
-              setCopied(false);
-            }}
-          >
+          <Button size="touch" onClick={() => setCreated(null)}>
             {t("createAnother")}
           </Button>
           <Link

@@ -1,5 +1,5 @@
 import { expect, type Page } from "@playwright/test";
-import { waitForAuthLink, waitForSignupCode } from "./mailpit";
+import { waitForAuthLink } from "./mailpit";
 
 export const SEED_PASSWORD = "Wemuste-Local-2026!";
 export const unique = () => `${Date.now()}${Math.floor(Math.random() * 1000)}`;
@@ -18,15 +18,9 @@ export async function signOut(page: Page) {
 
 export async function activate(page: Page, email: string, since: Date) {
   const link = await waitForAuthLink(email, since);
-  // Links use the email template's token_hash format, not the PKCE default.
+  // Links use our email templates' token_hash format, not the PKCE default.
   expect(link).toContain("token_hash=");
   // Emails use Supabase's site_url; open the same path on the app under test.
   const url = new URL(link);
   await page.goto(`${url.pathname}${url.search}`);
-}
-
-// Types the 6-digit code from the signup email on /verify-email.
-export async function enterSignupCode(page: Page, email: string, since: Date) {
-  const code = await waitForSignupCode(email, since);
-  await page.getByLabel("6-digit code").fill(code);
 }

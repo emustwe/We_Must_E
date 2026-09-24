@@ -1,4 +1,4 @@
-import { ArrowRight, BriefcaseBusiness, Lock } from "lucide-react";
+import { BriefcaseBusiness, Lock } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Logo } from "@/components/brand/logo";
@@ -73,17 +73,7 @@ export default async function LandingPage() {
             ))}
           </ol>
 
-          <div className="mt-5 grid grid-cols-[1fr_auto] gap-2.5 sm:mt-6 sm:grid-cols-1 sm:gap-3">
-            <Link
-              href="/signup/employee"
-              className={cn(buttonVariants({ size: "touch" }), "w-full text-base")}
-            >
-              {t("findWork")}
-              <ArrowRight
-                className="hidden size-4 min-[400px]:block rtl:-scale-x-100"
-                aria-hidden="true"
-              />
-            </Link>
+          <div className="mt-5 grid gap-2.5 sm:mt-6 sm:gap-3">
             <Link
               href="/for-employers"
               className={cn(buttonVariants({ variant: "secondary", size: "touch" }), "w-full")}
@@ -92,7 +82,6 @@ export default async function LandingPage() {
               {t("hiring")}
             </Link>
           </div>
-          <p className="mt-2 text-center text-xs text-muted-foreground">{t("free")}</p>
 
           <div className="mt-4 flex flex-col items-center gap-2 border-t pt-3 text-center text-sm">
             <p className="text-muted-foreground">

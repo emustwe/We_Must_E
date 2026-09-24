@@ -6,11 +6,6 @@ import { emailSchema, newPasswordSchema } from "@/lib/validations/auth";
 // which hand-written seed IDs don't have; the database checks existence anyway.
 export const idSchema = z.guid({ error: "validation.invalid" });
 
-export const jobRequestSchema = z.strictObject({
-  jobId: idSchema,
-  message: z.string().trim().max(500, { error: "validation.messageTooLong" }).optional(),
-});
-
 const money = z.coerce
   .number({ error: "validation.payInvalid" })
   .min(0, { error: "validation.payInvalid" })
@@ -78,11 +73,6 @@ export type JobInput = z.input<typeof jobSchema>;
 export const jobStatusSchema = z.strictObject({
   jobId: idSchema,
   status: z.enum(["open", "paused", "closed"]),
-});
-
-export const applicationResponseSchema = z.strictObject({
-  applicationId: idSchema,
-  accept: z.boolean(),
 });
 
 export const setInitialPasswordSchema = z

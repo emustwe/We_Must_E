@@ -47,8 +47,8 @@
     "password": "Password",
     "forgot": "Forgot password?",
     "submit": "Log in",
-    "noAccount": "New to Wemuste?",
-    "createAccount": "Create an account",
+    "noAccount": "Hiring?",
+    "createAccount": "How employers join",
     "resetDone": "Your password was changed. Please log in again.",
     "signedOutAll": "You have been logged out on all devices.",
     "linkInvalid": "That link is invalid or has expired. Please try again.",
@@ -198,7 +198,8 @@
     "fileType": "Please choose a PDF or Word (.docx) file.",
     "inUse": "Someone already answered this question, so it can't be deleted. Create a new survey version instead.",
     "meetingOpen": "You already have a meeting request waiting for this person.",
-    "invalidCode": "That code didn't work. Check the latest email, or tap Resend code."
+    "invalidCode": "That code didn't work. Check the latest email, or tap Resend code.",
+    "alreadyActive": "This employer has already set a password."
   },
   "employee": {
     "welcome": "Hi {name}",
@@ -227,7 +228,7 @@
     "requestsCount": "{count, plural, =0 {No requests yet} one {# new request} other {# new requests}}",
     "expires": "Expires {date}",
     "welcomeTitle": "Welcome to Wemuste",
-    "welcomeBody": "Your account was created by our team. Choose your own password to continue.",
+    "welcomeBody": "You were invited by the Wemuste team. Choose your password to finish setting up your account.",
     "welcomeSubmit": "Save password and continue",
     "newPassword": "New password",
     "confirmPassword": "Confirm new password"
@@ -245,7 +246,7 @@
     "employersTitle": "Employers",
     "createEmployer": "Create employer",
     "createTitle": "Create an employer account",
-    "createBody": "We'll generate a temporary password. The employer must change it at first login.",
+    "createBody": "We'll email them an invite link. They choose their own password.",
     "companyName": "Company name",
     "contactPerson": "Contact person",
     "email": "Login email",
@@ -253,9 +254,9 @@
     "tradeLicense": "Trade license number",
     "website": "Website",
     "optional": "optional",
-    "createSubmit": "Create account",
-    "createdTitle": "Account created",
-    "createdBody": "Share these credentials with {company} through a secure channel. The password is shown only once.",
+    "createSubmit": "Send invite",
+    "createdTitle": "Invite sent",
+    "createdBody": "We emailed an invite to {email}. The link works once and expires in 24 hours.",
     "copy": "Copy",
     "copied": "Copied",
     "createAnother": "Create another",
@@ -268,7 +269,7 @@
       "approved": "Active",
       "suspended": "Suspended"
     },
-    "mustChange": "Hasn't logged in yet",
+    "mustChange": "Invite not accepted yet",
     "statCards": {
       "employers": "Employers",
       "jobs": "Live jobs",
@@ -415,7 +416,9 @@
     "contactEmail": "Email",
     "allEmployers": "All employers",
     "allJobStatuses": "All statuses",
-    "approveEmployer": "Approve"
+    "approveEmployer": "Approve",
+    "resendInvite": "Resend invite",
+    "inviteResent": "Invite sent again."
   },
   "legal": {
     "placeholder": "PLACEHOLDER — client/lawyer to replace.",

@@ -2,28 +2,21 @@
 
 import type { AuthError, EmailOtpType } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
-import {
-  clearPendingEmail,
-  readPendingEmail,
-  rememberPendingEmail,
-} from "@/lib/auth/pending-email";
 import { clientEnv } from "@/lib/env";
-import { CONSENT_VERSIONS } from "@/lib/legal";
 import { logError } from "@/lib/log";
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { HOME_BY_ROLE } from "@/lib/routes";
-import { getClientIp, hmac } from "@/lib/security/ip";
+import { getClientIp } from "@/lib/security/ip";
 import { withinRateLimit } from "@/lib/security/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import {
-  emailCodeSchema,
-  employeeSignupSchema,
   forgotPasswordSchema,
   loginSchema,
-  resendVerificationSchema,
   resetPasswordSchema,
   toFieldErrors,
 } from "@/lib/validations/auth";
+
+// Only admins and employers have accounts. Job seekers apply without one.
 
 const confirmUrl = (type: EmailOtpType) =>
   `${clientEnv.NEXT_PUBLIC_SITE_URL}/auth/confirm?type=${type}`;
@@ -41,47 +34,13 @@ function mapAuthError(error: AuthError, context: string): ActionResult<never> {
     case "over_email_send_rate_limit":
       return fail("rateLimited");
     case "invalid_credentials":
-      return fail("invalidCredentials");
     case "email_not_confirmed":
-      return fail("emailNotConfirmed");
+      // Invited accounts that never set a password look the same as a wrong password.
+      return fail("invalidCredentials");
     default:
       logError(context, error);
       return fail("generic");
   }
-}
-
-export async function signUpEmployee(input: unknown): Promise<ActionResult> {
-  const parsed = employeeSignupSchema.safeParse(input);
-  if (!parsed.success) return fail("invalidInput", toFieldErrors(parsed.error));
-  const { fullName, email, password, captchaToken } = parsed.data;
-
-  const ip = await getClientIp();
-  if (!(await withinRateLimit("signupPerIp", ip))) return fail("rateLimited");
-
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      captchaToken,
-      emailRedirectTo: confirmUrl("email"),
-      // Read once by the handle_new_user trigger. It only ever accepts
-      // 'employee' or 'employer' as a role; admins are never created here.
-      data: {
-        role: "employee",
-        full_name: fullName,
-        consents: CONSENT_VERSIONS,
-        ip_hash: hmac(ip),
-      },
-    },
-  });
-  // An existing address is treated as success so signup cannot reveal it.
-  if (error && error.code !== "user_already_exists" && error.code !== "email_exists") {
-    return mapAuthError(error, "signup-employee");
-  }
-
-  await rememberPendingEmail(email);
-  redirect("/verify-email");
 }
 
 export async function signIn(input: unknown): Promise<ActionResult> {
@@ -102,21 +61,19 @@ export async function signIn(input: unknown): Promise<ActionResult> {
     password,
     options: { captchaToken },
   });
-  if (error) {
-    if (error.code === "email_not_confirmed") {
-      // Correct password, not activated yet: continue with the code screen.
-      await rememberPendingEmail(email);
-      redirect("/verify-email?unconfirmed=1");
-    }
-    return mapAuthError(error, "sign-in");
-  }
+  if (error) return mapAuthError(error, "sign-in");
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("role")
     .eq("id", data.user.id)
-    .single();
-  redirect(profile ? HOME_BY_ROLE[profile.role] : "/");
+    .maybeSingle();
+  if (!profile) {
+    // An auth user without a profile (e.g. a leftover v1 account) gets nothing.
+    await supabase.auth.signOut({ scope: "local" });
+    return fail("invalidCredentials");
+  }
+  redirect(HOME_BY_ROLE[profile.role]);
 }
 
 export async function signOut() {
@@ -169,73 +126,10 @@ export async function updatePassword(input: unknown): Promise<ActionResult> {
 
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
   if (error) return mapAuthError(error, "update-password");
+  // An invited employer who used "forgot password" has now set their own password.
+  await supabase.rpc("complete_password_change");
 
   // A password change signs the account out everywhere, including here.
   await supabase.auth.signOut({ scope: "global" });
   redirect("/login?reset=1");
-}
-
-export async function resendVerification(input: unknown): Promise<ActionResult> {
-  const parsed = resendVerificationSchema.safeParse(input);
-  if (!parsed.success) return fail("invalidInput");
-
-  const email = await readPendingEmail();
-  if (!email) return ok(undefined);
-
-  const ip = await getClientIp();
-  if (!(await withinRateLimit("resendPerIp", ip))) return fail("rateLimited");
-
-  const supabase = await createClient();
-  const { error } = await supabase.auth.resend({
-    type: "signup",
-    email,
-    options: { captchaToken: parsed.data.captchaToken, emailRedirectTo: confirmUrl("email") },
-  });
-  if (error?.code === "captcha_failed") return fail("captchaFailed");
-  if (error?.code === "over_email_send_rate_limit") return fail("rateLimited");
-  if (error) logError("resend-verification", error);
-  return ok(undefined);
-}
-
-// Activates the account with the 6-digit code from the signup email.
-export async function verifySignupCode(input: unknown): Promise<ActionResult> {
-  const parsed = emailCodeSchema.safeParse(input);
-  if (!parsed.success) return fail("invalidInput", toFieldErrors(parsed.error));
-  const email = await readPendingEmail();
-  if (!email) return fail("sessionExpired");
-
-  const ip = await getClientIp();
-  const [ipOk, emailOk] = await Promise.all([
-    withinRateLimit("codePerIp", ip),
-    withinRateLimit("codePerEmail", email),
-  ]);
-  if (!ipOk || !emailOk) return fail("rateLimited");
-
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.verifyOtp({
-    email,
-    token: parsed.data.code,
-    type: "email",
-  });
-  if (error || !data.user) {
-    if (error?.code === "over_request_rate_limit") return fail("rateLimited");
-    if (error && error.code !== "otp_expired" && error.code !== "invalid_credentials")
-      logError("verify-signup-code", error);
-    return fail("invalidCode", { code: "validation.emailCodeWrong" });
-  }
-
-  await clearPendingEmail();
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", data.user.id)
-    .single();
-  // New job seekers go straight into building their profile.
-  redirect(
-    profile?.role === "employee"
-      ? "/employee/onboarding"
-      : profile
-        ? HOME_BY_ROLE[profile.role]
-        : "/",
-  );
 }
