@@ -54,7 +54,9 @@ test("admin reviews a job seeker, grants access, edits content, moderates jobs, 
   await page.getByRole("button", { name: "Approve", exact: true }).click();
   await expect(page.getByText("Approved", { exact: true }).first()).toBeVisible();
   await page.getByRole("button", { name: "Approve profile" }).click();
-  await expect(page.getByRole("button", { name: "Hide" })).toBeVisible();
+  // "Hide" is already shown for submitted profiles; wait for approval itself.
+  await expect(page.getByRole("button", { name: "Approve profile" })).toHaveCount(0);
+  await expect(page.getByText("Approved", { exact: true }).first()).toBeVisible();
   expect(psql(`select status from public.employee_profiles where user_id = '${id}'`)).toBe(
     "approved",
   );
