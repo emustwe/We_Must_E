@@ -21,8 +21,8 @@ jobs:
       IP_HASH_SECRET: ci-ip-hash-secret-placeholder-0123456789abcdef
       RESEND_API_KEY: re_ci_placeholder_0123456789
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
@@ -39,7 +39,7 @@ jobs:
     name: Secret scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - uses: gitleaks/gitleaks-action@v2
@@ -50,8 +50,8 @@ jobs:
     name: RLS policy tests and end-to-end
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
@@ -78,7 +78,7 @@ jobs:
       - name: End-to-end tests (all three roles)
         run: npm run test:e2e
       - if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: playwright-traces
           path: test-results/

@@ -12,14 +12,21 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   retries: 0,
-  reporter: [["list"]],
+  // GitHub annotations in CI so failures are readable on the run page.
+  reporter: process.env.CI ? [["github"], ["list"]] : [["list"]],
   use: {
     baseURL: BASE_URL,
     trace: "retain-on-failure",
     // A fake camera and microphone for the video-resume step.
     permissions: ["camera", "microphone"],
     launchOptions: {
-      args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"],
+      args: [
+        "--use-fake-ui-for-media-stream",
+        "--use-fake-device-for-media-stream",
+        // Software WebGL for the map on CI machines without a GPU.
+        "--enable-unsafe-swiftshader",
+        "--use-angle=swiftshader",
+      ],
     },
   },
   projects: [{ name: "mobile", use: { ...devices["Pixel 7"] } }],

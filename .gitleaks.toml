@@ -7,5 +7,7 @@ description = "Supabase secret (service role) key"
 regex = '''sb_secret_[A-Za-z0-9_-]{16,}'''
 
 [allowlist]
-description = "CI placeholders and documentation"
+description = "CI placeholders and made-up passwords in tests"
 regexes = ['''ci-[a-z-]+-placeholder[-0-9a-f]*''', '''re_ci_placeholder_[0-9]+''']
+# Test files only hold fake credentials for local test accounts.
+paths = ['''^e2e/''', '''\.test\.ts$''']
