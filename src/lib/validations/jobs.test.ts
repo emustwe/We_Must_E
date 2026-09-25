@@ -7,6 +7,8 @@ const job = {
   locationLabel: "Dubai Marina, Dubai",
   lat: 25.08,
   lng: 55.14,
+  countryCode: "AE",
+  city: "dubai",
 };
 
 describe("jobSchema", () => {
@@ -26,6 +28,14 @@ describe("jobSchema", () => {
   });
 });
 
+describe("jobSchema location", () => {
+  it("needs a real country and normalises the city", () => {
+    expect(jobSchema.parse(job).city).toBe("Dubai");
+    expect(jobSchema.safeParse({ ...job, countryCode: "XX" }).success).toBe(false);
+    expect(jobSchema.safeParse({ ...job, city: " " }).success).toBe(false);
+  });
+});
+
 describe("jobStatusSchema", () => {
   it("lets employers only close a job", () => {
     const jobId = "00000000-0000-4000-8000-000000000000";
@@ -40,6 +50,7 @@ describe("createEmployerSchema", () => {
       companyName: "Acme",
       contactPerson: "Omar Ali",
       email: "o@acme.ae",
+      password: "Long-enough-pass-1",
       phone: "+971 50 123 4567",
     };
     expect(createEmployerSchema.safeParse({ ...base, website: "" }).success).toBe(true);

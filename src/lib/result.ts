@@ -25,7 +25,9 @@ export type ActionError =
   | "alreadyActive"
   | "jobUnavailable"
   | "phoneUnverified"
-  | "wrongStep";
+  | "wrongStep"
+  | "fileTooBig"
+  | "uploadFailed";
 
 export type ActionResult<T = undefined> =
   { ok: true; data: T } | { ok: false; error: ActionError; fieldErrors?: Record<string, string> };

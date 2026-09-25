@@ -29,7 +29,7 @@ export default async function EmployerJobsPage() {
     <div className="animate-in-fast space-y-6 pt-2">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-3xl font-extrabold tracking-tight">{t("jobsTitle")}</h1>
-        <Link href="/employer/jobs/new" className={buttonVariants({ size: "touch" })}>
+        <Link href="/sponsor/jobs/new" className={buttonVariants({ size: "touch" })}>
           <Plus className="size-4" aria-hidden="true" />
           {t("postJob")}
         </Link>
@@ -42,7 +42,7 @@ export default async function EmployerJobsPage() {
           </span>
           <h2 className="text-xl font-extrabold">{t("noJobsTitle")}</h2>
           <p className="max-w-sm text-muted-foreground">{t("noJobsBody")}</p>
-          <Link href="/employer/jobs/new" className={cn(buttonVariants({ size: "touch" }), "mt-2")}>
+          <Link href="/sponsor/jobs/new" className={cn(buttonVariants({ size: "touch" }), "mt-2")}>
             {t("postJob")}
           </Link>
         </div>
@@ -51,7 +51,7 @@ export default async function EmployerJobsPage() {
           {jobs.map((job) => (
             <li key={job.id}>
               <Link
-                href={`/employer/jobs/${job.id}`}
+                href={`/sponsor/jobs/${job.id}`}
                 className="shadow-float flex gap-3 rounded-3xl bg-card p-4 transition-transform active:scale-[0.99]"
               >
                 <span

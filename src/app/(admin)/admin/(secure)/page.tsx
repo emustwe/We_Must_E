@@ -24,7 +24,7 @@ export default async function AdminHome() {
       label: t("statCards.employers"),
       value: employers.count ?? 0,
       icon: Building2,
-      href: "/admin/employers",
+      href: "/admin/sponsors",
     },
     { label: t("statCards.jobs"), value: jobs.count ?? 0, icon: MapPinned, href: "/admin/jobs" },
   ];

@@ -15,9 +15,21 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Sponsor logos (up to 1 MB) are sent to a server action.
+  experimental: { serverActions: { bodySizeLimit: "2mb" } },
   turbopack: { root: __dirname },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
+  },
+  // "Employer" is now called "Sponsor": keep old links (and bookmarks) working.
+  async redirects() {
+    return [
+      { source: "/employer", destination: "/sponsor", permanent: true },
+      { source: "/employer/:path*", destination: "/sponsor/:path*", permanent: true },
+      { source: "/admin/employers", destination: "/admin/sponsors", permanent: true },
+      { source: "/admin/employers/:path*", destination: "/admin/sponsors/:path*", permanent: true },
+      { source: "/for-employers", destination: "/for-sponsors", permanent: true },
+    ];
   },
 };
 

@@ -11,10 +11,15 @@ export type PublicJob = {
   lat: number;
   lng: number;
   publishedAt: string;
+  sponsorName: string;
+  sponsorLogo: string | null;
+  countryCode: string | null;
+  countryName: string | null;
+  city: string | null;
 };
 
-// Published jobs of approved employers in the service area, with the rounded
-// (~300 m) public pin only. Runs as anon, so RLS-level access is the public's.
+// Published jobs of approved sponsors in the service area, with the rounded
+// (~300 m) public pin, sponsor name/logo, country and city only. Runs as anon, so RLS-level access is the public's.
 export async function getPublicJobs(): Promise<PublicJob[]> {
   const b = jobAreaBounds();
   const { data, error } = await createPublicClient().rpc("get_public_jobs", {
@@ -35,5 +40,10 @@ export async function getPublicJobs(): Promise<PublicJob[]> {
     lat: j.public_lat,
     lng: j.public_lng,
     publishedAt: j.published_at,
+    sponsorName: j.sponsor_name,
+    sponsorLogo: j.sponsor_logo,
+    countryCode: j.country_code,
+    countryName: j.country_name,
+    city: j.city,
   }));
 }

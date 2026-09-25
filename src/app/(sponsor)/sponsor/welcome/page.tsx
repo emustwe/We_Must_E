@@ -11,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function EmployerWelcomePage() {
   const { employer } = await getEmployerAccount();
-  if (!employer?.must_change_password) redirect("/employer");
+  if (!employer?.must_change_password) redirect("/sponsor");
   const t = await getTranslations("employer");
   return (
     <div className="shadow-float animate-sheet mx-auto mt-6 max-w-md rounded-[2rem] bg-card p-6 sm:p-8">

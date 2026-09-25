@@ -29,7 +29,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
       footer={
         <>
           {t("noAccount")}{" "}
-          <Link href="/for-employers" className="font-medium text-primary hover:underline">
+          <Link href="/for-sponsors" className="font-medium text-primary hover:underline">
             {t("createAccount")}
           </Link>
         </>

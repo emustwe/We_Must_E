@@ -321,3 +321,98 @@
   border: 3px solid white;
   box-shadow: 0 0 0 8px oklch(0.62 0.19 255 / 0.2);
 }
+
+/* Job cards on the public map */
+.wm-card {
+  position: absolute;
+  transform: translate(-50%, calc(-100% - 6px));
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: max-content;
+  max-width: 13.5rem;
+  padding: 0.3rem 0.65rem 0.3rem 0.3rem;
+  border-radius: 1rem;
+  background: var(--background);
+  color: var(--foreground);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.12),
+    0 8px 20px rgb(0 0 0 / 0.16);
+  transition: transform 150ms ease;
+}
+.wm-card::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  width: 11px;
+  height: 11px;
+  background: inherit;
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: 2px;
+}
+.wm-card-logo {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 0.7rem;
+  background: color-mix(in oklch, var(--primary) 12%, transparent);
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+.wm-card-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.wm-card-text {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  line-height: 1.2;
+}
+.wm-card-title,
+.wm-card-sponsor {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wm-card-title {
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+.wm-card-sponsor {
+  font-size: 0.6875rem;
+  color: var(--muted-foreground);
+}
+.wm-card-selected {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  transform: translate(-50%, calc(-100% - 6px)) scale(1.06);
+}
+.wm-card-selected .wm-card-sponsor {
+  color: color-mix(in oklch, var(--primary-foreground) 80%, transparent);
+}
+.wm-card-selected .wm-card-logo {
+  background: var(--background);
+}
+.leaflet-marker-icon:focus-visible .wm-card {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Phones: pinch to zoom; the +/- buttons would cover the cards and buttons. */
+@media (max-width: 639px) {
+  .leaflet-control-zoom {
+    display: none;
+  }
+}

@@ -9,11 +9,11 @@ const serverSchema = z.object({
   EMAIL_FROM: z.string().min(3).default("Wemuste <no-reply@wemuste.example>"),
   // Local development only: deliver app emails to Mailpit instead of Resend.
   SMTP_URL: z.url().optional(),
-  // Where jobs may be placed: "south,west,north,east". Default: the UAE.
+  // Where jobs may be placed: "south,west,north,east". Default: the whole world.
   JOB_AREA_BOUNDS: z
     .string()
     .regex(/^-?\d+(\.\d+)?(,-?\d+(\.\d+)?){3}$/)
-    .default("22.5,51.0,26.5,56.6"),
+    .default("-90,-180,90,180"),
   // Cloudflare Turnstile secret for public applications. Required in production.
   TURNSTILE_SECRET_KEY: z.string().optional(),
   // HMAC key for application draft tokens (stored hashed). At least 32 characters.

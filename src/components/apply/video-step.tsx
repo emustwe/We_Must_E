@@ -1,6 +1,6 @@
 "use client";
 
-import { Camera, CheckCircle2, Circle, RotateCcw, Square } from "lucide-react";
+import { Camera, CheckCircle2, Circle, RotateCcw, Square, Upload } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { confirmVideo, createVideoUpload, finishVideos } from "@/actions/apply";
@@ -12,6 +12,19 @@ import { cn } from "@/lib/utils";
 import type { ApplyView } from "@/server/public-application";
 
 type VideoView = Extract<ApplyView, { stage: "video" }>;
+type VideoMime = "video/webm" | "video/mp4" | "video/quicktime";
+const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
+
+// Length of a video file, read by the browser (0 if it can't tell).
+function videoSeconds(url: string) {
+  return new Promise<number>((resolve) => {
+    const v = document.createElement("video");
+    v.preload = "metadata";
+    v.onloadedmetadata = () => resolve(Number.isFinite(v.duration) ? v.duration : 0);
+    v.onerror = () => resolve(0);
+    v.src = url;
+  });
+}
 type Question = VideoView["questions"][number];
 
 // Recording format: the first one this browser supports (Safari records MP4).
@@ -149,7 +162,13 @@ function Recorder({
   const [phase, setPhase] = useState<Phase>(stream ? "ready" : "camera");
   const [count, setCount] = useState(3);
   const [elapsed, setElapsed] = useState(0);
-  const [clip, setClip] = useState<{ blob: Blob; url: string; seconds: number } | null>(null);
+  const [clip, setClip] = useState<{
+    blob: Blob;
+    url: string;
+    seconds: number;
+    mime: VideoMime;
+  } | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const live = useRef<HTMLVideoElement>(null);
@@ -211,7 +230,7 @@ function Recorder({
       const seconds = Math.max(1, Math.round((Date.now() - startedAt.current) / 1000));
       // Upload with the plain type (no codecs) so storage accepts it.
       const blob = new Blob(chunks, { type: fmt.mime });
-      setClip({ blob, url: URL.createObjectURL(blob), seconds });
+      setClip({ blob, url: URL.createObjectURL(blob), seconds, mime: fmt.mime });
       setPhase("review");
     };
     recorder.current = rec;
@@ -232,13 +251,31 @@ function Recorder({
     return () => window.clearInterval(id);
   }, [phase, question.maxSeconds]);
 
+  // A video chosen from the phone instead of recording here.
+  async function pickFile(file: File) {
+    setError(null);
+    const mime = (["video/webm", "video/mp4", "video/quicktime"] as const).find(
+      (m) => m === file.type,
+    );
+    if (!mime) return setError(t("fileType"));
+    if (file.size > MAX_VIDEO_BYTES) return setError(t("fileTooLong"));
+    const url = URL.createObjectURL(file);
+    const seconds = Math.round(await videoSeconds(url));
+    if (seconds > question.maxSeconds + 5) {
+      URL.revokeObjectURL(url);
+      return setError(t("videoTooLong", { seconds: question.maxSeconds }));
+    }
+    setClip({ blob: file, url, seconds: Math.max(1, seconds), mime });
+    setPhase("review");
+  }
+
   async function upload() {
-    if (!clip || !format) return;
+    if (!clip) return;
     setError(null);
     setPhase("uploading");
     setProgress(0);
     try {
-      const target = await createVideoUpload({ jobId, questionId: question.id, mime: format.mime });
+      const target = await createVideoUpload({ jobId, questionId: question.id, mime: clip.mime });
       if (!target.ok) throw new Error(target.error);
       await uploadWithProgress(target.data.signedUrl, clip.blob, setProgress);
       const confirmed = await confirmVideo({
@@ -258,10 +295,6 @@ function Recorder({
       );
       setPhase("review");
     }
-  }
-
-  if (format === null) {
-    return <FormAlert message={t("noCamera")} />;
   }
 
   const remaining = Math.max(0, question.maxSeconds - elapsed);
@@ -323,16 +356,42 @@ function Recorder({
 
       <div className="mt-auto space-y-3 pt-6">
         <FormAlert message={error} />
-        {phase === "camera" ? (
+        {format === null && (phase === "camera" || phase === "ready") ? (
+          <FormAlert message={t("noCamera")} />
+        ) : null}
+        <input
+          ref={fileInput}
+          type="file"
+          accept="video/mp4,video/quicktime,video/webm"
+          className="sr-only"
+          aria-label={t("uploadVideo")}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) void pickFile(file);
+            e.target.value = "";
+          }}
+        />
+        {phase === "camera" && format !== null ? (
           <Button size="touch" className="w-full" onClick={enableCamera}>
             <Camera className="size-4" aria-hidden="true" />
             {t("cameraOn")}
           </Button>
         ) : null}
-        {phase === "ready" ? (
+        {phase === "ready" && format !== null ? (
           <Button size="touch" className="w-full" onClick={begin}>
             <Circle className="size-4 fill-current text-red-500" aria-hidden="true" />
             {t("record")}
+          </Button>
+        ) : null}
+        {phase === "camera" || phase === "ready" ? (
+          <Button
+            size="touch"
+            variant="secondary"
+            className="w-full"
+            onClick={() => fileInput.current?.click()}
+          >
+            <Upload className="size-4" aria-hidden="true" />
+            {t("uploadVideo")}
           </Button>
         ) : null}
         {phase === "recording" ? (

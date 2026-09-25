@@ -34,19 +34,63 @@ export function ThemedTiles() {
   );
 }
 
-// Moves the map when `target` changes.
-export function FlyTo({ target }: { target: { center: [number, number]; zoom: number } | null }) {
+export type MapTarget =
+  { center: [number, number]; zoom: number } | { bounds: [[number, number], [number, number]] }; // [[south, west], [north, east]]
+
+// Moves the map when `target` changes: to a point, or to fit an area.
+export function FlyTo({ target }: { target: MapTarget | null }) {
   const map = useMap();
   useEffect(() => {
     if (!target) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    map.flyTo(target.center, target.zoom, { animate: !reduce, duration: 0.8 });
+    if ("bounds" in target) {
+      map.flyToBounds(target.bounds, {
+        animate: !reduce,
+        duration: 0.8,
+        padding: [48, 48],
+        maxZoom: 14,
+      });
+    } else {
+      map.flyTo(target.center, target.zoom, { animate: !reduce, duration: 0.8 });
+    }
   }, [map, target]);
   return null;
 }
 
-// Job pin: a pill with the job title. Built with DOM APIs (textContent) so
-// employer-written titles can never inject HTML.
+// Job card on the map: sponsor logo (or initials), job title and sponsor.
+// Built with DOM APIs (textContent, img.src) so sponsor-written text can never
+// inject HTML.
+export function jobCardIcon(
+  job: { title: string; sponsorName: string; logoUrl: string | null; initials: string },
+  selected = false,
+) {
+  const el = document.createElement("span");
+  el.className = selected ? "wm-card wm-card-selected" : "wm-card";
+  const logo = document.createElement("span");
+  logo.className = "wm-card-logo";
+  if (job.logoUrl) {
+    const img = document.createElement("img");
+    img.src = job.logoUrl;
+    img.alt = "";
+    img.loading = "lazy";
+    logo.append(img);
+  } else {
+    logo.textContent = job.initials;
+  }
+  const text = document.createElement("span");
+  text.className = "wm-card-text";
+  const title = document.createElement("span");
+  title.className = "wm-card-title";
+  title.textContent = job.title;
+  const sponsor = document.createElement("span");
+  sponsor.className = "wm-card-sponsor";
+  sponsor.textContent = job.sponsorName;
+  text.append(title, sponsor);
+  el.append(logo, text);
+  return L.divIcon({ html: el, className: "wm-pin-wrap", iconSize: undefined, iconAnchor: [0, 0] });
+}
+
+// Admin overview pins (no sponsor details needed there).
 export function jobPinIcon(title: string, selected = false) {
   const el = document.createElement("span");
   el.className = selected ? "wm-pin wm-pin-selected" : "wm-pin";

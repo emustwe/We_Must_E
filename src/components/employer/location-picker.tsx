@@ -7,7 +7,7 @@ import { useRef, useState } from "react";
 import { PlaceSearch } from "@/components/map/place-search";
 import { Button } from "@/components/ui/button";
 import { isInside, type Bounds } from "@/lib/jobs/meta";
-import { reverseGeocode } from "@/lib/map/geocode";
+import { reverseGeocode, type Place } from "@/lib/map/geocode";
 
 const PickerMap = dynamic(() => import("@/components/map/picker-map"), {
   ssr: false,
@@ -15,22 +15,21 @@ const PickerMap = dynamic(() => import("@/components/map/picker-map"), {
 });
 
 type Point = { lat: number; lng: number };
+export type PlaceDetails = { label: string; countryCode: string | null; city: string | null };
 const round6 = (n: number) => Math.round(n * 1e6) / 1e6;
 
 // Search a place, use the device location, or tap/drag the pin. Every move
-// fills the place name (reverse geocoding), which the employer can edit.
+// looks up the place name, country and city, which the sponsor can edit.
 export function LocationPicker({
   value,
   bounds,
   onChange,
-  onLabel,
-  describedBy,
+  onDetails,
 }: {
   value: Point | null;
   bounds: Bounds;
   onChange: (p: Point) => void;
-  onLabel: (label: string) => void;
-  describedBy?: string;
+  onDetails: (details: PlaceDetails) => void;
 }) {
   const t = useTranslations("jobForm");
   const [target, setTarget] = useState<{ center: [number, number]; zoom: number } | null>(null);
@@ -39,18 +38,22 @@ export function LocationPicker({
   const lookup = useRef<AbortController | null>(null);
   const outside = value ? !isInside(bounds, value.lat, value.lng) : false;
 
-  function place(p: Point, label?: string) {
+  function place(p: Point, found?: Place) {
     const point = { lat: round6(p.lat), lng: round6(p.lng) };
     onChange(point);
     lookup.current?.abort();
-    if (label) {
-      onLabel(label.slice(0, 200));
-      return;
-    }
+    // A search result already knows its country; the name still comes from the pin.
     const controller = new AbortController();
     lookup.current = controller;
     reverseGeocode(point.lat, point.lng, controller.signal)
-      .then((name) => name && onLabel(name))
+      .then((r) => {
+        if (!r && !found) return;
+        onDetails({
+          label: (found ? found.label.replace(/,\s*[^,]+$/, "") : (r?.label ?? "")).slice(0, 200),
+          countryCode: r?.countryCode ?? found?.countryCode ?? null,
+          city: r?.city ?? found?.city ?? null,
+        });
+      })
       .catch(() => {});
   }
 
@@ -73,14 +76,14 @@ export function LocationPicker({
   }
 
   return (
-    <div className="space-y-2" aria-describedby={describedBy}>
+    <div className="space-y-2">
       <div className="flex flex-col gap-2 sm:flex-row">
         <PlaceSearch
           bounds={bounds}
           placeholder={t("searchPlace")}
           className="flex-1"
           onPick={(p) => {
-            place({ lat: p.lat, lng: p.lng }, p.label.replace(/,\s*United Arab Emirates$/, ""));
+            place({ lat: p.lat, lng: p.lng }, p);
             setTarget({ center: [p.lat, p.lng], zoom: 16 });
           }}
         />

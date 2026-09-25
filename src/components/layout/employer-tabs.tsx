@@ -8,16 +8,16 @@ export function EmployerTabs() {
   const t = useTranslations("tabs");
   return (
     <PillNav
-      label="Employer"
+      label="Sponsor"
       tabs={[
         {
-          href: "/employer",
+          href: "/sponsor",
           label: t("jobs"),
           icon: MapPinned,
           exact: true,
-          match: ["/employer/jobs"],
+          match: ["/sponsor/jobs"],
         },
-        { href: "/employer/account", label: t("account"), icon: Settings },
+        { href: "/sponsor/account", label: t("account"), icon: Settings },
       ]}
     />
   );

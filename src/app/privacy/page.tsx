@@ -20,7 +20,7 @@ const SECTIONS = [
   },
   {
     heading: "3. Who can see your information",
-    body: "[PLACEHOLDER] Your profile is never public. Only employers approved and selected by Wemuste can see the parts of your profile Wemuste chooses to share.",
+    body: "[PLACEHOLDER] Your profile is never public. Only sponsors approved and selected by Wemuste can see the parts of your profile Wemuste chooses to share.",
   },
   {
     heading: "4. Where it is stored",

@@ -6,14 +6,17 @@ import MarkerClusterGroup from "react-leaflet-cluster";
 import {
   clusterIcon,
   FlyTo,
-  jobPinIcon,
+  jobCardIcon,
   pointIcon,
   ThemedTiles,
+  type MapTarget,
 } from "@/components/map/leaflet-parts";
+import { initials } from "@/lib/sponsors/initials";
+import { logoUrl } from "@/lib/sponsors/logo";
 import type { Bounds } from "@/lib/jobs/meta";
 import type { PublicJob } from "@/lib/jobs/public-queries";
 
-export type MapTarget = { center: [number, number]; zoom: number };
+export type { MapTarget };
 
 function JobMarker({
   job,
@@ -24,13 +27,26 @@ function JobMarker({
   selected: boolean;
   onSelect: (id: string) => void;
 }) {
-  const icon = useMemo(() => jobPinIcon(job.title, selected), [job.title, selected]);
+  const icon = useMemo(
+    () =>
+      jobCardIcon(
+        {
+          title: job.title,
+          sponsorName: job.sponsorName,
+          logoUrl: logoUrl(job.sponsorLogo),
+          initials: initials(job.sponsorName),
+        },
+        selected,
+      ),
+    [job.title, job.sponsorName, job.sponsorLogo, selected],
+  );
+  const label = `${job.title}, ${job.sponsorName}`;
   return (
     <Marker
       position={[job.lat, job.lng]}
       icon={icon}
-      title={job.title}
-      alt={job.title}
+      title={label}
+      alt={label}
       keyboard
       zIndexOffset={selected ? 1000 : 0}
       eventHandlers={{ click: () => onSelect(job.id) }}
@@ -61,11 +77,13 @@ export default function ExploreMap({
       <MapContainer
         center={[25.2048, 55.2708]}
         zoom={10}
-        minZoom={7}
+        minZoom={2}
+        worldCopyJump
         maxBounds={[
-          [bounds.south - 1, bounds.west - 1],
-          [bounds.north + 1, bounds.east + 1],
+          [Math.max(bounds.south - 1, -85), bounds.west - 1],
+          [Math.min(bounds.north + 1, 85), bounds.east + 1],
         ]}
+        maxBoundsViscosity={0.8}
         zoomControl={false}
         className="size-full"
       >

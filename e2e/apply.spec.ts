@@ -17,6 +17,38 @@ async function recordAnswer(page: Page) {
   await page.getByRole("button", { name: "Use this video" }).click();
 }
 
+// A 2-second WebM made in the browser (a canvas video), used as a file the
+// visitor "picks from their phone".
+async function makeVideoFile(page: Page) {
+  const base64 = await page.evaluate(async () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 320;
+    canvas.height = 240;
+    const ctx = canvas.getContext("2d")!;
+    const stream = canvas.captureStream(15);
+    const rec = new MediaRecorder(stream, { mimeType: "video/webm" });
+    const chunks: Blob[] = [];
+    rec.ondataavailable = (e) => chunks.push(e.data);
+    let frame = 0;
+    const timer = setInterval(() => {
+      ctx.fillStyle = `hsl(${(frame += 12) % 360} 70% 50%)`;
+      ctx.fillRect(0, 0, 320, 240);
+    }, 60);
+    rec.start(200);
+    await new Promise((r) => setTimeout(r, 2000));
+    await new Promise((r) => {
+      rec.onstop = r;
+      rec.stop();
+    });
+    clearInterval(timer);
+    const bytes = new Uint8Array(await new Blob(chunks).arrayBuffer());
+    let binary = "";
+    for (const b of bytes) binary += String.fromCharCode(b);
+    return btoa(binary);
+  });
+  return { name: "answer.webm", mimeType: "video/webm", buffer: Buffer.from(base64, "base64") };
+}
+
 test.afterEach(async () => {
   // Uploaded videos first (the rows point to them), then the rows.
   const paths = psql(
@@ -47,7 +79,7 @@ test("a visitor applies in 3 steps without an account, and nothing reaches the e
   await expect(page.getByText("Step 1 of 3 · Quick test")).toBeVisible();
   await page.getByRole("button", { name: "Start the test" }).click();
   await expect(page.getByText("Question 1 of 3")).toBeVisible();
-  await expect(page.getByText(/\d:\d\d/)).toBeVisible(); // the timer
+  await expect(page.getByText("Time left")).toBeAttached(); // the timer
   await page.getByText("Listen and apologise").click();
   await page.getByRole("button", { name: "Next", exact: true }).click();
   await expect(page.getByText("Question 2 of 3")).toBeVisible();
@@ -69,7 +101,10 @@ test("a visitor applies in 3 steps without an account, and nothing reaches the e
   await expect(page.getByText("Video 1 of 2")).toBeVisible();
   await recordAnswer(page);
   await expect(page.getByText("Video 2 of 2")).toBeVisible({ timeout: 20_000 });
-  await recordAnswer(page);
+  // The second answer is a video picked from the phone instead.
+  await page.getByLabel("Upload a video from my phone").setInputFiles(await makeVideoFile(page));
+  await expect(page.locator("video[controls]")).toBeVisible();
+  await page.getByRole("button", { name: "Use this video" }).click();
   await expect(page.getByRole("button", { name: "Continue" })).toBeEnabled({ timeout: 20_000 });
   await page.getByRole("button", { name: "Continue" }).click();
 

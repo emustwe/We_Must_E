@@ -1,3 +1,4 @@
+import { isCountryCode, normaliseCity } from "@/lib/geo/countries";
 import { z } from "@/lib/validations/zod";
 import { emailSchema, newPasswordSchema } from "@/lib/validations/auth";
 
@@ -23,6 +24,15 @@ export const jobSchema = z.strictObject({
     .max(200, { error: "validation.areaTooLong" }),
   lat: z.number({ error: "validation.locationRequired" }).min(-90).max(90),
   lng: z.number({ error: "validation.locationRequired" }).min(-180).max(180),
+  countryCode: z
+    .string({ error: "validation.countryRequired" })
+    .refine(isCountryCode, { error: "validation.countryRequired" }),
+  city: z
+    .string()
+    .trim()
+    .min(1, { error: "validation.cityRequired" })
+    .max(120, { error: "validation.areaTooLong" })
+    .transform(normaliseCity),
 });
 export type JobInput = z.input<typeof jobSchema>;
 
@@ -50,6 +60,8 @@ export const createEmployerSchema = z.strictObject({
     .min(2, { error: "validation.nameRequired" })
     .max(120, { error: "validation.nameTooLong" }),
   email: emailSchema,
+  // The admin chooses it; it is emailed to the sponsor with the login link.
+  password: newPasswordSchema,
   phone: z
     .string()
     .trim()
@@ -64,4 +76,10 @@ export type CreateEmployerInput = z.input<typeof createEmployerSchema>;
 export const employerStatusSchema = z.strictObject({
   employerId: idSchema,
   status: z.enum(["approved", "suspended"]),
+});
+
+export const sponsorPasswordSchema = z.strictObject({
+  employerId: idSchema,
+  password: newPasswordSchema,
+  notify: z.boolean(),
 });

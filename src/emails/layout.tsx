@@ -18,12 +18,17 @@ export function EmailLayout({
   body,
   cta,
   href,
+  details,
+  footer,
 }: {
   preview: string;
   heading: string;
   body: string;
   cta: string;
   href: string;
+  // Label/value lines shown in a box, e.g. the sponsor's login details.
+  details?: { label: string; value: string }[];
+  footer?: string;
 }) {
   return (
     <Html lang="en">
@@ -57,6 +62,25 @@ export function EmailLayout({
           <Text style={{ margin: "0 0 24px", fontSize: 16, lineHeight: 1.6, color: "#334155" }}>
             {body}
           </Text>
+          {details?.length ? (
+            <Section
+              style={{
+                margin: "0 0 24px",
+                padding: "16px",
+                backgroundColor: "#f1f5f9",
+                borderRadius: 12,
+              }}
+            >
+              {details.map((d) => (
+                <Text key={d.label} style={{ margin: "0 0 8px", fontSize: 15, lineHeight: 1.5 }}>
+                  <span style={{ color: "#64748b" }}>{d.label}: </span>
+                  <span style={{ fontFamily: "Menlo, Consolas, monospace", fontWeight: 600 }}>
+                    {d.value}
+                  </span>
+                </Text>
+              ))}
+            </Section>
+          ) : null}
           <Section>
             <Button
               href={href}
@@ -74,8 +98,8 @@ export function EmailLayout({
             </Button>
           </Section>
           <Text style={{ margin: "24px 0 0", fontSize: 13, lineHeight: 1.6, color: "#64748b" }}>
-            For your privacy we never put details in emails. Wemuste will never ask for your
-            password by email or phone.
+            {footer ??
+              "For your privacy we never put details in emails. Wemuste will never ask for your password by email or phone."}
           </Text>
         </Container>
       </Body>

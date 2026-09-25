@@ -15,7 +15,7 @@ test("the public map page sends security headers", async ({ page }) => {
     /connect-src [^;]*https:\/\/api\.maptiler\.com/,
   );
   expect(headers["permissions-policy"]).toContain("geolocation=(self)");
-  await page.getByRole("link", { name: "Employer login" }).click();
+  await page.getByRole("link", { name: "Sponsor login" }).click();
   await expect(page).toHaveURL(/\/login$/);
 });
 
@@ -25,14 +25,14 @@ test("job seekers no longer have accounts", async ({ page }) => {
     await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
   }
   await page.goto("/login");
-  await expect(page.getByRole("link", { name: "How employers join" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "How sponsors join" })).toHaveAttribute(
     "href",
-    "/for-employers",
+    "/for-sponsors",
   );
 });
 
 test("protected areas redirect guests to login", async ({ page }) => {
-  for (const path of ["/employer", "/admin"]) {
+  for (const path of ["/sponsor", "/admin"]) {
     await page.goto(path);
     await expect(page).toHaveURL(/\/login$/);
   }

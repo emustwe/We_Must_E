@@ -23,7 +23,7 @@ export const testAnswerSchema = z.strictObject({
 export const videoUploadSchema = z.strictObject({
   jobId: z.guid(),
   questionId: z.guid(),
-  mime: z.enum(["video/webm", "video/mp4"]),
+  mime: z.enum(["video/webm", "video/mp4", "video/quicktime"]),
 });
 
 export const videoConfirmSchema = z.strictObject({

@@ -15,8 +15,10 @@ export function PlaceSearch({
   placeholder,
   className,
   inputClassName,
+  country,
 }: {
   bounds: Bounds;
+  country?: string | null;
   onPick: (place: Place) => void;
   placeholder: string;
   className?: string;
@@ -38,7 +40,7 @@ export function PlaceSearch({
     const timer = window.setTimeout(async () => {
       setLoading(true);
       try {
-        setResults(await searchPlaces(q, bounds, controller.signal));
+        setResults(await searchPlaces(q, bounds, controller.signal, country));
         setActive(-1);
       } catch {
         // Aborted or offline: keep the previous results.
@@ -50,7 +52,7 @@ export function PlaceSearch({
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [query, bounds]);
+  }, [query, bounds, country]);
 
   useEffect(() => {
     function onDown(e: PointerEvent) {

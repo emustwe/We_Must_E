@@ -18,7 +18,7 @@ import { clearToken, issueToken, readTokenHash } from "./token";
 // returns answer keys, scores or other applicants' data.
 
 export const VIDEO_BUCKET = "application-videos";
-export const CONSENT_VERSION = "2026-10-v1";
+export const CONSENT_VERSION = "2026-10-v2";
 const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
 
 const db = () => createAdminClient();
@@ -241,7 +241,7 @@ export const submitTest = (jobId: string) =>
 export async function createVideoUpload(
   jobId: string,
   questionId: string,
-  mime: "video/webm" | "video/mp4",
+  mime: "video/webm" | "video/mp4" | "video/quicktime",
 ): Promise<ActionResult<{ path: string; signedUrl: string; token: string }>> {
   const current = await currentApplication(jobId);
   if (!current) return fail("sessionExpired");
@@ -255,7 +255,8 @@ export async function createVideoUpload(
     .maybeSingle();
   if (!question) return fail("notFound");
 
-  const path = `${current.app.id}/${questionId}/${randomUUID()}.${mime === "video/mp4" ? "mp4" : "webm"}`;
+  const ext = { "video/webm": "webm", "video/mp4": "mp4", "video/quicktime": "mov" }[mime];
+  const path = `${current.app.id}/${questionId}/${randomUUID()}.${ext}`;
   const { data, error } = await db().storage.from(VIDEO_BUCKET).createSignedUploadUrl(path);
   if (error || !data) {
     logError("app-video-upload-url", error);
@@ -293,7 +294,13 @@ export async function confirmVideo(
       kind = res.ok ? detectFileKind(new Uint8Array(await res.arrayBuffer())) : null;
     }
   }
-  const expected = mime === "video/mp4" ? "mp4" : mime === "video/webm" ? "webm" : null;
+  // MP4 and iPhone .mov files share the same container signature ("ftyp").
+  const expected =
+    mime === "video/mp4" || mime === "video/quicktime"
+      ? "mp4"
+      : mime === "video/webm"
+        ? "webm"
+        : null;
   if (!object || size < 1 || size > MAX_VIDEO_BYTES || !expected || kind !== expected) {
     if (object) await storage.remove([path]);
     return fail("invalidFile");

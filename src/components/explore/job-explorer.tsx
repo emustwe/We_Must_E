@@ -17,8 +17,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MapTarget } from "@/components/explore/explore-map";
 import { PlaceSearch } from "@/components/map/place-search";
 import { Logo } from "@/components/brand/logo";
+import { SponsorLogo } from "@/components/sponsors/sponsor-logo";
 import { buttonVariants } from "@/components/ui/button";
-import { CITIES, distanceKm, type Bounds } from "@/lib/jobs/meta";
+import { COUNTRIES, countryName } from "@/lib/geo/countries";
+import { distanceKm, type Bounds } from "@/lib/jobs/meta";
+import { findCountry } from "@/lib/map/geocode";
 import type { PublicJob } from "@/lib/jobs/public-queries";
 import { cn } from "@/lib/utils";
 
@@ -29,10 +32,34 @@ const ExploreMap = dynamic(() => import("@/components/explore/explore-map"), {
 
 const DISTANCES = [null, 2, 5, 10, 25] as const;
 type Distance = (typeof DISTANCES)[number];
-type Origin = { point: [number, number]; kind: "me" | "place" | "city"; label: string };
+type Origin = { point: [number, number]; kind: "me" | "place"; label: string };
 type LocState = "checking" | "prompt" | "locating" | "denied" | "done";
 
 const PROMPT_KEY = "wm-location-prompt";
+
+// "Dubai Marina, Dubai, United Arab Emirates" without repeating a part the
+// place name already contains.
+function placeLine(job: PublicJob, withCountry = true) {
+  const parts = [job.locationLabel];
+  const has = (x: string) => parts.some((p) => p.toLowerCase().includes(x.toLowerCase()));
+  if (job.city && !has(job.city)) parts.push(job.city);
+  if (withCountry && job.countryName && !has(job.countryName)) parts.push(job.countryName);
+  return parts.join(", ");
+}
+
+// The area around some jobs, to fit the map to them.
+function boundsOf(jobs: PublicJob[]): MapTarget | null {
+  if (!jobs.length) return null;
+  if (jobs.length === 1) return { center: [jobs[0].lat, jobs[0].lng], zoom: 13 };
+  const lats = jobs.map((j) => j.lat);
+  const lngs = jobs.map((j) => j.lng);
+  return {
+    bounds: [
+      [Math.min(...lats), Math.min(...lngs)],
+      [Math.max(...lats), Math.max(...lngs)],
+    ],
+  };
+}
 
 function readDismissed() {
   try {
@@ -78,9 +105,11 @@ export function JobExplorer({
   const [view, setView] = useState<"map" | "list">("map");
   const [origin, setOrigin] = useState<Origin | null>(null);
   const [distance, setDistance] = useState<Distance>(null);
+  const [country, setCountry] = useState<string | null>(null);
+  const [city, setCity] = useState<string | null>(null);
   const [target, setTarget] = useState<MapTarget | null>(() => {
     const job = jobs.find((j) => j.id === initialJobId);
-    return job ? { center: [job.lat, job.lng], zoom: 14 } : null;
+    return job ? { center: [job.lat, job.lng], zoom: 14 } : boundsOf(jobs);
   });
   const [locState, setLocState] = useState<LocState>("checking");
   const sheetHeading = useRef<HTMLHeadingElement>(null);
@@ -104,7 +133,7 @@ export function JobExplorer({
   }, [t]);
 
   // Ask for location only if the browser already allows it; otherwise offer
-  // a prompt (with an emirate fallback) instead of a cold permission dialog.
+  // a prompt (with a country fallback) instead of a cold permission dialog.
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -132,12 +161,59 @@ export function JobExplorer({
     setLocState("done");
   }
 
-  function chooseCity(id: string) {
-    const city = CITIES.find((c) => c.id === id);
-    if (!city) return;
-    setOrigin({ point: [...city.center], kind: "city", label: city.id });
-    setTarget({ center: [...city.center], zoom: city.zoom });
+  // Countries that have jobs come first in the pickers.
+  const jobCountries = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const j of jobs)
+      if (j.countryCode) counts.set(j.countryCode, (counts.get(j.countryCode) ?? 0) + 1);
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([code, count]) => ({ code, name: countryName(code), count }));
+  }, [jobs]);
+
+  const cities = useMemo(() => {
+    if (!country) return [];
+    const counts = new Map<string, number>();
+    for (const j of jobs) {
+      if (j.countryCode === country && j.city) counts.set(j.city, (counts.get(j.city) ?? 0) + 1);
+    }
+    return [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0], "en"));
+  }, [jobs, country]);
+
+  async function chooseCountry(code: string | null) {
+    setCountry(code);
+    setCity(null);
     setLocState("done");
+    if (!code) {
+      setTarget(boundsOf(jobs));
+      return;
+    }
+    const inCountry = jobs.filter((j) => j.countryCode === code);
+    const fit = boundsOf(inCountry);
+    if (fit) {
+      setTarget(fit);
+      return;
+    }
+    // No jobs there yet: still show the country.
+    const place = await findCountry(countryName(code), code).catch(() => null);
+    if (place?.bbox) {
+      const [w, s, e, n] = place.bbox;
+      setTarget({
+        bounds: [
+          [s, w],
+          [n, e],
+        ],
+      });
+    } else if (place) {
+      setTarget({ center: [place.lat, place.lng], zoom: 5 });
+    }
+  }
+
+  function chooseCity(name: string | null) {
+    setCity(name);
+    const inArea = jobs.filter((j) => j.countryCode === country && (!name || j.city === name));
+    const fit = boundsOf(inArea);
+    if (fit) setTarget(fit);
   }
 
   const select = useCallback((id: string | null) => {
@@ -158,10 +234,15 @@ export function JobExplorer({
     [jobs, origin],
   );
   const visible = useMemo(() => {
-    const list =
-      distance && origin ? withDistance.filter((j) => (j.km ?? 0) <= distance) : withDistance;
+    const list = withDistance.filter(
+      ({ job, km }) =>
+        (!country || job.countryCode === country) &&
+        (!city || job.city === city) &&
+        (!distance || !origin || (km ?? 0) <= distance),
+    );
     return origin ? [...list].sort((a, b) => (a.km ?? 0) - (b.km ?? 0)) : list;
-  }, [withDistance, distance, origin]);
+  }, [withDistance, distance, origin, country, city]);
+  const areaLabel = city ?? (country ? countryName(country) : null);
 
   const selected = selectedId ? withDistance.find((j) => j.job.id === selectedId) : undefined;
 
@@ -197,7 +278,7 @@ export function JobExplorer({
       <div className="pointer-events-none absolute inset-x-0 top-0 z-[1000] space-y-2 p-3 sm:p-4">
         <div className="flex items-center gap-2">
           <Link
-            href="/for-employers"
+            href="/for-sponsors"
             aria-label={t("aboutWemuste")}
             className="shadow-float pointer-events-auto hidden shrink-0 rounded-full bg-background py-1.5 ps-1.5 pe-4 sm:block"
           >
@@ -205,6 +286,7 @@ export function JobExplorer({
           </Link>
           <PlaceSearch
             bounds={bounds}
+            country={country}
             placeholder={t("searchPlaceholder")}
             className="shadow-float pointer-events-auto min-w-0 flex-1 rounded-full sm:max-w-md"
             inputClassName="border-transparent"
@@ -241,24 +323,60 @@ export function JobExplorer({
             />
             <span className="hidden sm:inline">{t("nearMe")}</span>
           </button>
-          <label className="sr-only" htmlFor="wm-city">
-            {t("chooseEmirate")}
+          <label className="sr-only" htmlFor="wm-country">
+            {t("country")}
           </label>
           <select
-            id="wm-city"
-            value={origin?.kind === "city" ? origin.label : ""}
-            onChange={(e) => chooseCity(e.target.value)}
-            className="shadow-float h-10 shrink-0 rounded-full border-0 bg-background ps-3.5 pe-8 text-sm font-semibold"
+            id="wm-country"
+            value={country ?? ""}
+            onChange={(e) => void chooseCountry(e.target.value || null)}
+            className={cn(
+              "shadow-float h-10 max-w-44 shrink-0 rounded-full border-0 ps-3.5 pe-8 text-sm font-semibold",
+              country ? "bg-primary text-primary-foreground" : "bg-background",
+            )}
           >
-            <option value="" disabled>
-              {t("chooseEmirate")}
-            </option>
-            {CITIES.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.id}
-              </option>
-            ))}
+            <option value="">{t("allCountries")}</option>
+            {jobCountries.length ? (
+              <optgroup label={t("countriesWithJobs")}>
+                {jobCountries.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.name} ({c.count})
+                  </option>
+                ))}
+              </optgroup>
+            ) : null}
+            <optgroup label={t("allCountriesGroup")}>
+              {COUNTRIES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.name}
+                </option>
+              ))}
+            </optgroup>
           </select>
+          {country ? (
+            <>
+              <label className="sr-only" htmlFor="wm-city">
+                {t("city")}
+              </label>
+              <select
+                id="wm-city"
+                value={city ?? ""}
+                disabled={!cities.length}
+                onChange={(e) => chooseCity(e.target.value || null)}
+                className={cn(
+                  "shadow-float h-10 max-w-44 shrink-0 rounded-full border-0 ps-3.5 pe-8 text-sm font-semibold disabled:opacity-60",
+                  city ? "bg-primary text-primary-foreground" : "bg-background",
+                )}
+              >
+                <option value="">{cities.length ? t("allCities") : t("noCities")}</option>
+                {cities.map(([name, count]) => (
+                  <option key={name} value={name}>
+                    {name} ({count})
+                  </option>
+                ))}
+              </select>
+            </>
+          ) : null}
           <div
             role="group"
             aria-label={t("distanceLabel")}
@@ -284,7 +402,7 @@ export function JobExplorer({
         </div>
       </div>
 
-      {/* Location prompt with emirate fallback */}
+      {/* Location prompt with a country fallback */}
       {(locState === "prompt" || locState === "denied") && !selected && view === "map" ? (
         <section
           aria-labelledby="wm-loc-title"
@@ -315,17 +433,33 @@ export function JobExplorer({
             </button>
           ) : null}
           <div className="mt-3 flex flex-wrap gap-2">
-            {CITIES.map((c) => (
+            {jobCountries.slice(0, 6).map((c) => (
               <button
-                key={c.id}
+                key={c.code}
                 type="button"
-                onClick={() => chooseCity(c.id)}
+                onClick={() => void chooseCountry(c.code)}
                 className="h-9 rounded-full bg-muted px-3.5 text-sm font-semibold hover:bg-muted/70"
               >
-                {c.id}
+                {c.name}
               </button>
             ))}
           </div>
+          <label className="mt-3 block text-sm font-medium" htmlFor="wm-prompt-country">
+            {t("orChooseCountry")}
+          </label>
+          <select
+            id="wm-prompt-country"
+            value=""
+            onChange={(e) => e.target.value && void chooseCountry(e.target.value)}
+            className="mt-1 h-11 w-full rounded-xl border border-input bg-background px-3 text-sm"
+          >
+            <option value="">{t("allCountries")}</option>
+            {COUNTRIES.map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.name}
+              </option>
+            ))}
+          </select>
         </section>
       ) : null}
 
@@ -354,7 +488,11 @@ export function JobExplorer({
           className="absolute inset-x-0 top-32 bottom-0 z-[999] overflow-y-auto rounded-t-[2rem] bg-background px-4 pt-5 pb-24 sm:inset-x-auto sm:start-4 sm:bottom-4 sm:w-[26rem] sm:rounded-[2rem]"
         >
           <h2 className="text-lg font-extrabold">
-            {origin ? t("listNear", { place: origin.label }) : t("listTitle")}
+            {areaLabel
+              ? t("listIn", { place: areaLabel })
+              : origin
+                ? t("listNear", { place: origin.label })
+                : t("listTitle")}
           </h2>
           <p className="text-sm text-muted-foreground">
             {t("jobsCount", { count: visible.length })}
@@ -376,11 +514,16 @@ export function JobExplorer({
                     }}
                     className="flex w-full items-start gap-3 rounded-3xl bg-muted/60 p-4 text-start hover:bg-muted"
                   >
-                    <MapPin className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
+                    <SponsorLogo
+                      name={job.sponsorName}
+                      path={job.sponsorLogo}
+                      className="size-11 text-sm"
+                    />
                     <span className="min-w-0 flex-1">
                       <span className="block font-bold">{job.title}</span>
+                      <span className="block truncate text-sm font-medium">{job.sponsorName}</span>
                       <span className="block truncate text-sm text-muted-foreground">
-                        {job.locationLabel}
+                        {placeLine(job, false)}
                         {dist !== null ? ` · ${km(dist)}` : ""}
                       </span>
                     </span>
@@ -391,7 +534,7 @@ export function JobExplorer({
           )}
           <TrustLines className="mt-6 text-muted-foreground" />
           <nav className="mt-4 flex gap-5 text-xs text-muted-foreground">
-            <Link href="/for-employers" className="hover:text-foreground">
+            <Link href="/for-sponsors" className="hover:text-foreground">
               {t("forEmployers")}
             </Link>
             <Link href="/privacy" className="hover:text-foreground">
@@ -422,18 +565,30 @@ export function JobExplorer({
           >
             <X className="size-4" aria-hidden="true" />
           </button>
-          <h2
-            id="wm-job-title"
-            ref={sheetHeading}
-            tabIndex={-1}
-            className="pe-12 text-2xl font-extrabold tracking-tight outline-none"
-          >
-            {selected.job.title}
-          </h2>
+          <div className="flex items-center gap-3 pe-12">
+            <SponsorLogo
+              name={selected.job.sponsorName}
+              path={selected.job.sponsorLogo}
+              className="size-14 text-lg"
+            />
+            <div className="min-w-0">
+              <h2
+                id="wm-job-title"
+                ref={sheetHeading}
+                tabIndex={-1}
+                className="text-2xl leading-tight font-extrabold tracking-tight break-words outline-none"
+              >
+                {selected.job.title}
+              </h2>
+              <p className="truncate text-sm font-semibold text-muted-foreground">
+                {selected.job.sponsorName}
+              </p>
+            </div>
+          </div>
           <p className="mt-1 flex items-start gap-1.5 text-sm text-muted-foreground">
             <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
             <span>
-              {selected.job.locationLabel}
+              {placeLine(selected.job)}
               {selected.km !== null ? ` · ${km(selected.km)}` : ""}
             </span>
           </p>

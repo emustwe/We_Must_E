@@ -23,7 +23,9 @@ export function PageTitle({
 
 export function Card({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <section className={cn("shadow-float rounded-3xl bg-card p-5", className)}>{children}</section>
+    <section className={cn("shadow-float min-w-0 rounded-3xl bg-card p-5", className)}>
+      {children}
+    </section>
   );
 }
 

@@ -11,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("editTitle") };
 }
 
-export default async function EditJobPage({ params }: PageProps<"/employer/jobs/[id]/edit">) {
+export default async function EditJobPage({ params }: PageProps<"/sponsor/jobs/[id]/edit">) {
   const { id } = await params;
   if (!idSchema.safeParse(id).success) notFound();
   const job = await getOwnJob(id);
@@ -31,6 +31,8 @@ export default async function EditJobPage({ params }: PageProps<"/employer/jobs/
             locationLabel: job.location_label,
             lat: job.lat,
             lng: job.lng,
+            countryCode: job.country_code ?? "",
+            city: job.city ?? "",
           }}
         />
       </div>

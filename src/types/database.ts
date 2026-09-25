@@ -384,6 +384,7 @@ export type Database = {
           contact_phone: string | null
           created_at: string
           created_by: string | null
+          logo_path: string | null
           must_change_password: boolean
           status: Database["public"]["Enums"]["employer_status"]
           trade_license_no: string | null
@@ -400,6 +401,7 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           created_by?: string | null
+          logo_path?: string | null
           must_change_password?: boolean
           status?: Database["public"]["Enums"]["employer_status"]
           trade_license_no?: string | null
@@ -416,6 +418,7 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           created_by?: string | null
+          logo_path?: string | null
           must_change_password?: boolean
           status?: Database["public"]["Enums"]["employer_status"]
           trade_license_no?: string | null
@@ -449,7 +452,10 @@ export type Database = {
       }
       jobs: {
         Row: {
+          city: string | null
           closed_at: string | null
+          country_code: string | null
+          country_name: string | null
           created_at: string
           description: string
           employer_id: string
@@ -468,7 +474,10 @@ export type Database = {
           video_set_id: string | null
         }
         Insert: {
+          city?: string | null
           closed_at?: string | null
+          country_code?: string | null
+          country_name?: string | null
           created_at?: string
           description: string
           employer_id: string
@@ -487,7 +496,10 @@ export type Database = {
           video_set_id?: string | null
         }
         Update: {
+          city?: string | null
           closed_at?: string | null
+          country_code?: string | null
+          country_name?: string | null
           created_at?: string
           description?: string
           employer_id?: string
@@ -983,14 +995,23 @@ export type Database = {
           min_lng: number
         }
         Returns: {
+          city: string
+          country_code: string
+          country_name: string
           description: string
           id: string
           location_label: string
           public_lat: number
           public_lng: number
           published_at: string
+          sponsor_logo: string
+          sponsor_name: string
           title: string
         }[]
+      }
+      log_sponsor_change: {
+        Args: { p_change: string; p_employer_id: string }
+        Returns: undefined
       }
       log_video_view: {
         Args: { p_application_id: string; p_question_id: string }

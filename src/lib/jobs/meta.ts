@@ -2,17 +2,6 @@ import type { Database } from "@/types/database";
 
 export type JobStatus = Database["public"]["Enums"]["job_status"];
 
-// Emirate picker when location permission is denied.
-export const CITIES = [
-  { id: "Dubai", center: [25.2048, 55.2708] as [number, number], zoom: 11 },
-  { id: "Abu Dhabi", center: [24.4539, 54.3773] as [number, number], zoom: 11 },
-  { id: "Sharjah", center: [25.3463, 55.4033] as [number, number], zoom: 12 },
-  { id: "Ajman", center: [25.4052, 55.5136] as [number, number], zoom: 12 },
-  { id: "Ras Al Khaimah", center: [25.8007, 55.9432] as [number, number], zoom: 12 },
-  { id: "Fujairah", center: [25.1288, 56.3264] as [number, number], zoom: 12 },
-  { id: "Umm Al Quwain", center: [25.5647, 55.555] as [number, number], zoom: 12 },
-] as const;
-
 export type Bounds = { south: number; west: number; north: number; east: number };
 
 export function parseBounds(value: string): Bounds {

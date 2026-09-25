@@ -12,14 +12,14 @@ export async function generateMetadata(): Promise<Metadata> {
 const SECTIONS = [
   {
     heading: "1. The service",
-    body: "[PLACEHOLDER] What Wemuste provides to people looking for work and to employers.",
+    body: "[PLACEHOLDER] What Wemuste provides to people looking for work and to sponsors.",
   },
   {
     heading: "2. Accounts",
     body: "[PLACEHOLDER] Eligibility, accurate information, one account per person, keeping your password safe.",
   },
   {
-    heading: "3. Employers",
+    heading: "3. Sponsors",
     body: "[PLACEHOLDER] Verification, approved use of candidate information, no copying or exporting of candidate data.",
   },
   {

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/session";
 import { dbFail } from "@/lib/db-errors";
 import { jobAreaBounds } from "@/lib/jobs/area";
+import { countryName } from "@/lib/geo/countries";
 import { isInside } from "@/lib/jobs/meta";
 import { logError } from "@/lib/log";
 import { fail, ok, type ActionResult } from "@/lib/result";
@@ -28,6 +29,9 @@ function toRow(job: JobData) {
     location_label: job.locationLabel,
     lat: job.lat,
     lng: job.lng,
+    country_code: job.countryCode.toUpperCase(),
+    country_name: countryName(job.countryCode),
+    city: job.city,
   };
 }
 
@@ -35,7 +39,7 @@ function parseJob(input: unknown): { error: ActionResult } | { data: JobData } {
   const parsed = jobSchema.safeParse(input);
   if (!parsed.success) return { error: fail("invalidInput", toFieldErrors(parsed.error)) };
   if (!isInside(jobAreaBounds(), parsed.data.lat, parsed.data.lng)) {
-    return { error: fail("invalidInput", { lat: "validation.locationUae" }) };
+    return { error: fail("invalidInput", { lat: "validation.locationOutside" }) };
   }
   return { data: parsed.data };
 }
@@ -56,9 +60,9 @@ export async function createJob(input: unknown): Promise<ActionResult> {
   if (error) return dbFail("create-job", error);
 
   // Live immediately: refresh the employer list and the public map.
-  revalidatePath("/employer");
+  revalidatePath("/sponsor");
   revalidatePath("/");
-  redirect(`/employer/jobs/${data.id}?posted=1`);
+  redirect(`/sponsor/jobs/${data.id}?posted=1`);
 }
 
 export async function updateJob(jobId: unknown, input: unknown): Promise<ActionResult> {
@@ -77,9 +81,9 @@ export async function updateJob(jobId: unknown, input: unknown): Promise<ActionR
   if (error) return dbFail("update-job", error);
   if (!data?.length) return fail("notFound");
 
-  revalidatePath(`/employer/jobs/${id.data}`);
+  revalidatePath(`/sponsor/jobs/${id.data}`);
   revalidatePath("/");
-  redirect(`/employer/jobs/${id.data}?saved=1`);
+  redirect(`/sponsor/jobs/${id.data}?saved=1`);
 }
 
 // Employers can only close a published job (the database enforces this too).
@@ -96,8 +100,8 @@ export async function closeJob(input: unknown): Promise<ActionResult> {
     .select("id");
   if (error) return dbFail("job-status", error);
   if (!data?.length) return fail("notFound");
-  revalidatePath(`/employer/jobs/${parsed.data.jobId}`);
-  revalidatePath("/employer");
+  revalidatePath(`/sponsor/jobs/${parsed.data.jobId}`);
+  revalidatePath("/sponsor");
   revalidatePath("/");
   return ok(undefined);
 }
@@ -122,5 +126,5 @@ export async function setInitialPassword(input: unknown): Promise<ActionResult> 
   if (flagError) return dbFail("complete-password-change", flagError);
   // End any other session that used the temporary password.
   await supabase.auth.signOut({ scope: "others" });
-  redirect("/employer");
+  redirect("/sponsor");
 }

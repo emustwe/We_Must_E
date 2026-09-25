@@ -12,6 +12,7 @@ import { FormAlert } from "@/components/forms/form-alert";
 import { SubmitButton } from "@/components/forms/submit-button";
 import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { COUNTRIES } from "@/lib/geo/countries";
 import type { Bounds } from "@/lib/jobs/meta";
 import { cn } from "@/lib/utils";
 import { jobSchema, type JobInput } from "@/lib/validations/jobs";
@@ -37,7 +38,7 @@ export function JobForm({
   const form = useForm<JobInput>({
     resolver: zodResolver(jobSchema),
     mode: "onBlur",
-    defaultValues: defaults ?? { title: "", description: "", locationLabel: "" },
+    defaultValues: defaults ?? { title: "", description: "", locationLabel: "", city: "" },
   });
   const { errors } = form.formState;
   const lat = useWatch({ control: form.control, name: "lat" });
@@ -100,11 +101,44 @@ export function JobForm({
             form.setValue("lat", p.lat, { shouldValidate: true });
             form.setValue("lng", p.lng, { shouldValidate: true });
           }}
-          onLabel={(label) => form.setValue("locationLabel", label, { shouldValidate: true })}
+          onDetails={(d) => {
+            if (d.label) form.setValue("locationLabel", d.label, { shouldValidate: true });
+            if (d.countryCode)
+              form.setValue("countryCode", d.countryCode, { shouldValidate: true });
+            if (d.city) form.setValue("city", d.city, { shouldValidate: true });
+          }}
         />
         {locationError ? (
           <p className="text-sm font-medium text-destructive">{tr(locationError)}</p>
         ) : null}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label={t("country")} error={errors.countryCode?.message}>
+            {(props) => (
+              <select
+                {...props}
+                {...form.register("countryCode")}
+                className="h-12 w-full rounded-xl border border-input bg-background px-3 text-base"
+              >
+                <option value="">{t("chooseCountry")}</option>
+                {COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </Field>
+          <Field label={t("city")} error={errors.city?.message}>
+            {(props) => (
+              <Input
+                {...props}
+                {...form.register("city")}
+                placeholder={t("cityPlaceholder")}
+                maxLength={120}
+              />
+            )}
+          </Field>
+        </div>
         <Field
           label={t("locationLabel")}
           hint={t("locationLabelHint")}
@@ -123,7 +157,7 @@ export function JobForm({
 
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <Link
-          href={jobId ? `/employer/jobs/${jobId}` : "/employer"}
+          href={jobId ? `/sponsor/jobs/${jobId}` : "/sponsor"}
           className={cn(buttonVariants({ variant: "ghost", size: "touch" }))}
         >
           {t("cancel")}

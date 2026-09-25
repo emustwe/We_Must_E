@@ -1,5 +1,5 @@
 // Identify a file from its first bytes, never from its name or declared type.
-export type FileKind = "pdf" | "zip" | "mp4" | "webm";
+export type FileKind = "pdf" | "zip" | "mp4" | "webm" | "png" | "jpeg" | "webp";
 
 export function detectFileKind(bytes: Uint8Array): FileKind | null {
   const at = (offset: number, ...values: number[]) =>
@@ -8,5 +8,8 @@ export function detectFileKind(bytes: Uint8Array): FileKind | null {
   if (at(0, 0x50, 0x4b, 0x03, 0x04)) return "zip"; // DOCX is a ZIP container
   if (at(4, 0x66, 0x74, 0x79, 0x70)) return "mp4"; // ....ftyp (MP4/MOV)
   if (at(0, 0x1a, 0x45, 0xdf, 0xa3)) return "webm"; // EBML (WebM/Matroska)
+  if (at(0, 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)) return "png";
+  if (at(0, 0xff, 0xd8, 0xff)) return "jpeg";
+  if (at(0, 0x52, 0x49, 0x46, 0x46) && at(8, 0x57, 0x45, 0x42, 0x50)) return "webp"; // RIFF....WEBP
   return null;
 }

@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: "Job" };
 export default async function EmployerJobPage({
   params,
   searchParams,
-}: PageProps<"/employer/jobs/[id]">) {
+}: PageProps<"/sponsor/jobs/[id]">) {
   const { id } = await params;
   if (!idSchema.safeParse(id).success) notFound();
   const query = await searchParams;
@@ -28,7 +28,7 @@ export default async function EmployerJobPage({
   return (
     <div className="animate-in-fast space-y-6 pt-2">
       <Link
-        href="/employer"
+        href="/sponsor"
         className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-4 rtl:-scale-x-100" aria-hidden="true" />
@@ -57,7 +57,7 @@ export default async function EmployerJobPage({
           <JobStatusControls jobId={job.id} status={job.status} />
           {editable ? (
             <Link
-              href={`/employer/jobs/${job.id}/edit`}
+              href={`/sponsor/jobs/${job.id}/edit`}
               className={buttonVariants({ variant: "outline", size: "pill" })}
             >
               <Pencil className="size-4" aria-hidden="true" />

@@ -329,6 +329,30 @@ select is(tests.rows_as(:AD, $$select 1 from storage.objects where bucket_id = '
 select ok(tests.denied_as(null, $$insert into storage.objects (bucket_id, name) values ('application-videos', 'x/y.webm')$$),
   'nobody uploads without a server-signed upload URL');
 
+-- ---------------------------------------------------------------------------
+-- Sponsors: public map details, logos, audited changes
+-- ---------------------------------------------------------------------------
+select tests.run_as(:E3, format('update jobs set country_code = ''AE'', country_name = ''United Arab Emirates'', city = ''Dubai'' where id = %s', :'JC'));
+select is((select city from jobs where id = :JC), 'Dubai', 'sponsors set the country and city of their job');
+select ok(tests.denied_as(:E3, format('update jobs set country_code = ''uae'' where id = %s', :'JC')), 'country codes must be two capital letters');
+select is((select sponsor_name || '|' || city || '|' || country_code from get_public_jobs(-90, -180, 90, 180) where id = :JC),
+  'Invited Co|Dubai|AE', 'the public map shows the sponsor name, city and country');
+select is((select array_agg(a order by a) from unnest((select proargnames from pg_proc where proname = 'get_public_jobs')) a
+            where a in ('lat', 'lng', 'employer_id', 'user_id', 'contact_email', 'contact_phone')), null,
+  'the public map still never returns exact points, ids or contact details');
+select is((select public from storage.buckets where id = 'sponsor-logos'), true, 'logos are public images');
+select ok(tests.denied_as(:E3, $$insert into storage.objects (bucket_id, name) values ('sponsor-logos', 'x/logo.png')$$),
+  'nobody uploads logos directly (the server checks the file first)');
+select ok(tests.denied_as(:E3, format('update employer_profiles set logo_path = ''x.png'' where user_id = %L', :E3)),
+  'sponsors cannot change their profile directly');
+select tests.run_as(:E3, format('select log_sponsor_change(%L, ''logo'')', :E3));
+select ok(exists (select 1 from audit_logs where action = 'sponsor.logo' and actor_id = :E3::uuid), 'a sponsor''s logo change is logged');
+select ok(tests.denied_as(:E3, format('select log_sponsor_change(%L, ''password'')', :E3)), 'sponsors cannot use the admin password change');
+select ok(tests.denied_as(:E3, format('select log_sponsor_change(%L, ''logo'')', :E2)), 'sponsors cannot change another sponsor''s logo');
+select ok(tests.denied_as(:AD, format('select log_sponsor_change(%L, ''deleted'')', :E3)), 'admin without MFA cannot delete sponsors');
+select tests.run_as(:AD, format('select log_sponsor_change(%L, ''password'')', :E3), 'aal2');
+select ok(exists (select 1 from audit_logs where action = 'sponsor.password' and target_id = :E3::uuid), 'admin password changes are logged');
+
 -- Admin review (required test 7: admin writes fail without MFA).
 \set Q3 '''30000000-0000-0000-0000-0000000000a3'''
 select ok(tests.denied_as(:AD, format('select admin_review_application(%s, ''approved'', ''ok'')', :'AA')),

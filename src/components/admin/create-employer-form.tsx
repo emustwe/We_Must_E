@@ -6,7 +6,8 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { useForm, type Path } from "react-hook-form";
-import { createEmployer, type InvitedEmployer } from "@/actions/admin";
+import { createEmployer, type CreatedSponsor } from "@/actions/admin";
+import { PasswordInput } from "@/components/admin/password-input";
 import { Field } from "@/components/forms/field";
 import { FormAlert } from "@/components/forms/form-alert";
 import { SubmitButton } from "@/components/forms/submit-button";
@@ -17,7 +18,7 @@ import { createEmployerSchema, type CreateEmployerInput } from "@/lib/validation
 export function CreateEmployerForm() {
   const t = useTranslations("admin");
   const te = useTranslations("errors");
-  const [created, setCreated] = useState<InvitedEmployer | null>(null);
+  const [created, setCreated] = useState<CreatedSponsor | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const form = useForm<CreateEmployerInput>({
@@ -27,6 +28,7 @@ export function CreateEmployerForm() {
       companyName: "",
       contactPerson: "",
       email: "",
+      password: "",
       phone: "",
       tradeLicenseNo: "",
       website: "",
@@ -59,7 +61,9 @@ export function CreateEmployerForm() {
         <div>
           <h2 className="text-xl font-extrabold">{t("createdTitle")}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {t("createdBody", { email: created.email })}
+            {created.emailed
+              ? t("createdBody", { email: created.email })
+              : t("createdNoEmail", { email: created.email })}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -67,7 +71,7 @@ export function CreateEmployerForm() {
             {t("createAnother")}
           </Button>
           <Link
-            href="/admin/employers"
+            href="/admin/sponsors"
             className={buttonVariants({ size: "touch", variant: "ghost" })}
           >
             {t("backToEmployers")}
@@ -101,6 +105,15 @@ export function CreateEmployerForm() {
             type="email"
             autoCapitalize="none"
             autoComplete="off"
+          />
+        )}
+      </Field>
+      <Field label={t("password")} hint={t("passwordHint")} error={errors.password?.message}>
+        {(props) => (
+          <PasswordInput
+            {...props}
+            {...form.register("password")}
+            onGenerate={(p) => form.setValue("password", p, { shouldValidate: true })}
           />
         )}
       </Field>

@@ -2,7 +2,7 @@
 
 import { Check, Clock } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { saveTestAnswer, startTest, submitTest } from "@/actions/apply";
 import { useStepAction } from "@/components/apply/use-step-action";
 import { FormAlert } from "@/components/forms/form-alert";
@@ -25,14 +25,18 @@ function fromSaved(value: Json | undefined): Answer | undefined {
 const isAnswered = (a: Answer | undefined) =>
   a ? ("options" in a ? a.options.length > 0 : a.text.trim().length > 0) : false;
 
+// A clock that ticks every second in the browser. On the server (and during
+// hydration) it is null, so the rendered time never differs between the two.
+function subscribeClock(onTick: () => void) {
+  const id = window.setInterval(onTick, 1000);
+  return () => window.clearInterval(id);
+}
+const clockNow = () => Math.floor(Date.now() / 1000);
+
 function useCountdown(deadline: string | null) {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    if (!deadline) return;
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(id);
-  }, [deadline]);
-  return deadline ? Math.max(0, Math.floor((new Date(deadline).getTime() - now) / 1000)) : null;
+  const now = useSyncExternalStore(subscribeClock, clockNow, () => null);
+  if (!deadline || now === null) return null;
+  return Math.max(0, Math.floor(new Date(deadline).getTime() / 1000) - now);
 }
 
 export function TestStep({ jobId, view }: { jobId: string; view: TestView }) {

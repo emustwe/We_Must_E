@@ -11,8 +11,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function EmployerPendingPage() {
   const { employer } = await getEmployerAccount();
-  if (employer?.must_change_password) redirect("/employer/welcome");
-  if (employer?.status === "approved") redirect("/employer");
+  if (employer?.must_change_password) redirect("/sponsor/welcome");
+  if (employer?.status === "approved") redirect("/sponsor");
   const t = await getTranslations("employer");
   const suspended = employer?.status === "suspended";
   const Icon = suspended ? PauseCircle : Clock;

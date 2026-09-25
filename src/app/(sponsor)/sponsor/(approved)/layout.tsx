@@ -6,8 +6,8 @@ import { getEmployerAccount } from "@/lib/auth/employer";
 // independently gives pending or suspended employers nothing.
 export default async function ApprovedEmployerLayout({ children }: { children: React.ReactNode }) {
   const { employer } = await getEmployerAccount();
-  if (employer?.must_change_password) redirect("/employer/welcome");
-  if (employer?.status !== "approved") redirect("/employer/pending");
+  if (employer?.must_change_password) redirect("/sponsor/welcome");
+  if (employer?.status !== "approved") redirect("/sponsor/pending");
   return (
     <>
       <EmployerTabs />

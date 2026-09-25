@@ -3,7 +3,7 @@ import { matchesPrefix, safeNextPath } from "./routes";
 
 describe("safeNextPath", () => {
   it("allows same-origin paths", () => {
-    expect(safeNextPath("/employer")).toBe("/employer");
+    expect(safeNextPath("/sponsor")).toBe("/sponsor");
   });
   it("rejects external and protocol-relative targets", () => {
     for (const bad of [

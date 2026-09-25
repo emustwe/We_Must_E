@@ -89,7 +89,46 @@ export default async function AuditPage({ searchParams }: PageProps<"/admin/audi
           {t("filter")}
         </button>
       </form>
-      <div className="shadow-float overflow-x-auto rounded-3xl bg-card">
+      {/* Phones: one card per entry. Larger screens: the table. */}
+      <ul className="space-y-2.5 sm:hidden">
+        {!rows?.length ? (
+          <li className="rounded-3xl bg-card p-6 text-center text-muted-foreground">
+            {t("noAudit")}
+          </li>
+        ) : (
+          rows.map((r) => (
+            <li key={r.id} className="shadow-float rounded-3xl bg-card p-4 text-sm">
+              <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-semibold break-all">
+                {r.action}
+              </code>
+              <p className="mt-2 font-semibold">{nameFor(r.actor_id)}</p>
+              <p className="text-xs text-muted-foreground">
+                {format.dateTime(new Date(r.created_at), {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                })}
+                {" · "}
+                {r.target_type === "application" && r.target_id ? (
+                  <Link
+                    href={`/admin/applications/${r.target_id}`}
+                    className="text-primary hover:underline"
+                  >
+                    {r.target_type}
+                  </Link>
+                ) : (
+                  r.target_type
+                )}
+              </p>
+              {r.metadata && Object.keys(r.metadata as object).length ? (
+                <p className="mt-1 font-mono text-xs break-all text-muted-foreground">
+                  {JSON.stringify(r.metadata)}
+                </p>
+              ) : null}
+            </li>
+          ))
+        )}
+      </ul>
+      <div className="shadow-float hidden overflow-x-auto rounded-3xl bg-card sm:block">
         <table className="w-full text-sm">
           <thead className="text-start text-xs text-muted-foreground">
             <tr className="border-b">

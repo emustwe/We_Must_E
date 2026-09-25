@@ -10,15 +10,22 @@ async function stubMapTiler(page: Page) {
     const url = new URL(route.request().url());
     if (!url.pathname.startsWith("/geocoding/")) return route.fulfill({ status: 204 });
     const reverse = /^\/geocoding\/-?[\d.]+,-?[\d.]+\.json$/.test(url.pathname);
+    const context = [
+      { id: "place.1", text: "Dubai Marina" },
+      { id: "region.2", text: "Dubai Emirate" },
+      { id: "country.3", text: "United Arab Emirates", country_code: "ae" },
+    ];
     return route.fulfill({
       json: {
         features: [
-          reverse
-            ? { place_name: "Marina Walk, Dubai, United Arab Emirates", center: [55.1403, 25.0805] }
-            : {
-                place_name: "Dubai Marina, Dubai, United Arab Emirates",
-                center: [55.1403, 25.0805],
-              },
+          {
+            place_name: reverse
+              ? "Marina Walk, Dubai, United Arab Emirates"
+              : "Dubai Marina, Dubai, United Arab Emirates",
+            center: [55.1403, 25.0805],
+            properties: { country_code: "ae" },
+            context,
+          },
         ],
       },
     });
@@ -34,28 +41,35 @@ async function openList(page: Page) {
 
 test.beforeEach(({ page }) => stubMapTiler(page));
 
+const sponsorName = psql(
+  `select company_name from public.employer_profiles where contact_email = 'employer@wemuste.local'`,
+);
+
 test("anyone can browse live jobs on the map and open one, without an account", async ({
   page,
 }) => {
   await page.goto("/");
   await expect(page.getByRole("region", { name: "Map of jobs" })).toBeVisible();
-  // Pins (or clusters of pins) are on the map.
-  await expect(page.locator(".wm-pin, .wm-cluster").first()).toBeVisible();
-  // Location is blocked in this browser: the emirate picker is offered instead.
+  // Job cards (or clusters of them) are on the map, with the sponsor's name.
+  await expect(page.locator(".wm-card, .wm-cluster").first()).toBeVisible();
+  // Location is blocked in this browser: a country picker is offered instead.
   await expect(page.getByRole("heading", { name: "Where are you looking?" })).toBeVisible();
 
-  // Emirate fallback instead of location, then the distance filter works.
-  await page.getByRole("button", { name: "Sharjah", exact: true }).click();
-  await page.getByRole("button", { name: "5 km", exact: true }).click();
+  // Country, then city, filter the jobs.
+  await page.getByRole("button", { name: "United Arab Emirates", exact: true }).click();
+  await expect(page.getByLabel("Country", { exact: true })).toHaveValue("AE");
+  await page.getByLabel("City", { exact: true }).selectOption({ label: "Sharjah (1)" });
   await page.getByRole("button", { name: /^List ·/ }).click();
   const near = page.getByRole("region", { name: "All jobs" });
-  await expect(near.getByRole("heading", { name: "Jobs near Sharjah" })).toBeVisible();
+  await expect(near.getByRole("heading", { name: "Jobs in Sharjah" })).toBeVisible();
+  await expect(near.getByText("[SAMPLE] Shop assistant")).toBeVisible();
   await expect(near.getByText("[SAMPLE] Weekend barista")).toHaveCount(0);
 
   const list = await openList(page);
   await list.getByRole("button", { name: /\[SAMPLE\] Weekend barista/ }).click();
   const sheet = page.getByRole("region", { name: "[SAMPLE] Weekend barista" });
-  await expect(sheet.getByText("Dubai Marina, Dubai")).toBeVisible();
+  await expect(sheet.getByText(/Dubai Marina, Dubai, United Arab Emirates/)).toBeVisible();
+  await expect(sheet.getByText(sponsorName, { exact: true })).toBeVisible();
   for (const line of ["Free to apply", "We never ask for money", "Your information is private"]) {
     await expect(sheet.getByText(line)).toBeVisible();
   }
@@ -95,7 +109,7 @@ test("an employer posts a job that appears on the map, and an admin can hide it"
   const title = `Pop-up stall helper ${unique()}`;
 
   await login(page, "employer@wemuste.local");
-  await expect(page).toHaveURL(/\/employer$/);
+  await expect(page).toHaveURL(/\/sponsor$/);
   await page.getByRole("link", { name: "Post a job" }).first().click();
   await page.getByLabel("Job title").fill(title);
   await page
@@ -104,6 +118,9 @@ test("an employer posts a job that appears on the map, and an admin can hide it"
   await page.getByRole("combobox", { name: "Search a place or area" }).fill("Marina");
   await page.getByRole("option", { name: /Dubai Marina/ }).click();
   await expect(page.getByLabel("Place name")).toHaveValue("Dubai Marina, Dubai");
+  // Country and city come from the map; the sponsor can correct them.
+  await expect(page.getByLabel("Country")).toHaveValue("AE");
+  await expect(page.getByLabel("City")).toHaveValue("Dubai");
   await page.getByRole("button", { name: "Post job" }).click();
   await expect(page.getByText("Your job is live on the map.")).toBeVisible();
   await expect(page.getByText("Live", { exact: true })).toBeVisible();
@@ -112,7 +129,7 @@ test("an employer posts a job that appears on the map, and an admin can hide it"
   await expect(list.getByRole("button", { name: new RegExp(title) })).toBeVisible();
 
   // Admin hides it: it leaves the public map.
-  await page.goto("/employer");
+  await page.goto("/sponsor");
   await signOut(page);
   await loginAsAdmin(page);
   await page.goto("/admin/jobs");

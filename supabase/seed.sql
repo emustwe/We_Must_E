@@ -95,3 +95,6 @@ insert into public.jobs (employer_id, title, description, location_label, lat, l
   ('10000000-0000-0000-0000-000000000002', '[SAMPLE] Warehouse helper',
    'Pack and label orders in a warehouse. Morning shift, transport provided.',
    'Mussafah, Abu Dhabi', 24.3486, 54.5003);
+update public.jobs set country_code = 'AE', country_name = 'United Arab Emirates',
+  city = case when location_label like '%Sharjah%' then 'Sharjah'
+              when location_label like '%Abu Dhabi%' then 'Abu Dhabi' else 'Dubai' end;

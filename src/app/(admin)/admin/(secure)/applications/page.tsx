@@ -28,7 +28,7 @@ export default async function ApplicationsPage({ searchParams }: PageProps<"/adm
   const status =
     statusParam === "all" ? undefined : (STATUSES.find((s) => s === statusParam) ?? "submitted");
   const job = idSchema.safeParse(one(params.job)).data;
-  const employer = idSchema.safeParse(one(params.employer)).data;
+  const employer = idSchema.safeParse(one(params.sponsor)).data;
   const from = isDate(one(params.from));
   const to = isDate(one(params.to));
   const minScore = /^\d{1,3}$/.test(one(params.score) ?? "") ? Number(params.score) : undefined;
@@ -67,7 +67,7 @@ export default async function ApplicationsPage({ searchParams }: PageProps<"/adm
   const current = {
     status: statusParam ?? "submitted",
     ...(job ? { job } : {}),
-    ...(employer ? { employer } : {}),
+    ...(employer ? { sponsor: employer } : {}),
     ...(from ? { from } : {}),
     ...(to ? { to } : {}),
     ...(minScore !== undefined ? { score: String(minScore) } : {}),
@@ -105,8 +105,8 @@ export default async function ApplicationsPage({ searchParams }: PageProps<"/adm
           </select>
         </div>
         <div className="space-y-1 text-sm font-medium">
-          <label htmlFor="f-employer">{t("filterEmployer")}</label>
-          <select id="f-employer" name="employer" defaultValue={employer ?? ""} className={select}>
+          <label htmlFor="f-sponsor">{t("filterEmployer")}</label>
+          <select id="f-sponsor" name="sponsor" defaultValue={employer ?? ""} className={select}>
             <option value="">{t("anyEmployer")}</option>
             {(employers ?? []).map((e) => (
               <option key={e.user_id} value={e.user_id}>
