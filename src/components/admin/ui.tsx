@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
+import { PageHeader, StatusPill, type PillTone } from "@/components/admin/wm";
 import { cn } from "@/lib/utils";
+
+// Older admin building blocks, drawn in the admin design (see wm.tsx).
 
 export function PageTitle({
   title,
@@ -10,47 +13,33 @@ export function PageTitle({
   body?: string;
   action?: ReactNode;
 }) {
-  return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight">{title}</h1>
-        {body ? <p className="mt-1 max-w-2xl text-muted-foreground">{body}</p> : null}
-      </div>
-      {action}
-    </div>
-  );
+  return <PageHeader title={title} body={body} actions={action} />;
 }
 
 export function Card({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <section className={cn("shadow-float min-w-0 rounded-3xl bg-card p-5", className)}>
+    <section className={cn("min-w-0 rounded-3xl bg-white p-[22px] shadow-wm-1", className)}>
       {children}
     </section>
   );
 }
 
+const TONES: Record<"muted" | "success" | "warning" | "danger" | "primary", PillTone> = {
+  muted: "idle",
+  success: "ok",
+  warning: "warn",
+  danger: "danger",
+  primary: "blue",
+};
+
 export function Badge({
   tone = "muted",
   children,
 }: {
-  tone?: "muted" | "success" | "warning" | "danger" | "primary";
+  tone?: keyof typeof TONES;
   children: ReactNode;
 }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap",
-        tone === "muted" && "bg-muted text-muted-foreground",
-        tone === "success" && "bg-success/15 text-success",
-        tone === "warning" &&
-          "bg-brand-accent/20 text-brand-accent-foreground dark:text-brand-accent",
-        tone === "danger" && "bg-destructive/10 text-destructive",
-        tone === "primary" && "bg-primary/10 text-primary",
-      )}
-    >
-      {children}
-    </span>
-  );
+  return <StatusPill tone={TONES[tone]}>{children}</StatusPill>;
 }
 
 export const APPLICATION_TONE = {

@@ -6,13 +6,8 @@ import { useState, type ComponentProps } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-// 20 characters from an unambiguous alphabet, e.g. "Kq7m-Xw2p-Rt9v-Hn4c".
-export function generatePassword() {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
-  const bytes = crypto.getRandomValues(new Uint32Array(16));
-  const chars = Array.from(bytes, (b) => alphabet[b % alphabet.length]);
-  return [0, 4, 8, 12].map((i) => chars.slice(i, i + 4).join("")).join("-");
-}
+export { generatePassword } from "@/lib/generate-password";
+import { generatePassword } from "@/lib/generate-password";
 
 // Password field for admins: visible by default so it can be checked before
 // it is emailed, with a "generate" button.

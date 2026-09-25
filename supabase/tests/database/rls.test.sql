@@ -488,5 +488,13 @@ select is((select string_agg(relname, ', ') from pg_class
               and not (relrowsecurity and relforcerowsecurity)), null,
   'every public table has RLS enabled and forced');
 
+-- CSV exports are MFA-admin only and always logged, without personal data.
+select ok(tests.denied_as(:AD, $$select log_admin_export('applications', 3)$$), 'exports need MFA');
+select ok(tests.denied_as(:E3, $$select log_admin_export('applications', 3)$$, 'aal2'), 'sponsors cannot export');
+select ok(tests.denied_as(:AD, $$select log_admin_export('everything', 3)$$, 'aal2'), 'only known exports');
+select tests.run_as(:AD, $$select log_admin_export('applications', 3)$$, 'aal2');
+select is((select metadata::text from audit_logs where action = 'export.applications' order by created_at desc limit 1),
+  '{"rows": 3}', 'the export is logged with its row count only');
+
 select * from finish();
 rollback;

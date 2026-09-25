@@ -15,6 +15,9 @@ export async function login(page: Page, email: string, password = SEED_PASSWORD)
 }
 
 export async function signOut(page: Page) {
+  // The admin sidebar (with Sign out) is a drawer on phones.
+  const menu = page.getByRole("button", { name: "Open menu" });
+  if (await menu.isVisible()) await menu.click();
   await page.getByRole("button", { name: "Sign out" }).first().click();
   await expect(page).toHaveURL(/\/login$/);
 }
@@ -31,7 +34,7 @@ export async function activate(page: Page, email: string, since: Date) {
 // Confirmations are an in-page popup (<dialog>), not the browser's confirm():
 // press its confirm button whenever one opens, like accepting a native dialog.
 export async function acceptConfirms(page: Page) {
-  await page.addLocatorHandler(page.getByRole("dialog"), async (dialog) => {
+  await page.addLocatorHandler(page.locator("dialog[open]"), async (dialog) => {
     await dialog.getByRole("button").last().click();
   });
 }

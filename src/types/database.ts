@@ -1101,6 +1101,10 @@ export type Database = {
           title: string
         }[]
       }
+      log_admin_export: {
+        Args: { p_kind: string; p_rows: number }
+        Returns: undefined
+      }
       log_sponsor_change: {
         Args: { p_change: string; p_employer_id: string }
         Returns: undefined

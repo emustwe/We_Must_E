@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { requireAdminMfa } from "@/lib/auth/session";
 import { dbFail } from "@/lib/db-errors";
 import { sendEmail } from "@/lib/email/send";
+import { generatePassword } from "@/lib/generate-password";
 import { logError } from "@/lib/log";
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -214,4 +215,45 @@ export async function addEcoins(input: unknown): Promise<ActionResult<{ balance:
   if (error) return dbFail("admin-add-ecoins", error);
   revalidatePath(`/admin/sponsors/${parsed.data.employerId}`);
   return ok({ balance: data });
+}
+
+// "Resend invite": sponsors don't get an invite link, they get a password the
+// admin sets. Resending makes a new one and emails it with the login link
+// (logged as a password change; the old password stops working).
+export async function resendSponsorInvite(
+  employerId: unknown,
+): Promise<ActionResult<{ emailed: boolean }>> {
+  const id = idSchema.safeParse(employerId);
+  if (!id.success) return fail("invalidInput");
+  await requireAdminMfa();
+  const supabase = await createClient();
+  const { data: sponsor } = await supabase
+    .from("employer_profiles")
+    .select("contact_email")
+    .eq("user_id", id.data)
+    .maybeSingle();
+  if (!sponsor?.contact_email) return fail("notFound");
+  const { error: logErr } = await supabase.rpc("log_sponsor_change", {
+    p_employer_id: id.data,
+    p_change: "password",
+  });
+  if (logErr) return dbFail("admin-sponsor-invite-log", logErr);
+
+  const password = generatePassword();
+  // Service role: only it can change another user's password.
+  const service = createAdminClient();
+  const { error } = await service.auth.admin.updateUserById(id.data, { password });
+  if (error) {
+    logError("admin-sponsor-invite", error);
+    return fail("generic");
+  }
+  await service
+    .from("employer_profiles")
+    .update({ must_change_password: false })
+    .eq("user_id", id.data);
+  const emailed = await sendEmail("sponsorAccount", sponsor.contact_email, {
+    email: sponsor.contact_email,
+    password,
+  });
+  return ok({ emailed });
 }

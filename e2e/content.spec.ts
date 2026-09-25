@@ -17,13 +17,17 @@ test("an admin builds an unscored test with written and multi-answer questions, 
     await loginAsAdmin(page);
     await page.goto("/admin/content");
 
-    // A new test, untimed.
+    // A new test, untimed: the dashed "New test" button opens the form in place.
     const tests = page
       .locator("section")
-      .filter({ has: page.getByRole("heading", { name: "Tests" }) });
-    await tests.getByLabel("Title").fill(testTitle);
-    await tests.getByLabel("Time limit (minutes, 0 = none)").fill("0");
+      .filter({ has: page.getByRole("heading", { name: "Test" }) });
+    await expect(tests.getByText("In use now")).toBeVisible();
     await tests.getByRole("button", { name: "New test" }).click();
+    await tests.getByLabel("Title").fill(testTitle);
+    await tests.getByLabel("Time limit (minutes)").fill("0");
+    await expect(tests.getByText("0 means no limit")).toBeVisible();
+    await expect(tests.getByLabel(/Pass mark/)).toHaveCount(0); // nothing is scored
+    await tests.getByRole("button", { name: "Create test" }).click();
     await expect(page).toHaveURL(/\/admin\/content\/tests\/[0-9a-f-]{36}$/);
 
     // Multi-choice: no "correct" answers and no points (nothing is scored).
@@ -69,8 +73,9 @@ test("an admin builds an unscored test with written and multi-answer questions, 
     const videos = page
       .locator("section")
       .filter({ has: page.getByRole("heading", { name: "Video questions" }) });
-    await videos.getByLabel("Title").fill(setTitle);
     await videos.getByRole("button", { name: "New video question set" }).click();
+    await videos.getByLabel("Title").fill(setTitle);
+    await videos.getByRole("button", { name: "Create set" }).click();
     await expect(page.getByRole("heading", { name: setTitle })).toBeVisible();
     await page.getByLabel("Question", { exact: true }).last().fill("Why do you want this job?");
     await page.getByRole("button", { name: "New video question" }).click();

@@ -32,12 +32,14 @@ async function stubMapTiler(page: Page) {
   });
 }
 
-async function openList(page: Page) {
-  await page.goto("/");
-  await page.getByRole("button", { name: "Not now" }).click();
-  await page.getByRole("button", { name: /^List ·/ }).click();
-  return page.getByRole("region", { name: "All jobs" });
+// "N jobs in this area" (what the map shows).
+async function jobsInArea(page: Page) {
+  const pill = page.getByText(/^\d+ jobs? in this area$/);
+  await expect(pill).toBeVisible();
+  return Number((await pill.textContent())!.match(/^\d+/)![0]);
 }
+const pin = (page: Page, title: string) =>
+  page.locator(`.leaflet-marker-icon[title="${title}"] .wm-p-pill`);
 
 test.beforeEach(({ page }) => stubMapTiler(page));
 
@@ -57,39 +59,44 @@ test("anyone can browse live jobs on the map and open one, without an account", 
 }) => {
   await page.goto("/");
   await expect(page.getByRole("region", { name: "Map of jobs" })).toBeVisible();
-  // Job cards (or clusters of them) are on the map, with the sponsor's name.
-  await expect(page.locator(".wm-card, .wm-cluster").first()).toBeVisible();
-  // Location is blocked in this browser: a country picker is offered instead.
-  await expect(page.getByRole("heading", { name: "Where are you looking?" })).toBeVisible();
+  // Jobs are pins (or clusters of pins) on the map; there is no list.
+  await expect(page.locator(".wm-p-pill, .wm-c").first()).toBeVisible();
+  expect(await jobsInArea(page)).toBeGreaterThan(0);
 
-  // Country, then city, filter the jobs.
-  await page.getByRole("button", { name: "United Arab Emirates", exact: true }).click();
-  await expect(page.getByLabel("Country", { exact: true })).toHaveValue("AE");
-  // Any city can be searched; cities with jobs are listed.
-  await page.getByRole("button", { name: /All cities/ }).click();
-  const cities = page.getByRole("region", { name: "Cities in United Arab Emirates" });
-  await expect(cities.getByRole("combobox", { name: "Search any city" })).toBeVisible();
-  await cities.getByRole("button", { name: /^Sharjah/ }).click();
-  await page.getByRole("button", { name: /^List ·/ }).click();
-  const near = page.getByRole("region", { name: "All jobs" });
-  await expect(near.getByRole("heading", { name: "Jobs in Sharjah" })).toBeVisible();
-  await expect(near.getByText("[SAMPLE] Shop assistant")).toBeVisible();
-  await expect(near.getByText("[SAMPLE] Weekend barista")).toHaveCount(0);
+  // Search a place: the map moves there.
+  await page.getByRole("combobox", { name: "City or area" }).fill("Marina");
+  await page.getByRole("option", { name: /Dubai Marina/ }).click();
+  await expect(page.getByRole("combobox", { name: "City or area" })).toHaveValue(
+    "Dubai Marina, Dubai, United Arab Emirates",
+  );
 
-  const list = await openList(page);
-  await list.getByRole("button", { name: /\[SAMPLE\] Weekend barista/ }).click();
-  const sheet = page.getByRole("region", { name: "[SAMPLE] Weekend barista" });
-  await expect(sheet.getByText(/Dubai Marina, Dubai, United Arab Emirates/)).toBeVisible();
+  // Tapping a pin opens the job (a bottom sheet on phones).
+  await pin(page, "Weekend barista").click();
+  const sheet = page.getByRole("region", { name: "Weekend barista" });
+  await expect(sheet.getByText("Sample listing")).toBeVisible(); // a badge, not "[SAMPLE]"
   await expect(sheet.getByText(sponsorName, { exact: true })).toBeVisible();
-  for (const line of ["Free to apply", "We never ask for money", "Your information is private"]) {
-    await expect(sheet.getByText(line)).toBeVisible();
-  }
+  await expect(sheet.getByText("Dubai Marina", { exact: true })).toBeVisible();
+  await expect(sheet.getByText("Free to apply. We never ask for money.")).toBeVisible();
   // The open job is in the URL, so it can be shared.
   await expect(page).toHaveURL(/\?job=[0-9a-f-]{36}$/);
-  await sheet.getByRole("link", { name: "Apply" }).click();
+  // Saving keeps it on this device.
+  await sheet.getByRole("button", { name: "Save job" }).click();
+  await expect(sheet.getByRole("button", { name: "Remove from saved" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await sheet.getByRole("button", { name: "Close job details" }).click();
+  await expect(sheet).toHaveCount(0);
+
+  // Opening the shared link shows the job; Apply starts the application.
+  const id = psql(`select id from public.jobs where title = '[SAMPLE] Weekend barista'`);
+  await page.goto(`/?job=${id}`);
+  await page
+    .getByRole("region", { name: "Weekend barista" })
+    .getByRole("link", { name: "Apply for this job" })
+    .click();
   await expect(page).toHaveURL(/\/apply\/[0-9a-f-]{36}$/);
   await expect(page.getByRole("heading", { name: "Apply in 3 short steps" })).toBeVisible();
-  await expect(page.getByText("[SAMPLE] Weekend barista")).toBeVisible();
 
   // The public page never receives exact coordinates.
   const html = await (await page.request.get("/")).text();
@@ -97,20 +104,20 @@ test("anyone can browse live jobs on the map and open one, without an account", 
   expect(html).not.toContain("employer_id");
 });
 
-test("with location allowed, the nearest jobs come first", async ({ page, context }) => {
+test("with location allowed, the distance filter keeps the nearest jobs", async ({
+  page,
+  context,
+}) => {
   await context.grantPermissions(["geolocation"]);
   await context.setGeolocation({ latitude: 25.0805, longitude: 55.1403 }); // Dubai Marina
   await page.goto("/");
-  await expect(page.getByRole("button", { name: "Use my location" })).toBeVisible();
-  await expect(page.getByRole("button", { name: /^List ·/ })).toBeVisible();
+  await expect(page.locator(".wm-you")).toBeAttached(); // "you are here"
+  await page.getByRole("button", { name: "Filters" }).click();
   await page.getByRole("button", { name: "2 km", exact: true }).click();
-  await page.getByRole("button", { name: /^List ·/ }).click();
-  const list = page.getByRole("region", { name: "All jobs" });
-  await expect(list.getByRole("heading", { name: "Jobs near You" })).toBeVisible();
-  const first = list.getByRole("listitem").first();
-  await expect(first).toContainText("[SAMPLE] Weekend barista");
-  await expect(first).toContainText(/· 0\.\d km away/);
-  await expect(list.getByText("[SAMPLE] Bike delivery rider")).toHaveCount(0);
+  await expect(pin(page, "Bike delivery rider")).toHaveCount(0); // Downtown, too far
+  await pin(page, "Weekend barista").click();
+  const sheet = page.getByRole("region", { name: "Weekend barista" });
+  await expect(sheet.getByText(/^0\.\d km$/)).toBeVisible();
 });
 
 test("a sponsor's job waits for approval, then appears live on an open map; hiding removes it live", async ({
@@ -143,19 +150,15 @@ test("a sponsor's job waits for approval, then appears live on an open map; hidi
   const visitor = await visitorContext.newPage();
   await stubMapTiler(visitor);
   await visitor.goto("/");
-  await visitor.getByRole("button", { name: "Not now" }).click();
-  await visitor.getByRole("button", { name: /^List ·/ }).click();
-  const visitorList = visitor.getByRole("region", { name: "All jobs" });
-  await expect(visitorList.getByText("[SAMPLE] Weekend barista")).toBeVisible();
-  await expect(visitorList.getByRole("button", { name: new RegExp(title) })).toHaveCount(0);
+  const before = await jobsInArea(visitor);
 
   // Admin approves: the job appears on the visitor's open map without a reload.
   await loginAsAdmin(page);
   await page.goto("/admin/jobs?status=pending");
   const row = page.getByRole("listitem").filter({ hasText: title });
-  await row.getByRole("button", { name: "Approve" }).click();
+  await row.getByRole("button", { name: "Approve for map" }).click();
   await expect(page.getByText("Approved. The job is now on the map.")).toBeVisible();
-  await expect(visitorList.getByRole("button", { name: new RegExp(title) })).toBeVisible({
+  await expect(visitor.getByText(`${before + 1} jobs in this area`)).toBeVisible({
     timeout: 5_000,
   });
 
@@ -166,7 +169,7 @@ test("a sponsor's job waits for approval, then appears live on an open map; hidi
     .filter({ hasText: title })
     .getByRole("button", { name: "Hide" })
     .click();
-  await expect(visitorList.getByRole("button", { name: new RegExp(title) })).toHaveCount(0, {
+  await expect(visitor.getByText(`${before} jobs in this area`)).toBeVisible({
     timeout: 5_000,
   });
   await visitorContext.close();
@@ -178,9 +181,11 @@ test("a sponsor's job waits for approval, then appears live on an open map; hidi
           from public.employer_profiles where contact_email = 'employer@wemuste.local'`);
   await page.goto("/admin/jobs?status=pending");
   const pendingRow = page.getByRole("listitem").filter({ hasText: second });
-  await pendingRow.getByRole("button", { name: "Reject" }).click();
-  await pendingRow.getByLabel(/Why can't it be approved/).fill("Please add the working hours.");
-  await pendingRow.getByRole("button", { name: "Send back to sponsor" }).click();
+  await pendingRow.getByRole("button", { name: "Needs changes" }).click();
+  await pendingRow
+    .getByLabel("What should the sponsor change?")
+    .fill("Please add the working hours.");
+  await pendingRow.getByRole("button", { name: "Send back" }).click();
   await expect(page.getByText("Sent back to the sponsor.")).toBeVisible();
   await signOut(page);
   await login(page, "employer@wemuste.local");

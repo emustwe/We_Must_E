@@ -15,6 +15,9 @@ test("the public map page sends security headers", async ({ page }) => {
     /connect-src [^;]*https:\/\/api\.maptiler\.com/,
   );
   expect(headers["permissions-policy"]).toContain("geolocation=(self)");
+  // Phones: "Sponsor login" is in the filters panel.
+  const filters = page.getByRole("button", { name: "Filters" });
+  if (await filters.isVisible()) await filters.click();
   await page.getByRole("link", { name: "Sponsor login" }).click();
   await expect(page).toHaveURL(/\/login$/);
 });

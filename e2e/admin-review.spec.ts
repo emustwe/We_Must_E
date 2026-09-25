@@ -15,6 +15,8 @@ test("an admin reviews an application (answers, logged video view, approval); th
 
   try {
     await loginAsAdmin(page);
+    // Phones: the sidebar is a drawer behind the menu button.
+    await page.getByRole("button", { name: "Open menu" }).click();
     await page
       .getByRole("navigation", { name: "Admin" })
       .getByRole("link", { name: "Applications" })
@@ -23,21 +25,24 @@ test("an admin reviews an application (answers, logged video view, approval); th
 
     // Filter by job; there is no score to filter by.
     await expect(page.getByLabel(/Minimum score/)).toHaveCount(0);
-    await page.getByLabel("Job", { exact: true }).selectOption({ label: JOB });
-    await page.getByRole("button", { name: "Filter" }).click();
+    await page
+      .getByLabel("Job", { exact: true })
+      .selectOption({ label: JOB.replace("[SAMPLE] ", "") });
+    await expect(page).toHaveURL(/job=/);
     await page.getByRole("link", { name: new RegExp(name) }).click();
     await expect(page).toHaveURL(new RegExp(`/admin/applications/${appId}`));
     await expect(page.getByRole("heading", { name })).toBeVisible();
-    await expect(page.getByText(PHONE)).toBeVisible();
     await expect(page.getByText(/%/)).toHaveCount(0); // nothing is scored
+    // Contact details are under "More actions".
+    await page.getByRole("button", { name: "More actions" }).click();
+    await expect(page.getByText(PHONE)).toBeVisible();
 
-    // Test tab: the answers as given (no right/wrong, no grading).
+    // Test answers as given (no right/wrong, no grading).
     await expect(page.getByText("Listen and apologise")).toBeVisible();
     await expect(page.getByText("I love serving people")).toBeVisible();
     await expect(page.getByRole("button", { name: "Save grade" })).toHaveCount(0);
 
-    // Video tab: a short-lived link, and the view is logged.
-    await page.getByRole("link", { name: "Video" }).click();
+    // Video: a short-lived link, and the view is logged.
     await page
       .getByRole("button", { name: /Play video/ })
       .first()
@@ -50,14 +55,16 @@ test("an admin reviews an application (answers, logged video view, approval); th
       ),
     ).toBe("1");
 
-    // Survey tab shows the answers.
-    await page.getByRole("link", { name: "Survey" }).click();
+    // Survey answers behind "Show all answers".
+    await page.getByRole("button", { name: "Show all answers" }).click();
     await expect(page.getByText("Latte art")).toBeVisible();
 
     // Approve with notes.
     await page.getByLabel("Notes").fill("Friendly, good answers.");
     await page.getByRole("button", { name: "Approve" }).click();
-    await expect(page.getByText("Approved", { exact: true }).first()).toBeVisible();
+    await expect(
+      page.locator('section[aria-labelledby="app-name"]').getByText("Approved", { exact: true }),
+    ).toBeVisible();
     expect(
       psql(`select status || '|' || admin_notes from public.applications where id = '${appId}'`),
     ).toBe("approved|Friendly, good answers.");
@@ -65,7 +72,7 @@ test("an admin reviews an application (answers, logged video view, approval); th
     // The audit log links back to the application.
     await page.goto("/admin/audit?action=application.reviewed");
     await expect(
-      page.getByRole("link", { name: "application", exact: true }).first(),
+      page.getByRole("link", { name: "Application", exact: true }).first(),
     ).toHaveAttribute("href", `/admin/applications/${appId}`);
 
     // The sponsor who posted the job now sees the candidate (and was emailed).

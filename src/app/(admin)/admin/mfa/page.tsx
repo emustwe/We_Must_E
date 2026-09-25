@@ -21,9 +21,20 @@ export default async function AdminMfaPage() {
   const verified = factors?.totp.find((factor) => factor.status === "verified");
 
   return (
-    <div className="mx-auto max-w-sm space-y-6 py-6">
-      <h1 className="text-2xl font-semibold tracking-tight">{t("mfaTitle")}</h1>
-      <MfaForm verifiedFactorId={verified?.id ?? null} />
+    <div className="flex min-h-dvh flex-col items-center justify-center px-4 py-10">
+      <div className="mb-6 flex items-center gap-[11px]">
+        <span className="flex size-10 items-center justify-center rounded-[13px] bg-wm-blue text-[21px] font-extrabold text-white shadow-[inset_0_-3px_0_rgba(0,0,0,0.12)]">
+          W
+        </span>
+        <span className="flex flex-col">
+          <span className="text-lg leading-[1.15] font-extrabold tracking-[-0.4px]">Wemuste</span>
+          <span className="text-xs font-semibold text-wm-caption">Admin console</span>
+        </span>
+      </div>
+      <div className="w-full max-w-sm space-y-6 rounded-3xl bg-white p-6 shadow-wm-1">
+        <h1 className="text-2xl font-extrabold tracking-[-0.6px]">{t("mfaTitle")}</h1>
+        <MfaForm verifiedFactorId={verified?.id ?? null} />
+      </div>
     </div>
   );
 }

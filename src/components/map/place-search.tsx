@@ -2,14 +2,21 @@
 
 import { Loader2, MapPin, Search, X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useImperativeHandle, useRef, useState, type Ref } from "react";
 import type { Bounds } from "@/lib/jobs/meta";
 import { searchPlaces, type Place } from "@/lib/map/geocode";
 import { cn } from "@/lib/utils";
 
+export type PlaceSearchHandle = { submit: () => void };
+
 // Place search (MapTiler geocoding, English, limited to the service area).
 // An accessible combobox: arrow keys move, Enter picks, Escape closes.
+// `bare` drops the icons and field styling, for a field inside another design.
 export function PlaceSearch({
+  ref,
+  bare = false,
+  label,
+  listClassName,
   bounds,
   onPick,
   placeholder,
@@ -23,6 +30,10 @@ export function PlaceSearch({
   country?: string | null;
   kind?: "any" | "city";
   autoFocus?: boolean;
+  ref?: Ref<PlaceSearchHandle>;
+  bare?: boolean;
+  label?: string;
+  listClassName?: string;
   onPick: (place: Place) => void;
   placeholder: string;
   className?: string;
@@ -74,12 +85,23 @@ export function PlaceSearch({
 
   const shown = query.trim().length >= 2 ? results : [];
 
+  // The design's round search button: pick the best match for what was typed.
+  useImperativeHandle(ref, () => ({
+    submit: () => {
+      const place = shown[active >= 0 ? active : 0];
+      if (place) pick(place);
+      else setOpen(true);
+    },
+  }));
+
   return (
     <div ref={boxRef} className={cn("relative", className)}>
-      <Search
-        className="pointer-events-none absolute start-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-        aria-hidden="true"
-      />
+      {bare ? null : (
+        <Search
+          className="pointer-events-none absolute start-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+          aria-hidden="true"
+        />
+      )}
       <input
         type="search"
         role="combobox"
@@ -87,7 +109,7 @@ export function PlaceSearch({
         aria-controls={listId}
         aria-autocomplete="list"
         aria-activedescendant={active >= 0 ? `${listId}-${active}` : undefined}
-        aria-label={placeholder}
+        aria-label={label ?? placeholder}
         placeholder={placeholder}
         value={query}
         autoComplete="off"
@@ -114,11 +136,13 @@ export function PlaceSearch({
           }
         }}
         className={cn(
-          "h-12 w-full rounded-full border border-input bg-background ps-10 pe-10 text-base outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 [&::-webkit-search-cancel-button]:hidden",
+          bare
+            ? "w-full border-0 bg-transparent p-0 outline-none focus-visible:outline-none [&::-webkit-search-cancel-button]:hidden"
+            : "h-12 w-full rounded-full border border-input bg-background ps-10 pe-10 text-base outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 [&::-webkit-search-cancel-button]:hidden",
           inputClassName,
         )}
       />
-      {loading ? (
+      {bare ? null : loading ? (
         <Loader2
           className="absolute end-4 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground"
           aria-hidden="true"
@@ -140,7 +164,10 @@ export function PlaceSearch({
         <ul
           id={listId}
           role="listbox"
-          className="shadow-float absolute inset-x-0 top-full z-[1100] mt-2 overflow-hidden rounded-3xl bg-background py-2"
+          className={cn(
+            "shadow-float absolute inset-x-0 top-full z-[1100] mt-2 overflow-hidden rounded-3xl bg-background py-2",
+            listClassName,
+          )}
         >
           {shown.length === 0 && !loading ? (
             <li className="px-4 py-3 text-sm text-muted-foreground">{t("noResults")}</li>

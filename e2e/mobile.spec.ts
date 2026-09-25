@@ -61,9 +61,7 @@ test("public pages fit a small phone", async ({ page }) => {
     await expectFits(page, name);
   }
   await page.goto("/");
-  await page.getByRole("button", { name: "Not now" }).click();
-  await page.getByRole("button", { name: /^List ·/ }).click();
-  await expectFits(page, "map-list");
+  await expectFits(page, "map");
 });
 
 test("the application steps fit a small phone", async ({ page }) => {
@@ -127,9 +125,7 @@ test("admin pages fit a small phone", async ({ page }) => {
     for (const [name, path] of [
       ["admin-home", "/admin"],
       ["admin-applications", "/admin/applications"],
-      ["admin-application-test", `/admin/applications/${appId}?tab=test`],
-      ["admin-application-video", `/admin/applications/${appId}?tab=video`],
-      ["admin-application-survey", `/admin/applications/${appId}?tab=survey`],
+      ["admin-application", `/admin/applications/${appId}`],
       ["admin-sponsors", "/admin/sponsors"],
       ["admin-sponsor", `/admin/sponsors/${sponsor}`],
       ["admin-new-sponsor", "/admin/sponsors/new"],
@@ -182,21 +178,15 @@ test("maps stay under menus and pop-ups on a phone", async ({ page }) => {
     });
   });
 
-  // Public map: search results, the city list and the job sheet.
+  // Public map: search results and the job sheet.
   await page.goto("/");
-  await page.getByRole("button", { name: "Not now" }).click();
-  await page.getByRole("combobox", { name: /Search a city or area/ }).fill("Marina");
+  await page.getByRole("combobox", { name: "City or area" }).fill("Marina");
   await expect(page.getByRole("option").first()).toBeVisible();
   await expectOnTop(page, '[role="listbox"]', "public search results");
   await page.screenshot({ path: test.info().outputPath("map-search.png") });
   await page.keyboard.press("Escape");
-  await page.getByLabel("Country", { exact: true }).selectOption("AE");
-  await page.getByRole("button", { name: /All cities/ }).click();
-  await expectOnTop(page, "#wm-city-panel", "city list");
-  await page.screenshot({ path: test.info().outputPath("map-cities.png") });
-  await page.getByRole("button", { name: "Close city list" }).click();
-  await page.getByRole("button", { name: /^List ·/ }).click();
-  await page.getByRole("button", { name: /\[SAMPLE\] Weekend barista/ }).click();
+  const barista = psql(`select id from public.jobs where title = '[SAMPLE] Weekend barista'`);
+  await page.goto(`/?job=${barista}`);
   await expectOnTop(page, '[aria-labelledby="wm-job-title"]', "job sheet");
   await page.screenshot({ path: test.info().outputPath("map-sheet.png") });
 
@@ -225,7 +215,6 @@ test("maps stay under menus and pop-ups on a phone", async ({ page }) => {
     const map = document.querySelector(".leaflet-container")!;
     window.scrollBy(0, map.getBoundingClientRect().top - 60);
   });
-  await expectOnTop(page, "header", "admin header over the jobs map");
-  await expectOnTop(page, 'nav[aria-label="Admin"]', "admin menu over the jobs map");
+  await expectOnTop(page, '[aria-label="Open menu"]', "admin top bar over the jobs map");
   await page.screenshot({ path: test.info().outputPath("admin-jobs-scrolled.png") });
 });

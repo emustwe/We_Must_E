@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import { startApplication } from "@/actions/apply";
 import { Captcha, captchaEnabled } from "@/components/auth/captcha";
-import { TrustLines } from "@/components/explore/job-explorer";
+import { TrustLines } from "@/components/explore/trust-lines";
 import { FormAlert } from "@/components/forms/form-alert";
 import { SubmitButton } from "@/components/forms/submit-button";
 import { useStepAction } from "@/components/apply/use-step-action";

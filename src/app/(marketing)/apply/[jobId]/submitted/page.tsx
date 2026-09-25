@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { ClearDraft } from "@/components/apply/clear-draft";
-import { TrustLines } from "@/components/explore/job-explorer";
+import { TrustLines } from "@/components/explore/trust-lines";
 import { buttonVariants } from "@/components/ui/button";
 import { idSchema } from "@/lib/validations/jobs";
 

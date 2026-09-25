@@ -2,7 +2,49 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (@media (prefers-color-scheme: dark));
+/* Dark mode follows the system, except inside the map + admin design (.wm-ui),
+   which is always light. */
+@custom-variant dark {
+  @media (prefers-color-scheme: dark) {
+    &:where(:not(.wm-ui, .wm-ui *)) {
+      @slot;
+    }
+  }
+}
+
+/* The Wemuste map + admin design (reference/ in the design zip). */
+@theme {
+  --color-wm-blue: #2457f5;
+  --color-wm-blue-pressed: #1a45d1;
+  --color-wm-ink: #0b1220;
+  --color-wm-slate: #475569;
+  --color-wm-caption: #64748b;
+  --color-wm-body: #334155;
+  --color-wm-line: #e6e8ee;
+  --color-wm-field: #e1e4ea;
+  --color-wm-mist: #f3f5f9;
+  --color-wm-land: #f4f5f2;
+  --color-wm-track: #e9ecf1;
+  --color-wm-tint: #eef3ff;
+  --color-wm-tint-line: #d6e0fb;
+  --color-wm-new: #f2542d;
+  --color-wm-trust: #0e7a55;
+  --color-wm-warn-bg: #fdebd2;
+  --color-wm-warn: #9a4a06;
+  --color-wm-ok-bg: #d9f4e6;
+  --color-wm-ok: #0b6b45;
+  --color-wm-idle-bg: #e9ecf2;
+  --color-wm-sample-bg: #fef3c7;
+  --color-wm-sample: #92400e;
+  --color-wm-danger: #c0262d;
+  --color-wm-danger-line: #f3c9cb;
+  --shadow-wm-1: 0 1px 2px rgba(11, 18, 32, 0.06), 0 4px 12px rgba(11, 18, 32, 0.08);
+  --shadow-wm-2: 0 2px 4px rgba(11, 18, 32, 0.06), 0 12px 32px rgba(11, 18, 32, 0.12);
+  --shadow-wm-3: 0 4px 8px rgba(11, 18, 32, 0.06), 0 28px 64px rgba(11, 18, 32, 0.22);
+  --shadow-wm-pin: 0 1px 2px rgba(11, 18, 32, 0.08), 0 6px 16px rgba(11, 18, 32, 0.14);
+  --shadow-wm-blue: 0 1px 0 rgba(255, 255, 255, 0.25) inset, 0 10px 24px rgba(36, 87, 245, 0.35);
+  --shadow-wm-nav: 0 6px 16px rgba(36, 87, 245, 0.35);
+}
 
 @theme inline {
   --color-background: var(--background);
@@ -135,6 +177,47 @@
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.707 0.165 254.624);
   }
+}
+
+/* Inside the design, the shared components (buttons, inputs...) use its colours. */
+.wm-ui {
+  color-scheme: light;
+  --background: #f4f5f2;
+  --foreground: #0b1220;
+  --card: #ffffff;
+  --card-foreground: #0b1220;
+  --popover: #ffffff;
+  --popover-foreground: #0b1220;
+  --primary: #2457f5;
+  --primary-foreground: #ffffff;
+  --secondary: #f3f5f9;
+  --secondary-foreground: #0b1220;
+  --muted: #f3f5f9;
+  --muted-foreground: #475569;
+  --accent: #eef3ff;
+  --accent-foreground: #0b1220;
+  --destructive: #c0262d;
+  --border: #e6e8ee;
+  --input: #e1e4ea;
+  --ring: #2457f5;
+  --success: #0e7a55;
+  --success-foreground: #ffffff;
+  --brand-accent: #fdebd2;
+  --brand-accent-foreground: #9a4a06;
+  background: #f4f5f2;
+  color: #0b1220;
+}
+.wm-ui a:focus-visible,
+.wm-ui button:focus-visible,
+.wm-ui input:focus-visible,
+.wm-ui select:focus-visible,
+.wm-ui textarea:focus-visible {
+  outline: 2px solid #2457f5;
+  outline-offset: 2px;
+}
+.wm-ui input::placeholder,
+.wm-ui textarea::placeholder {
+  color: #64748b;
 }
 
 @layer base {
@@ -418,4 +501,267 @@
   .leaflet-control-zoom {
     display: none;
   }
+}
+
+/* ------------------------------------------------ design map (reference/*.html) */
+@keyframes wm-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes wm-pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.6);
+    opacity: 0.55;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.2);
+    opacity: 0;
+  }
+}
+.wm-pop {
+  animation: wm-pop 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.wm-ui .leaflet-container {
+  background: #f4f5f2;
+}
+.wm-p {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+}
+.wm-p-pulse {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: rgba(36, 87, 245, 0.35);
+  animation: wm-pulse 1.8s ease-out infinite;
+}
+.wm-p-dot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 10px;
+  height: 10px;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  background: #0b1220;
+  border: 2px solid #ffffff;
+  box-sizing: border-box;
+  box-shadow: 0 1px 3px rgba(11, 18, 32, 0.3);
+}
+.wm-p-pill {
+  position: absolute;
+  left: 0;
+  top: -10px;
+  transform: translate(-50%, -100%) scale(1);
+  transform-origin: 50% 100%;
+  transition: transform 0.16s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  box-sizing: border-box;
+  padding: 0 14px 0 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(11, 18, 32, 0.06);
+  background: #ffffff;
+  color: #0b1220;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
+  white-space: nowrap;
+  box-shadow:
+    0 1px 2px rgba(11, 18, 32, 0.08),
+    0 6px 16px rgba(11, 18, 32, 0.14);
+  cursor: pointer;
+}
+.wm-p-icon {
+  display: flex;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #e3eaff;
+  color: #2457f5;
+}
+.wm-p-new {
+  position: absolute;
+  right: -3px;
+  top: -3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #f2542d;
+  border: 2px solid #ffffff;
+  box-sizing: border-box;
+}
+.wm-p-on {
+  transform: translate(-50%, -100%) scale(1.08);
+  background: #2457f5;
+  border-color: #2457f5;
+  color: #ffffff;
+  box-shadow:
+    0 4px 10px rgba(36, 87, 245, 0.25),
+    0 16px 32px rgba(36, 87, 245, 0.3);
+}
+.wm-p-on .wm-p-icon {
+  background: #ffffff;
+}
+.wm-p:has(.wm-p-on) .wm-p-dot {
+  background: #2457f5;
+}
+.wm-p-pending {
+  border: 1.5px dashed #e08a1e;
+}
+.leaflet-marker-icon:focus-visible .wm-p-pill,
+.leaflet-marker-icon:focus-visible .wm-c {
+  outline: 2px solid #2457f5;
+  outline-offset: 2px;
+}
+.wm-c {
+  position: relative;
+  display: flex;
+  width: 58px;
+  height: 58px;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 4px solid #ffffff;
+  background: #ffffff;
+  color: #2457f5;
+  font-size: 18px;
+  font-weight: 800;
+  box-shadow:
+    0 0 0 10px rgba(36, 87, 245, 0.14),
+    0 2px 4px rgba(11, 18, 32, 0.06),
+    0 12px 32px rgba(11, 18, 32, 0.12);
+  cursor: pointer;
+}
+.wm-c-badges {
+  position: absolute;
+  right: -10px;
+  top: -10px;
+  display: flex;
+}
+.wm-c-badge {
+  display: flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #e3eaff;
+  color: #2457f5;
+  border: 2px solid #ffffff;
+}
+.wm-c-badge + .wm-c-badge {
+  margin-left: -8px;
+}
+.wm-you,
+.wm-you > span {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+}
+.wm-you {
+  width: var(--wm-acc);
+  height: var(--wm-acc);
+  background: rgba(36, 87, 245, 0.1);
+  border: 1px solid rgba(36, 87, 245, 0.25);
+  pointer-events: none;
+}
+.wm-you > span {
+  left: 50%;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  background: #2457f5;
+  border: 3px solid #ffffff;
+  box-sizing: border-box;
+  box-shadow: 0 2px 8px rgba(36, 87, 245, 0.5);
+}
+/* Scale bar and attribution, bottom right (reference/desktop-map.html). */
+.wm-ui .leaflet-control-scale-line {
+  border: 1.5px solid #475569;
+  border-top: none;
+  background: transparent;
+  color: #475569;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  padding: 0 2px;
+}
+.wm-ui .leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.85);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #475569;
+}
+.wm-ui .leaflet-control-attribution a {
+  color: #475569;
+}
+@media (max-width: 639px) {
+  .wm-p-pill {
+    height: 40px;
+    gap: 7px;
+    padding: 0 13px 0 5px;
+    font-size: 13px;
+  }
+  .wm-p-on {
+    transform: translate(-50%, -100%) scale(1.06);
+  }
+  .wm-c {
+    width: 52px;
+    height: 52px;
+    font-size: 17px;
+    box-shadow:
+      0 0 0 9px rgba(36, 87, 245, 0.14),
+      0 2px 4px rgba(11, 18, 32, 0.06),
+      0 12px 32px rgba(11, 18, 32, 0.12);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wm-pop,
+  .wm-p-pulse {
+    animation: none;
+  }
+}
+/* Admin maps: the smaller pills (reference/admin/jobs.html, overview.html). */
+.wm-p-sm .wm-p-dot {
+  width: 8px;
+  height: 8px;
+  box-shadow: none;
+}
+.wm-p-sm .wm-p-pill {
+  top: -8px;
+  height: 34px;
+  gap: 6px;
+  padding: 0 11px 0 4px;
+  font-size: 12px;
+}
+.wm-p-sm .wm-p-icon {
+  width: 26px;
+  height: 26px;
+}
+.wm-p-sm .wm-p-icon svg {
+  width: 14px;
+  height: 14px;
 }

@@ -21,6 +21,8 @@ test("admin creates a sponsor with a password, emails it, changes it, suspends a
 
   // --- Admin (MFA) creates the sponsor and chooses the password ---
   await loginAsAdmin(page);
+  // Phones: the admin sidebar is a drawer behind the menu button.
+  await page.getByRole("button", { name: "Open menu" }).click();
   const nav = page.getByRole("navigation", { name: "Admin" });
   await nav.getByRole("link", { name: "Sponsors", exact: true }).click();
   await page.getByRole("link", { name: "Create sponsor" }).click();
@@ -53,6 +55,7 @@ test("admin creates a sponsor with a password, emails it, changes it, suspends a
   await expect(page.getByText("An account with this email already exists.").first()).toBeVisible();
 
   // --- Admin opens the sponsor: logo and a new password (emailed) ---
+  await page.getByRole("button", { name: "Open menu" }).click();
   await nav.getByRole("link", { name: "Sponsors", exact: true }).click();
   await page.getByRole("link", { name: new RegExp(company) }).click();
   await expect(page.getByRole("heading", { name: company })).toBeVisible();
@@ -112,8 +115,21 @@ test("admin creates a sponsor with a password, emails it, changes it, suspends a
   await expect(page.getByRole("heading", { name: "Your account is paused" })).toBeVisible();
   await signOut(page);
 
-  // --- Admin deletes the sponsor (type the company name to confirm) ---
+  // --- "Resend invite" emails a new password with the login link ---
   await loginAsAdmin(page);
+  await page.goto("/admin/sponsors");
+  const resentAt = new Date(Date.now() - 1000);
+  await page.getByRole("button", { name: `Actions for ${company}` }).click();
+  await page.getByRole("menuitem", { name: "Resend invite" }).click();
+  await expect(page.getByText("A new password was emailed.")).toBeVisible();
+  const resent = await waitForEmail(email, /Your Wemuste sponsor account/, resentAt);
+  expect(resent.html).toContain("/login");
+  expect(
+    psql(`select count(*) from public.audit_logs where action = 'sponsor.password'
+          and target_id = (select id from auth.users where email = '${email}')`),
+  ).not.toBe("0");
+
+  // --- Admin deletes the sponsor (type the company name to confirm) ---
   await page.goto("/admin/sponsors");
   await page.getByRole("link", { name: new RegExp(company) }).click();
   const remove = page.getByRole("button", { name: "Delete sponsor" });

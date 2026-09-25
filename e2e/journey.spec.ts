@@ -113,12 +113,12 @@ test("full journey: apply with test, video and survey -> admin approves -> spons
   await loginAsAdmin(page);
   await page.goto("/admin/applications");
   await page.getByRole("link", { name: new RegExp(name) }).click();
-  await page.getByRole("link", { name: "Video" }).click();
   await expect(page.getByRole("button", { name: /Play video/ })).toHaveCount(videos);
-  await page.getByRole("link", { name: "Survey" }).click();
   await page.getByLabel("Notes").fill("Good answers.");
   await page.getByRole("button", { name: "Approve" }).click();
-  await expect(page.getByText("Approved", { exact: true }).first()).toBeVisible();
+  await expect(
+    page.locator('section[aria-labelledby="app-name"]').getByText("Approved", { exact: true }),
+  ).toBeVisible();
   await signOut(page);
 
   // ---------------------------------------------------------------- sponsor

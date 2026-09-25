@@ -1,46 +1,52 @@
 "use client";
 
-import {
-  BadgeCheck,
-  Banknote,
-  ChevronDown,
-  List,
-  LocateFixed,
-  Lock,
-  Map as MapIcon,
-  MapPin,
-  X,
-} from "lucide-react";
+import type L from "leaflet";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useFormatter, useTranslations } from "next-intl";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { MapTarget } from "@/components/explore/explore-map";
-import { PlaceSearch } from "@/components/map/place-search";
-import { Logo } from "@/components/brand/logo";
-import { SponsorLogo } from "@/components/sponsors/sponsor-logo";
-import { buttonVariants } from "@/components/ui/button";
-import { COUNTRIES, countryName, normaliseCity } from "@/lib/geo/countries";
-import { distanceKm, type Bounds } from "@/lib/jobs/meta";
-import { findCountry } from "@/lib/map/geocode";
+import { useTranslations } from "next-intl";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type CSSProperties,
+} from "react";
+import { toast } from "sonner";
+import type { MapJob, MapTarget } from "@/components/explore/explore-map";
+import { JobCard, JobSheet, type Pager } from "@/components/explore/job-card";
 import { useLiveJobs } from "@/components/explore/use-live-jobs";
-import { placeLine, type PublicJob } from "@/lib/jobs/public-job";
+import { PlaceSearch, type PlaceSearchHandle } from "@/components/map/place-search";
+import { WmIcon } from "@/components/map/wm-icons";
+import { displayTitle, isNewJob, shortLabel } from "@/lib/jobs/display";
+import { distanceKm, isInside, type Bounds } from "@/lib/jobs/meta";
+import type { PublicJob } from "@/lib/jobs/public-job";
 import { cn } from "@/lib/utils";
 
 const ExploreMap = dynamic(() => import("@/components/explore/explore-map"), {
   ssr: false,
-  loading: () => <div className="absolute inset-0 animate-pulse bg-muted" aria-hidden="true" />,
+  loading: () => <div className="absolute inset-0 bg-wm-land" aria-hidden="true" />,
 });
 
 const DISTANCES = [null, 2, 5, 10, 25] as const;
 type Distance = (typeof DISTANCES)[number];
-type Origin = { point: [number, number]; kind: "me" | "place"; label: string };
-type LocState = "checking" | "prompt" | "locating" | "denied" | "done";
+type Origin = { point: [number, number]; kind: "me" | "place" };
 
-const PROMPT_KEY = "wm-location-prompt";
+const SAVED_KEY = "wm-saved-jobs";
+const CARD_W = 392;
+// Gap between the pin point and the card: clears the pin's label pill.
+const CARD_GAP = 100;
 
-// The area around some jobs, to fit the map to them.
-function boundsOf(jobs: PublicJob[]): MapTarget | null {
+// Phones get the bottom sheet and the compact top bar (reference/mobile-map.html).
+const MOBILE = "(max-width: 639px)";
+function subscribeMobile(fn: () => void) {
+  const mq = window.matchMedia(MOBILE);
+  mq.addEventListener("change", fn);
+  return () => mq.removeEventListener("change", fn);
+}
+
+function boundsOf(jobs: { lat: number; lng: number }[]): MapTarget | null {
   if (!jobs.length) return null;
   if (jobs.length === 1) return { center: [jobs[0].lat, jobs[0].lng], zoom: 13 };
   const lats = jobs.map((j) => j.lat);
@@ -53,32 +59,16 @@ function boundsOf(jobs: PublicJob[]): MapTarget | null {
   };
 }
 
-function readDismissed() {
+function readSaved(): string[] {
   try {
-    return sessionStorage.getItem(PROMPT_KEY) === "dismissed";
+    const v = JSON.parse(localStorage.getItem(SAVED_KEY) ?? "[]");
+    return Array.isArray(v) ? v.filter((x) => typeof x === "string") : [];
   } catch {
-    return false;
+    return [];
   }
 }
 
-export function TrustLines({ className }: { className?: string }) {
-  const t = useTranslations("explore");
-  const lines = [
-    { icon: BadgeCheck, text: t("trustFree") },
-    { icon: Banknote, text: t("trustMoney") },
-    { icon: Lock, text: t("trustPrivate") },
-  ];
-  return (
-    <ul className={cn("space-y-1.5 text-sm", className)}>
-      {lines.map(({ icon: Icon, text }) => (
-        <li key={text} className="flex items-center gap-2">
-          <Icon className="size-4 shrink-0 text-success" aria-hidden="true" />
-          {text}
-        </li>
-      ))}
-    </ul>
-  );
-}
+const floating = "bg-white shadow-wm-2";
 
 export function JobExplorer({
   jobs: initialJobs,
@@ -92,136 +82,79 @@ export function JobExplorer({
   const t = useTranslations("explore");
   // Live: approved jobs appear (and closed ones disappear) without a reload.
   const jobs = useLiveJobs(initialJobs, bounds);
-  const format = useFormatter();
-  const [selectedId, setSelectedId] = useState<string | null>(
-    initialJobId && jobs.some((j) => j.id === initialJobId) ? initialJobId : null,
+  const mobile = useSyncExternalStore(
+    subscribeMobile,
+    () => window.matchMedia(MOBILE).matches,
+    () => false,
   );
-  const [view, setView] = useState<"map" | "list">("map");
+
+  const [map, setMap] = useState<L.Map | null>(null);
+  const [view, setView] = useState<Bounds | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(
+    initialJobId && initialJobs.some((j) => j.id === initialJobId) ? initialJobId : null,
+  );
+  const [spotIds, setSpotIds] = useState<string[] | null>(null);
   const [origin, setOrigin] = useState<Origin | null>(null);
   const [distance, setDistance] = useState<Distance>(null);
-  const [country, setCountry] = useState<string | null>(null);
-  const [city, setCity] = useState<string | null>(null);
-  // A searched city also matches jobs within 25 km of its centre.
-  const [cityCenter, setCityCenter] = useState<[number, number] | null>(null);
-  const [cityPanel, setCityPanel] = useState(false);
+  const [distanceOpen, setDistanceOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [moveSearch, setMoveSearch] = useState(true);
+  const [variant, setVariant] = useState<"light" | "satellite">("light");
+  const [saved, setSaved] = useState<string[]>([]);
+  const [anchor, setAnchor] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const [target, setTarget] = useState<MapTarget | null>(() => {
-    const job = jobs.find((j) => j.id === initialJobId);
-    return job ? { center: [job.lat, job.lng], zoom: 14 } : boundsOf(jobs);
+    const job = initialJobs.find((j) => j.id === initialJobId);
+    return job ? { center: [job.lat, job.lng], zoom: 14 } : boundsOf(initialJobs);
   });
-  const [locState, setLocState] = useState<LocState>("checking");
-  const sheetHeading = useRef<HTMLHeadingElement>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const search = useRef<PlaceSearchHandle>(null);
+
+  useEffect(() => {
+    const id = window.setTimeout(() => setSaved(readSaved()), 0);
+    return () => window.clearTimeout(id);
+  }, []);
 
   const locate = useCallback(() => {
     if (!("geolocation" in navigator)) {
-      setLocState("denied");
+      toast(t("locationOff"));
       return;
     }
-    setLocState("locating");
+    setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const point: [number, number] = [pos.coords.latitude, pos.coords.longitude];
-        setOrigin({ point, kind: "me", label: t("nearYou") });
+        setOrigin({ point, kind: "me" });
         setTarget({ center: point, zoom: 13 });
-        setLocState("done");
+        setLocating(false);
       },
-      () => setLocState("denied"),
+      () => {
+        setLocating(false);
+        toast(t("locationOff"));
+      },
       { enableHighAccuracy: false, timeout: 10_000, maximumAge: 300_000 },
     );
   }, [t]);
 
-  // Ask for location only if the browser already allows it; otherwise offer
-  // a prompt (with a country fallback) instead of a cold permission dialog.
+  // Use the location straight away only if the browser already allows it.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         const status = await navigator.permissions?.query({ name: "geolocation" });
-        if (cancelled) return;
-        if (status?.state === "granted" && !initialJobId) return locate();
-        if (status?.state === "denied") return setLocState("denied");
+        if (!cancelled && status?.state === "granted" && !initialJobId) locate();
       } catch {
-        // Permissions API missing (older Safari): fall through to the prompt.
+        // Permissions API missing (older Safari): wait for "Near me".
       }
-      if (!cancelled) setLocState(readDismissed() ? "done" : "prompt");
     })();
     return () => {
       cancelled = true;
     };
   }, [locate, initialJobId]);
 
-  function dismissPrompt() {
-    try {
-      sessionStorage.setItem(PROMPT_KEY, "dismissed");
-    } catch {
-      // Storage blocked: the prompt just shows again next visit.
-    }
-    setLocState("done");
-  }
-
-  // Countries that have jobs come first in the pickers.
-  const jobCountries = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const j of jobs)
-      if (j.countryCode) counts.set(j.countryCode, (counts.get(j.countryCode) ?? 0) + 1);
-    return [...counts.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .map(([code, count]) => ({ code, name: countryName(code), count }));
-  }, [jobs]);
-
-  const cities = useMemo(() => {
-    if (!country) return [];
-    const counts = new Map<string, number>();
-    for (const j of jobs) {
-      if (j.countryCode === country && j.city) counts.set(j.city, (counts.get(j.city) ?? 0) + 1);
-    }
-    return [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0], "en"));
-  }, [jobs, country]);
-
-  async function chooseCountry(code: string | null) {
-    setCountry(code);
-    setCity(null);
-    setCityCenter(null);
-    setLocState("done");
-    if (!code) {
-      setTarget(boundsOf(jobs));
-      return;
-    }
-    const inCountry = jobs.filter((j) => j.countryCode === code);
-    const fit = boundsOf(inCountry);
-    if (fit) {
-      setTarget(fit);
-      return;
-    }
-    // No jobs there yet: still show the country.
-    const place = await findCountry(countryName(code), code).catch(() => null);
-    if (place?.bbox) {
-      const [w, s, e, n] = place.bbox;
-      setTarget({
-        bounds: [
-          [s, w],
-          [n, e],
-        ],
-      });
-    } else if (place) {
-      setTarget({ center: [place.lat, place.lng], zoom: 5 });
-    }
-  }
-
-  function chooseCity(name: string | null, center: [number, number] | null = null) {
-    setCity(name);
-    setCityCenter(center);
-    setCityPanel(false);
-    if (center) {
-      setTarget({ center, zoom: 11 });
-      return;
-    }
-    const inArea = jobs.filter((j) => j.countryCode === country && (!name || j.city === name));
-    const fit = boundsOf(inArea);
-    if (fit) setTarget(fit);
-  }
-
-  const select = useCallback((id: string | null) => {
+  const select = useCallback((id: string | null, spot: string[] | null = null) => {
     setSelectedId(id);
+    setSpotIds(id ? spot : null);
     // Keep the open job in the URL so it can be shared and survives Back.
     const url = new URL(window.location.href);
     if (id) url.searchParams.set("job", id);
@@ -237,449 +170,514 @@ export function JobExplorer({
       })),
     [jobs, origin],
   );
-  const visible = useMemo(() => {
-    const list = withDistance.filter(
-      ({ job, km }) =>
-        (!country || job.countryCode === country) &&
-        (!city ||
-          job.city?.toLowerCase() === city.toLowerCase() ||
-          (cityCenter !== null && distanceKm(cityCenter, [job.lat, job.lng]) <= 25)) &&
-        (!distance || !origin || (km ?? 0) <= distance),
-    );
-    return origin ? [...list].sort((a, b) => (a.km ?? 0) - (b.km ?? 0)) : list;
-  }, [withDistance, distance, origin, country, city, cityCenter]);
-  const areaLabel = city ?? (country ? countryName(country) : null);
+  const filtered = useMemo(
+    () => withDistance.filter(({ km }) => !distance || km === null || km <= distance),
+    [withDistance, distance],
+  );
+  const mapJobs: MapJob[] = useMemo(
+    () =>
+      filtered.map(({ job }) => ({
+        id: job.id,
+        lat: job.lat,
+        lng: job.lng,
+        title: displayTitle(job.title),
+        label: shortLabel(job.title),
+        isNew: isNewJob(job.publishedAt),
+      })),
+    [filtered],
+  );
+  // "N jobs in this area": what the map shows, or everything that matches.
+  const count =
+    moveSearch && view
+      ? filtered.filter(({ job }) => isInside(view, job.lat, job.lng)).length
+      : filtered.length;
 
   const selected = selectedId ? withDistance.find((j) => j.job.id === selectedId) : undefined;
 
+  // Esc closes the card; focus moves to its title when it opens.
   useEffect(() => {
     if (!selectedId) return;
-    sheetHeading.current?.focus();
+    heading.current?.focus({ preventScroll: true });
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && select(null);
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [selectedId, select]);
 
-  const km = (value: number | null) =>
-    value === null
-      ? null
-      : t("distance", {
-          km: format.number(value, { maximumFractionDigits: value < 10 ? 1 : 0 }),
-        });
+  // Desktop: keep the card beside its pin while the map moves.
+  const lat = selected?.job.lat;
+  const lng = selected?.job.lng;
+  useEffect(() => {
+    if (!map || lat === undefined || lng === undefined || mobile) return;
+    const update = () => {
+      const p = map.latLngToContainerPoint([lat, lng]);
+      const size = map.getSize();
+      setAnchor({ x: p.x, y: p.y, w: size.x, h: size.y });
+    };
+    // Pan so the whole card fits when it would not.
+    const p = map.latLngToContainerPoint([lat, lng]);
+    const size = map.getSize();
+    const fits =
+      (p.x + CARD_GAP + CARD_W <= size.x - 24 || p.x - CARD_GAP - CARD_W >= 24) &&
+      p.y >= 170 &&
+      p.y <= size.y - 80;
+    if (!fits) {
+      const x = Math.min(Math.max(p.x, 120), size.x - 24 - CARD_W - CARD_GAP);
+      const y = Math.min(Math.max(p.y, 220), size.y - 140);
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      map.panBy([p.x - x, p.y - y], { animate: !reduce, duration: 0.3 });
+    }
+    update();
+    map.on("move zoom viewreset resize", update);
+    return () => {
+      map.off("move zoom viewreset resize", update);
+    };
+  }, [map, lat, lng, mobile]);
+
+  const cardStyle: CSSProperties | null = anchor
+    ? (() => {
+        const right = anchor.x + CARD_GAP + CARD_W <= anchor.w - 24;
+        const left = right ? anchor.x + CARD_GAP : Math.max(24, anchor.x - CARD_GAP - CARD_W);
+        const top = Math.max(156, Math.min(anchor.y - 330, anchor.h - 20 - 724));
+        return { left, top, maxHeight: Math.min(724, anchor.h - top - 20) };
+      })()
+    : null;
+
+  const pager: Pager | null =
+    spotIds && selectedId && spotIds.length > 1
+      ? (() => {
+          const index = Math.max(0, spotIds.indexOf(selectedId));
+          const go = (i: number) => select(spotIds[(i + spotIds.length) % spotIds.length], spotIds);
+          return {
+            index,
+            total: spotIds.length,
+            prev: () => go(index - 1),
+            next: () => go(index + 1),
+          };
+        })()
+      : null;
+
+  function toggleSave(id: string) {
+    const next = saved.includes(id) ? saved.filter((x) => x !== id) : [...saved, id];
+    setSaved(next);
+    try {
+      localStorage.setItem(SAVED_KEY, JSON.stringify(next));
+    } catch {
+      // Storage blocked: the job stays saved until the page closes.
+    }
+  }
+
+  async function share(job: PublicJob) {
+    const url = new URL(`/?job=${job.id}`, window.location.origin).toString();
+    const title = displayTitle(job.title);
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      toast(t("linkCopied"));
+    } catch {
+      // Share sheet closed.
+    }
+  }
+
+  function showAll() {
+    setDistance(null);
+    setTarget(boundsOf(jobs));
+  }
+
+  const distanceText =
+    distance === null ? t("anyDistanceLong") : t("withinKmLong", { km: distance });
+
+  const distanceMenu = (
+    <ul
+      role="menu"
+      aria-label={t("distanceLabel")}
+      className="absolute top-full right-0 z-[1100] mt-2 w-60 rounded-3xl bg-white py-2 shadow-wm-2"
+    >
+      {DISTANCES.map((d) => (
+        <li key={d ?? "any"} role="none">
+          <button
+            type="button"
+            role="menuitemradio"
+            aria-checked={distance === d}
+            disabled={d !== null && !origin}
+            onClick={() => {
+              setDistance(d);
+              setDistanceOpen(false);
+              setFiltersOpen(false);
+            }}
+            className={cn(
+              "flex h-11 w-full items-center px-4 text-start text-sm font-semibold hover:bg-wm-mist disabled:opacity-40",
+              distance === d && "text-wm-blue",
+            )}
+          >
+            {d === null ? t("anyDistanceLong") : t("withinKmLong", { km: d })}
+          </button>
+        </li>
+      ))}
+      {!origin ? (
+        <li className="px-4 pt-1 pb-2 text-xs text-wm-caption">{t("distanceNeedsPlace")}</li>
+      ) : null}
+    </ul>
+  );
+
+  // Rendered in both top bars (CSS shows one); the desktop one has the handle.
+  const placeSearch = (withRef: boolean) => (
+    <PlaceSearch
+      ref={withRef ? search : undefined}
+      bare
+      bounds={bounds}
+      label={t("whereLabel")}
+      placeholder={t("wherePlaceholder")}
+      className="static"
+      inputClassName="text-sm font-medium text-wm-body"
+      listClassName="bg-white shadow-wm-2 mt-3"
+      onPick={(place) => {
+        setOrigin({ point: [place.lat, place.lng], kind: "place" });
+        if (place.bbox) {
+          const [w, s, e, n] = place.bbox;
+          setTarget({
+            bounds: [
+              [s, w],
+              [n, e],
+            ],
+          });
+        } else setTarget({ center: [place.lat, place.lng], zoom: 13 });
+      }}
+    />
+  );
+
+  const nearMe = (
+    <button
+      type="button"
+      onClick={locate}
+      aria-pressed={origin?.kind === "me"}
+      className={cn(
+        "flex shrink-0 items-center rounded-full border-0 bg-wm-ink font-bold text-white shadow-wm-1",
+        "h-[38px] gap-[7px] ps-[11px] pe-[13px] text-[13px] sm:h-10 sm:gap-2 sm:ps-3 sm:pe-3.5",
+      )}
+    >
+      <WmIcon
+        name="nearMe"
+        size={16}
+        stroke={2.2}
+        className={cn("size-[15px] sm:size-4", locating && "animate-pulse")}
+      />
+      {t("nearMe")}
+    </button>
+  );
 
   return (
-    <div className="relative h-dvh overflow-hidden bg-muted">
+    <div className="wm-ui relative h-dvh overflow-hidden bg-wm-land font-sans text-wm-ink">
       <h1 className="sr-only">{t("pageTitle")}</h1>
       <ExploreMap
-        jobs={visible.map((v) => v.job)}
+        jobs={mapJobs}
         bounds={bounds}
         selectedId={selectedId}
-        onSelect={select}
+        onSelect={(id) => select(id)}
+        onSpot={(ids) => select(ids[0] ?? null, ids)}
+        onEmptyClick={() => select(null)}
         target={target}
         me={origin?.kind === "me" ? origin.point : null}
         label={t("mapLabel")}
+        variant={variant}
+        onReady={setMap}
+        onView={setView}
       />
 
-      {/* Top bar: logo, search, filters */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-[1000] space-y-2 p-3 sm:p-4">
-        <div className="flex items-center gap-2">
-          <Link
-            href="/for-sponsors"
-            aria-label={t("aboutWemuste")}
-            className="shadow-float pointer-events-auto hidden shrink-0 rounded-full bg-background py-1.5 ps-1.5 pe-4 sm:block"
-          >
-            <Logo />
-          </Link>
-          <PlaceSearch
-            bounds={bounds}
-            country={country}
-            placeholder={t("searchPlaceholder")}
-            className="shadow-float pointer-events-auto min-w-0 flex-1 rounded-full sm:max-w-md"
-            inputClassName="border-transparent"
-            onPick={(place) => {
-              setOrigin({ point: [place.lat, place.lng], kind: "place", label: place.label });
-              setTarget({ center: [place.lat, place.lng], zoom: 14 });
-              setLocState("done");
-            }}
-          />
-          <Link
-            href="/login"
+      {/* Both top bars are rendered; CSS picks one, so phones never flash the desktop bar. */}
+      <div className="sm:hidden">
+        {/* ------------------------------------------------------- phone top */}
+        <div className="absolute inset-x-4 top-3.5 z-[1000] flex flex-col gap-2.5">
+          <div
             className={cn(
-              buttonVariants({ variant: "outline", size: "pill" }),
-              "shadow-float pointer-events-auto ms-auto shrink-0 border-transparent",
+              "relative flex h-[60px] items-center gap-2.5 rounded-full px-2",
+              floating,
             )}
           >
-            {t("employerLogin")}
-          </Link>
-        </div>
-
-        <div className="pointer-events-auto flex [scrollbar-width:none] gap-2 overflow-x-auto pb-1">
-          <button
-            type="button"
-            onClick={locate}
-            aria-label={t("useLocation")}
-            className={cn(
-              "shadow-float flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold",
-              origin?.kind === "me" ? "bg-primary text-primary-foreground" : "bg-background",
-            )}
-          >
-            <LocateFixed
-              className={cn("size-4", locState === "locating" && "animate-pulse")}
-              aria-hidden="true"
-            />
-            <span className="hidden sm:inline">{t("nearMe")}</span>
-          </button>
-          <label className="sr-only" htmlFor="wm-country">
-            {t("country")}
-          </label>
-          <select
-            id="wm-country"
-            value={country ?? ""}
-            onChange={(e) => void chooseCountry(e.target.value || null)}
-            className={cn(
-              "shadow-float h-10 max-w-44 shrink-0 rounded-full border-0 ps-3.5 pe-8 text-sm font-semibold",
-              country ? "bg-primary text-primary-foreground" : "bg-background",
-            )}
-          >
-            <option value="">{t("allCountries")}</option>
-            {jobCountries.length ? (
-              <optgroup label={t("countriesWithJobs")}>
-                {jobCountries.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.name} ({c.count})
-                  </option>
-                ))}
-              </optgroup>
-            ) : null}
-            <optgroup label={t("allCountriesGroup")}>
-              {COUNTRIES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.name}
-                </option>
-              ))}
-            </optgroup>
-          </select>
-          {country ? (
+            <Link
+              href="/for-sponsors"
+              aria-label={t("aboutWemuste")}
+              className="flex size-11 shrink-0 items-center justify-center rounded-full bg-wm-blue text-xl font-extrabold text-white"
+            >
+              W
+            </Link>
+            <label className="flex min-w-0 grow flex-col gap-px">
+              <span className="text-xs font-extrabold">{t("where")}</span>
+              {placeSearch(false)}
+            </label>
             <button
               type="button"
-              onClick={() => setCityPanel((v) => !v)}
-              aria-expanded={cityPanel}
-              aria-controls="wm-city-panel"
-              className={cn(
-                "shadow-float flex h-10 max-w-44 shrink-0 items-center gap-1 rounded-full ps-3.5 pe-3 text-sm font-semibold",
-                city ? "bg-primary text-primary-foreground" : "bg-background",
-              )}
+              aria-label={t("filters")}
+              aria-expanded={filtersOpen}
+              onClick={() => setFiltersOpen((v) => !v)}
+              className="flex size-11 shrink-0 items-center justify-center rounded-full border border-wm-line bg-white text-wm-ink"
             >
-              <span className="truncate">{city ?? t("allCities")}</span>
-              <ChevronDown className="size-4 shrink-0" aria-hidden="true" />
-              <span className="sr-only"> ({t("city")})</span>
-            </button>
-          ) : null}
-          <div
-            role="group"
-            aria-label={t("distanceLabel")}
-            className="shadow-float flex h-10 shrink-0 items-center gap-0.5 rounded-full bg-background p-1"
-          >
-            {DISTANCES.map((d) => (
-              <button
-                key={d ?? "any"}
-                type="button"
-                aria-pressed={distance === d}
-                disabled={d !== null && !origin}
-                title={d !== null && !origin ? t("distanceNeedsPlace") : undefined}
-                onClick={() => setDistance(d)}
-                className={cn(
-                  "h-8 rounded-full px-3 text-sm font-semibold transition-colors disabled:opacity-40",
-                  distance === d ? "bg-foreground text-background" : "hover:bg-muted",
-                )}
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.1"
+                strokeLinecap="round"
+                aria-hidden="true"
               >
-                {d === null ? t("anyDistance") : t("withinKm", { km: d })}
-              </button>
-            ))}
+                <line x1="4" y1="7" x2="20" y2="7" />
+                <line x1="4" y1="17" x2="20" y2="17" />
+                <circle cx="9" cy="7" r="2.5" fill="#FFFFFF" />
+                <circle cx="15" cy="17" r="2.5" fill="#FFFFFF" />
+              </svg>
+            </button>
+            {filtersOpen ? (
+              <div className="absolute inset-x-0 top-full z-[1100] mt-2 rounded-3xl bg-white p-4 shadow-wm-2">
+                <p className="text-xs font-extrabold">{t("distanceLabel")}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {DISTANCES.map((d) => (
+                    <button
+                      key={d ?? "any"}
+                      type="button"
+                      aria-pressed={distance === d}
+                      disabled={d !== null && !origin}
+                      onClick={() => {
+                        setDistance(d);
+                        setFiltersOpen(false);
+                      }}
+                      className={cn(
+                        "h-10 rounded-full px-3.5 text-[13px] font-bold disabled:opacity-40",
+                        distance === d ? "bg-wm-blue text-white" : "bg-wm-mist text-wm-ink",
+                      )}
+                    >
+                      {d === null ? t("anyDistanceLong") : t("kmShort", { km: d })}
+                    </button>
+                  ))}
+                </div>
+                {!origin ? (
+                  <p className="mt-2 text-xs text-wm-caption">{t("distanceNeedsPlace")}</p>
+                ) : null}
+                <Link
+                  href="/login"
+                  className="mt-4 flex h-11 items-center justify-center gap-2 rounded-full border border-wm-line text-sm font-bold text-wm-ink"
+                >
+                  <span className="text-wm-blue">
+                    <WmIcon name="briefcase" size={17} stroke={2.1} />
+                  </span>
+                  {t("employerLogin")}
+                </Link>
+              </div>
+            ) : null}
           </div>
+          <div className="-me-4 flex [scrollbar-width:none] gap-2 overflow-x-auto">{nearMe}</div>
+        </div>
+      </div>
+      <div className="hidden sm:block">
+        {/* ----------------------------------------------------- desktop top */}
+        <Link
+          href="/for-sponsors"
+          aria-label={t("aboutWemuste")}
+          className={cn(
+            "absolute top-5 left-6 z-[1000] box-border flex h-16 items-center gap-[11px] rounded-[20px] ps-3 pe-5 text-wm-ink no-underline",
+            floating,
+          )}
+        >
+          <span className="flex size-10 items-center justify-center rounded-[13px] bg-wm-blue text-[21px] font-extrabold tracking-[-1px] text-white shadow-[inset_0_-3px_0_rgba(0,0,0,0.12)]">
+            W
+          </span>
+          <span className="flex flex-col">
+            <span className="text-[19px] leading-[1.1] font-extrabold tracking-[-0.4px]">
+              Wemuste
+            </span>
+            <span className="text-[11px] font-semibold text-wm-caption">{t("tagline")}</span>
+          </span>
+        </Link>
+
+        <form
+          role="search"
+          onSubmit={(e) => {
+            e.preventDefault();
+            search.current?.submit();
+          }}
+          className={cn(
+            "absolute top-5 left-1/2 z-[1000] box-border flex h-16 w-[min(680px,calc(100vw-440px))] -translate-x-1/2 items-center rounded-full p-2",
+            floating,
+          )}
+        >
+          <label className="relative box-border flex h-12 min-w-0 grow flex-col justify-center gap-px rounded-full bg-wm-mist px-5">
+            <span className="text-xs font-extrabold text-wm-ink">{t("where")}</span>
+            {placeSearch(true)}
+          </label>
+          <span className="mx-1 h-7 w-px bg-wm-line" aria-hidden="true" />
+          <div className="relative">
+            <button
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={distanceOpen}
+              onClick={() => setDistanceOpen((v) => !v)}
+              className="flex h-12 flex-col items-start justify-center gap-px rounded-full border-0 bg-transparent px-[18px] hover:bg-wm-mist"
+            >
+              <span className="text-xs font-extrabold text-wm-ink">{t("distanceLabel")}</span>
+              <span className="text-sm font-medium whitespace-nowrap text-wm-slate">
+                {distanceText}
+              </span>
+            </button>
+            {distanceOpen ? distanceMenu : null}
+          </div>
+          <button
+            type="submit"
+            aria-label={t("search")}
+            className="flex size-12 shrink-0 items-center justify-center rounded-full border-0 bg-wm-blue text-white shadow-wm-nav hover:bg-wm-blue-pressed"
+          >
+            <WmIcon name="search" size={19} stroke={2.4} />
+          </button>
+        </form>
+
+        <Link
+          href="/login"
+          className={cn(
+            "absolute top-[30px] right-6 z-[1000] flex h-11 items-center gap-2 rounded-full ps-3.5 pe-[18px] text-sm font-bold text-wm-ink no-underline",
+            floating,
+          )}
+        >
+          <span className="text-wm-blue">
+            <WmIcon name="briefcase" size={17} stroke={2.1} />
+          </span>
+          {t("employerLogin")}
+        </Link>
+
+        <nav
+          aria-label={t("filters")}
+          className="pointer-events-none absolute inset-x-0 top-[100px] z-[999] flex justify-center gap-2"
+        >
+          <span className="pointer-events-auto">{nearMe}</span>
+        </nav>
+      </div>
+
+      {/* Count pill, "Search as I move the map", and the empty state */}
+      {/* Phones hide it while the job sheet is open. */}
+      <div
+        className={cn(
+          "absolute right-4 bottom-4 left-4 z-[1000] flex flex-wrap items-center gap-3 sm:right-auto sm:bottom-6 sm:left-6 sm:flex-nowrap",
+          selected && "max-sm:hidden",
+        )}
+      >
+        <div
+          className={cn(
+            "box-border flex h-12 items-center gap-3.5 rounded-full ps-[18px] pe-[18px] sm:pe-2",
+            floating,
+          )}
+        >
+          <span className="text-sm font-extrabold whitespace-nowrap text-wm-ink" aria-live="polite">
+            {t("jobsInArea", { count })}
+          </span>
+          <span className="hidden h-[22px] w-px bg-wm-line sm:block" aria-hidden="true" />
+          {
+            <button
+              type="button"
+              aria-pressed={moveSearch}
+              onClick={() => setMoveSearch((v) => !v)}
+              className="hidden h-9 items-center gap-2.5 rounded-full border-0 bg-transparent px-2.5 text-[13px] font-semibold whitespace-nowrap text-wm-body sm:flex"
+            >
+              <span
+                className={cn(
+                  "relative h-[22px] w-9 shrink-0 rounded-full transition-colors duration-150",
+                  moveSearch ? "bg-wm-blue" : "bg-[#CBD2DC]",
+                )}
+                aria-hidden="true"
+              >
+                <span
+                  className={cn(
+                    "absolute top-[3px] size-4 rounded-full bg-white shadow-[0_1px_3px_rgba(11,18,32,0.3)] transition-[left] duration-150",
+                    moveSearch ? "left-[17px]" : "left-[3px]",
+                  )}
+                />
+              </span>
+              {t("searchAsMove")}
+            </button>
+          }
+        </div>
+        {count === 0 ? (
+          <button
+            type="button"
+            onClick={showAll}
+            className="h-12 rounded-full border-0 bg-wm-ink px-[18px] text-[13px] font-bold text-white shadow-wm-2"
+          >
+            {t("emptyShowAll")}
+          </button>
+        ) : null}
+      </div>
+
+      {/* Map controls */}
+      <button
+        type="button"
+        onClick={locate}
+        aria-label={t("myLocation")}
+        className="absolute top-[206px] right-4 z-[999] flex size-11 items-center justify-center rounded-full border-0 bg-white text-wm-blue shadow-wm-2 sm:hidden"
+      >
+        <WmIcon name="navigate" size={18} stroke={2.2} />
+      </button>
+      <div className="absolute right-6 bottom-11 z-[1000] hidden flex-col gap-2.5 sm:flex">
+        <button
+          type="button"
+          aria-label={t("mapStyle")}
+          aria-pressed={variant === "satellite"}
+          onClick={() => setVariant((v) => (v === "light" ? "satellite" : "light"))}
+          className="flex size-11 items-center justify-center rounded-full border-0 bg-white text-wm-ink shadow-wm-1"
+        >
+          <WmIcon name="layers" size={17} stroke={2.2} />
+        </button>
+        <button
+          type="button"
+          aria-label={t("myLocation")}
+          onClick={locate}
+          className="flex size-11 items-center justify-center rounded-full border-0 bg-white text-wm-blue shadow-wm-1"
+        >
+          <WmIcon name="navigate" size={17} stroke={2.2} />
+        </button>
+        <div className="flex flex-col overflow-hidden rounded-full bg-white shadow-wm-2">
+          <button
+            type="button"
+            aria-label={t("zoomIn")}
+            onClick={() => map?.zoomIn()}
+            className="flex h-[46px] w-11 items-center justify-center border-0 bg-transparent text-wm-ink"
+          >
+            <WmIcon name="plus" size={17} stroke={2.4} />
+          </button>
+          <span className="mx-2.5 h-px bg-wm-line" aria-hidden="true" />
+          <button
+            type="button"
+            aria-label={t("zoomOut")}
+            onClick={() => map?.zoomOut()}
+            className="flex h-[46px] w-11 items-center justify-center border-0 bg-transparent text-wm-ink"
+          >
+            <WmIcon name="minus" size={17} stroke={2.4} />
+          </button>
         </div>
       </div>
 
-      {/* City picker: any city in the chosen country (search), or one with jobs */}
-      {cityPanel && country ? (
-        <section
-          id="wm-city-panel"
-          aria-labelledby="wm-city-title"
-          className="shadow-float animate-in-fast absolute inset-x-3 top-32 z-[1002] max-h-[70dvh] overflow-y-auto rounded-[1.75rem] bg-background p-4 sm:start-4 sm:end-auto sm:w-96"
-        >
-          <div className="flex items-center justify-between gap-2">
-            <h2 id="wm-city-title" className="text-lg font-extrabold">
-              {t("cityIn", { country: countryName(country) })}
-            </h2>
-            <button
-              type="button"
-              onClick={() => setCityPanel(false)}
-              className="flex size-9 items-center justify-center rounded-full hover:bg-muted"
-              aria-label={t("closeCities")}
-            >
-              <X className="size-4" aria-hidden="true" />
-            </button>
-          </div>
-          <PlaceSearch
-            bounds={bounds}
-            country={country}
-            kind="city"
-            autoFocus
-            placeholder={t("searchCity")}
-            className="mt-3"
-            onPick={(place) =>
-              chooseCity(normaliseCity(place.label.split(",")[0] ?? place.label), [
-                place.lat,
-                place.lng,
-              ])
-            }
-          />
-          <ul className="mt-3 space-y-1">
-            <li>
-              <button
-                type="button"
-                onClick={() => chooseCity(null)}
-                className={cn(
-                  "flex h-11 w-full items-center rounded-2xl px-3 text-start text-sm font-semibold hover:bg-muted",
-                  !city && "bg-muted",
-                )}
-              >
-                {t("allCities")}
-              </button>
-            </li>
-            {cities.map(([name, count]) => (
-              <li key={name}>
-                <button
-                  type="button"
-                  onClick={() => chooseCity(name)}
-                  className={cn(
-                    "flex h-11 w-full items-center justify-between rounded-2xl px-3 text-start text-sm font-semibold hover:bg-muted",
-                    city === name && "bg-muted",
-                  )}
-                >
-                  <span>{name}</span>
-                  <span className="text-muted-foreground">{t("jobsCount", { count })}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-          {!cities.length ? (
-            <p className="mt-2 text-sm text-muted-foreground">{t("noCitiesYet")}</p>
-          ) : null}
-        </section>
+      {/* The job card, only when a pin is picked */}
+      {selected && mobile ? (
+        <JobSheet
+          item={selected}
+          pager={pager}
+          saved={saved.includes(selected.job.id)}
+          onToggleSave={() => toggleSave(selected.job.id)}
+          onClose={() => select(null)}
+          headingRef={heading}
+        />
       ) : null}
-
-      {/* Location prompt with a country fallback */}
-      {(locState === "prompt" || locState === "denied") && !selected && view === "map" ? (
-        <section
-          aria-labelledby="wm-loc-title"
-          className="shadow-float absolute inset-x-3 bottom-20 z-[1000] rounded-[1.75rem] bg-background p-5 sm:start-4 sm:end-auto sm:bottom-6 sm:w-96"
-        >
-          <button
-            type="button"
-            onClick={dismissPrompt}
-            className="absolute end-3 top-3 flex size-9 items-center justify-center rounded-full hover:bg-muted"
-            aria-label={t("notNow")}
-          >
-            <X className="size-4" aria-hidden="true" />
-          </button>
-          <h2 id="wm-loc-title" className="pe-8 text-lg font-extrabold">
-            {locState === "denied" ? t("pickEmirateTitle") : t("promptTitle")}
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {locState === "denied" ? t("pickEmirateBody") : t("promptBody")}
-          </p>
-          {locState === "prompt" ? (
-            <button
-              type="button"
-              onClick={locate}
-              className={cn(buttonVariants({ size: "touch" }), "mt-4 w-full")}
-            >
-              <LocateFixed className="size-4" aria-hidden="true" />
-              {t("useLocation")}
-            </button>
-          ) : null}
-          <div className="mt-3 flex flex-wrap gap-2">
-            {jobCountries.slice(0, 6).map((c) => (
-              <button
-                key={c.code}
-                type="button"
-                onClick={() => void chooseCountry(c.code)}
-                className="h-9 rounded-full bg-muted px-3.5 text-sm font-semibold hover:bg-muted/70"
-              >
-                {c.name}
-              </button>
-            ))}
-          </div>
-          <label className="mt-3 block text-sm font-medium" htmlFor="wm-prompt-country">
-            {t("orChooseCountry")}
-          </label>
-          <select
-            id="wm-prompt-country"
-            value=""
-            onChange={(e) => e.target.value && void chooseCountry(e.target.value)}
-            className="mt-1 h-11 w-full rounded-xl border border-input bg-background px-3 text-sm"
-          >
-            <option value="">{t("allCountries")}</option>
-            {COUNTRIES.map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </section>
-      ) : null}
-
-      {/* Count + list toggle */}
-      {!selected ? (
-        <div className="absolute inset-x-0 bottom-4 z-[1000] flex justify-center">
-          <button
-            type="button"
-            onClick={() => setView(view === "map" ? "list" : "map")}
-            className="shadow-float flex h-12 items-center gap-2 rounded-full bg-foreground px-5 text-sm font-bold text-background"
-          >
-            {view === "map" ? (
-              <List className="size-4" aria-hidden="true" />
-            ) : (
-              <MapIcon className="size-4" aria-hidden="true" />
-            )}
-            {view === "map" ? t("showList", { count: visible.length }) : t("showMap")}
-          </button>
-        </div>
-      ) : null}
-
-      {/* List view */}
-      {view === "list" && !selected ? (
-        <section
-          aria-label={t("listTitle")}
-          className="absolute inset-x-0 top-32 bottom-0 z-[999] overflow-y-auto rounded-t-[2rem] bg-background px-4 pt-5 pb-24 sm:inset-x-auto sm:start-4 sm:bottom-4 sm:w-[26rem] sm:rounded-[2rem]"
-        >
-          <h2 className="text-lg font-extrabold">
-            {areaLabel
-              ? t("listIn", { place: areaLabel })
-              : origin
-                ? t("listNear", { place: origin.label })
-                : t("listTitle")}
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {t("jobsCount", { count: visible.length })}
-          </p>
-          {visible.length === 0 ? (
-            <div className="mt-6 rounded-3xl border-2 border-dashed p-8 text-center">
-              <p className="font-bold">{t("emptyTitle")}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{t("emptyBody")}</p>
-            </div>
-          ) : (
-            <ul className="mt-4 space-y-2.5">
-              {visible.map(({ job, km: dist }) => (
-                <li key={job.id}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      select(job.id);
-                      setTarget({ center: [job.lat, job.lng], zoom: 15 });
-                    }}
-                    className="flex w-full items-start gap-3 rounded-3xl bg-muted/60 p-4 text-start hover:bg-muted"
-                  >
-                    <SponsorLogo
-                      name={job.sponsorName}
-                      path={job.sponsorLogo}
-                      className="size-11 text-sm"
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block font-bold">{job.title}</span>
-                      <span className="block truncate text-sm font-medium">{job.sponsorName}</span>
-                      <span className="block truncate text-sm text-muted-foreground">
-                        {placeLine(job, false)}
-                        {dist !== null ? ` · ${km(dist)}` : ""}
-                      </span>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          <TrustLines className="mt-6 text-muted-foreground" />
-          <nav className="mt-4 flex gap-5 text-xs text-muted-foreground">
-            <Link href="/for-sponsors" className="hover:text-foreground">
-              {t("forEmployers")}
-            </Link>
-            <Link href="/privacy" className="hover:text-foreground">
-              {t("privacy")}
-            </Link>
-            <Link href="/terms" className="hover:text-foreground">
-              {t("terms")}
-            </Link>
-          </nav>
-        </section>
-      ) : null}
-
-      {/* Job sheet */}
-      {selected ? (
-        <section
-          aria-labelledby="wm-job-title"
-          className="shadow-float animate-in-fast absolute inset-x-0 bottom-0 z-[1001] max-h-[80dvh] overflow-y-auto rounded-t-[2rem] bg-background px-5 pt-3 pb-6 sm:start-4 sm:end-auto sm:bottom-4 sm:w-[26rem] sm:rounded-[2rem] sm:pt-5"
-        >
-          <div
-            className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-border sm:hidden"
-            aria-hidden="true"
-          />
-          <button
-            type="button"
-            onClick={() => select(null)}
-            className="absolute end-3 top-3 flex size-10 items-center justify-center rounded-full bg-muted hover:bg-muted/70"
-            aria-label={t("closeJob")}
-          >
-            <X className="size-4" aria-hidden="true" />
-          </button>
-          <div className="flex items-center gap-3 pe-12">
-            <SponsorLogo
-              name={selected.job.sponsorName}
-              path={selected.job.sponsorLogo}
-              className="size-14 text-lg"
-            />
-            <div className="min-w-0">
-              <h2
-                id="wm-job-title"
-                ref={sheetHeading}
-                tabIndex={-1}
-                className="text-2xl leading-tight font-extrabold tracking-tight break-words outline-none"
-              >
-                {selected.job.title}
-              </h2>
-              <p className="truncate text-sm font-semibold text-muted-foreground">
-                {selected.job.sponsorName}
-              </p>
-            </div>
-          </div>
-          <p className="mt-1 flex items-start gap-1.5 text-sm text-muted-foreground">
-            <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-            <span>
-              {placeLine(selected.job)}
-              {selected.km !== null ? ` · ${km(selected.km)}` : ""}
-            </span>
-          </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {t("posted", {
-              date: format.dateTime(new Date(selected.job.publishedAt), {
-                day: "numeric",
-                month: "short",
-              }),
-            })}{" "}
-            · {t("approxPin")}
-          </p>
-          <p className="mt-4 text-base leading-relaxed whitespace-pre-line">
-            {selected.job.description}
-          </p>
-          <Link
-            href={`/apply/${selected.job.id}`}
-            className={cn(buttonVariants({ size: "touch" }), "mt-5 w-full")}
-          >
-            {t("apply")}
-          </Link>
-          <p className="mt-2 text-center text-xs text-muted-foreground">{t("applySteps")}</p>
-          <TrustLines className="mt-4 rounded-2xl bg-muted/60 p-4" />
-        </section>
+      {selected && !mobile && cardStyle ? (
+        <JobCard
+          key={selected.job.id}
+          item={selected}
+          pager={pager}
+          saved={saved.includes(selected.job.id)}
+          onToggleSave={() => toggleSave(selected.job.id)}
+          onShare={() => void share(selected.job)}
+          onClose={() => select(null)}
+          headingRef={heading}
+          style={cardStyle}
+        />
       ) : null}
     </div>
   );
