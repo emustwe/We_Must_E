@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { SurveyMetaForm, TestMetaForm, VideoSetForm } from "@/components/admin/content-forms";
+import { MissingStepsAlert } from "@/components/admin/missing-steps-alert";
 import { Badge, Card, PageTitle } from "@/components/admin/ui";
 import { createClient } from "@/lib/supabase/server";
 
@@ -61,6 +62,7 @@ export default async function ContentPage() {
   return (
     <div>
       <PageTitle title={t("contentTitle")} body={t("contentBody")} />
+      <MissingStepsAlert link={false} />
       <p className="mb-5 rounded-2xl bg-brand-accent/15 px-4 py-3 text-sm font-medium">
         {t("samplesNote")}
       </p>

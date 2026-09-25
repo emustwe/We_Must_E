@@ -516,7 +516,15 @@
     "sendBack": "Send back to sponsor",
     "jobApprovedToast": "Approved. The job is now on the map.",
     "jobRejectedToast": "Sent back to the sponsor.",
-    "rejectedBecause": "Sent back: {reason}"
+    "rejectedBecause": "Sent back: {reason}",
+    "stepName": {
+      "test": "test",
+      "video": "video",
+      "survey": "survey"
+    },
+    "missingStepsTitle": "Applicants are skipping: {steps}",
+    "missingStepsBody": "These steps have no live questions, so people applying don't see them. Add questions and tap Make live.",
+    "missingStepsLink": "Open Content"
   },
   "legal": {
     "placeholder": "PLACEHOLDER — client/lawyer to replace.",

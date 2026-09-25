@@ -10,6 +10,8 @@ test("an admin builds a test with written and multi-answer questions, and a vide
   page.on("dialog", (dialog) => dialog.accept());
   const testTitle = `E2E test ${unique()}`;
   const setTitle = `E2E videos ${unique()}`;
+  // Whatever set is live now is put back afterwards.
+  const liveSet = psql(`select id from public.video_question_sets where is_active`);
 
   try {
     await loginAsAdmin(page);
@@ -49,12 +51,17 @@ test("an admin builds a test with written and multi-answer questions, and a vide
     await page.getByRole("button", { name: "Save", exact: true }).last().click();
     await expect(page.getByText("Describe your last job.")).toBeVisible();
 
-    const stored = psql(
-      `select string_agg(q.type || ':' || q.points || ':' || coalesce(k.correct_options::text, '-'), ',' order by q.position)
+    // Wait until the editor has closed and both questions are stored.
+    await expect(page.getByRole("button", { name: "Add question" })).toBeVisible();
+    await expect
+      .poll(() =>
+        psql(
+          `select string_agg(q.type || ':' || q.points || ':' || coalesce(k.correct_options::text, '-'), ',' order by q.position)
          from public.test_questions q join public.tests t on t.id = q.test_id
          left join public.test_answer_keys k on k.question_id = q.id where t.title = '${testTitle}'`,
-    );
-    expect(stored).toBe("multi_choice:2:{0,2},long_text:1:-");
+        ),
+      )
+      .toBe("multi_choice:2:{0,2},long_text:1:-");
     expect(
       psql(`select time_limit_seconds is null from public.tests where title = '${testTitle}'`),
     ).toBe("t");
@@ -80,10 +87,26 @@ test("an admin builds a test with written and multi-answer questions, and a vide
   } finally {
     // Put the sample video set back as the live one.
     psql(`update public.video_question_sets set is_active = false where title = '${setTitle}'`);
-    psql(
-      `update public.video_question_sets set is_active = true where id = '20000000-0000-0000-0000-000000000006'`,
-    );
+    if (liveSet)
+      psql(`update public.video_question_sets set is_active = true where id = '${liveSet}'`);
     psql(`delete from public.video_question_sets where title = '${setTitle}'`);
     psql(`delete from public.tests where title = '${testTitle}'`);
   }
+});
+
+test("the admin is warned when a step has no live questions", async ({ page }) => {
+  const live = psql(`select id from public.surveys where is_active`);
+  psql(`update public.surveys set is_active = false`);
+  try {
+    await loginAsAdmin(page);
+    await expect(
+      page.getByRole("alert").filter({ hasText: "Applicants are skipping: survey" }),
+    ).toBeVisible();
+    await page.goto("/admin/content");
+    await expect(page.getByText("Applicants are skipping: survey")).toBeVisible();
+  } finally {
+    if (live) psql(`update public.surveys set is_active = true where id = '${live}'`);
+  }
+  await page.goto("/admin");
+  await expect(page.getByText(/Applicants are skipping/)).toHaveCount(0);
 });

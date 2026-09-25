@@ -1,10 +1,13 @@
 import { expect, type Page } from "@playwright/test";
+import { psql } from "./db";
 import { waitForAuthLink } from "./mailpit";
 
 export const SEED_PASSWORD = "Wemuste-Local-2026!";
 export const unique = () => `${Date.now()}${Math.floor(Math.random() * 1000)}`;
 
 export async function login(page: Page, email: string, password = SEED_PASSWORD) {
+  // The whole suite logs in more often than the real per-IP login limit allows.
+  psql("truncate private.rate_limits");
   await page.goto("/login");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);

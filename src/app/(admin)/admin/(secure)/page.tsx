@@ -1,6 +1,7 @@
 import { Building2, ClipboardCheck, Inbox, MapPinned } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { MissingStepsAlert } from "@/components/admin/missing-steps-alert";
 import { PageTitle } from "@/components/admin/ui";
 import { createClient } from "@/lib/supabase/server";
 
@@ -39,6 +40,7 @@ export default async function AdminHome() {
   return (
     <div>
       <PageTitle title={t("homeTitle")} body={t("homeBody")} />
+      <MissingStepsAlert />
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map(({ label, value, icon: Icon, href }) => (
           <Link
