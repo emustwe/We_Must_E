@@ -6,7 +6,10 @@ import { getIpHash } from "@/lib/security/ip";
 import { withinRateLimit } from "@/lib/security/rate-limit";
 import { toFieldErrors } from "@/lib/validations/auth";
 import {
+  cvConfirmSchema,
+  cvUploadSchema,
   jobIdSchema,
+  profileSaveSchema,
   phoneCodeSchema,
   startSchema,
   submitSchema,
@@ -75,8 +78,8 @@ export async function createVideoUpload(
   const parsed = videoUploadSchema.safeParse(input);
   if (!parsed.success) return fail("invalidInput");
   if (!(await withinRateLimit("videoUploadPerIp", await getIpHash()))) return fail("rateLimited");
-  const { jobId, mime } = parsed.data;
-  return app.createVideoUpload(jobId, mime);
+  const { jobId, mime, questionId } = parsed.data;
+  return app.createVideoUpload(jobId, mime, questionId);
 }
 
 export async function confirmVideo(input: unknown): Promise<ActionResult> {
@@ -92,6 +95,30 @@ export async function finishVideos(jobId: unknown): Promise<ActionResult> {
   if (!parsed.success) return fail("invalidInput");
   if (!(await stepAllowed())) return fail("rateLimited");
   return app.finishVideos(parsed.data);
+}
+
+// Task step: the profile (checked on the server), and the CV.
+export async function saveProfile(input: unknown): Promise<ActionResult<unknown>> {
+  const parsed = profileSaveSchema.safeParse(input);
+  if (!parsed.success) return fail("invalidInput");
+  if (!(await stepAllowed())) return fail("rateLimited");
+  return app.saveProfile(parsed.data.jobId, parsed.data.profile);
+}
+
+export async function createCvUpload(
+  input: unknown,
+): Promise<ActionResult<{ path: string; signedUrl: string; token: string }>> {
+  const parsed = cvUploadSchema.safeParse(input);
+  if (!parsed.success) return fail("invalidInput");
+  if (!(await withinRateLimit("videoUploadPerIp", await getIpHash()))) return fail("rateLimited");
+  return app.createCvUpload(parsed.data.jobId, parsed.data.kind);
+}
+
+export async function confirmCv(input: unknown): Promise<ActionResult> {
+  const parsed = cvConfirmSchema.safeParse(input);
+  if (!parsed.success) return fail("invalidInput");
+  if (!(await stepAllowed())) return fail("rateLimited");
+  return app.confirmCv(parsed.data.jobId, parsed.data.path);
 }
 
 export async function sendPhoneCode(input: unknown): Promise<ActionResult> {
@@ -113,17 +140,8 @@ export async function submitApplication(input: unknown): Promise<ActionResult> {
   if (!parsed.success) return fail("invalidInput", toFieldErrors(parsed.error));
   const ipHash = await getIpHash();
   if (!(await withinRateLimit("applicationStepPerIp", ipHash))) return fail("rateLimited");
-  const { jobId, contact, answers } = parsed.data;
-  const result = await app.submitApplication(
-    jobId,
-    {
-      fullName: contact.fullName,
-      phoneE164: contact.phone,
-      email: contact.email || null,
-      answers,
-    },
-    ipHash,
-  );
+  const { jobId, answers } = parsed.data;
+  const result = await app.submitApplication(jobId, answers, ipHash);
   if (!result.ok) return result;
   redirect(`/apply/${jobId}/submitted`);
 }

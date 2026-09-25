@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { submitSchema, testAnswerSchema } from "./apply";
+import { fullProfileSchema, submitSchema, testAnswerSchema } from "./apply";
 
 const ids = {
   jobId: "00000000-0000-4000-8000-000000000001",
@@ -23,22 +23,69 @@ describe("testAnswerSchema", () => {
 describe("submitSchema", () => {
   const base = {
     jobId: ids.jobId,
-    contact: { fullName: "Sara Ahmed", phone: "050 111 2233", email: "" },
     answers: { [ids.questionId]: { options: [0] } },
     consent: true,
   };
-  it("normalises the phone number to E.164", () => {
-    const parsed = submitSchema.parse(base);
-    expect(parsed.contact.phone).toBe("+971501112233");
-  });
   it("requires consent to be ticked", () => {
+    expect(submitSchema.safeParse(base).success).toBe(true);
     expect(submitSchema.safeParse({ ...base, consent: false }).success).toBe(false);
-    expect(submitSchema.safeParse({ ...base, consent: undefined }).success).toBe(false);
   });
-  it("rejects invalid phones and unknown fields", () => {
+  it("accepts a typed Other answer, and rejects unknown fields", () => {
     expect(
-      submitSchema.safeParse({ ...base, contact: { ...base.contact, phone: "12" } }).success,
-    ).toBe(false);
+      submitSchema.safeParse({
+        ...base,
+        answers: { [ids.questionId]: { options: [8], other: "Podcasts" } },
+      }).success,
+    ).toBe(true);
     expect(submitSchema.safeParse({ ...base, status: "approved" }).success).toBe(false);
+  });
+});
+
+describe("Task profile", () => {
+  const full = {
+    fullName: "Sara Ahmed",
+    preferredName: "Sara",
+    age: "29",
+    gender: "female",
+    country: "UAE",
+    city: "Abu Dhabi",
+    nationality: "Korean",
+    phone: "050 111 2233",
+    email: "sara@example.com",
+    languages: "Korean, English",
+    englishLevel: "fluent",
+    otherLanguages: "None",
+    previousEmployment: "Acme",
+    previousPosition: "Office assistant",
+    yearsExperience: "3",
+    previousExperience: "Admin work",
+    whyInterested: "I like translation",
+    workEnvironment: "Calm",
+    lookingFor: "Growth",
+  };
+  it("normalises the phone and numbers", () => {
+    const parsed = fullProfileSchema.parse(full);
+    expect(parsed.phone).toBe("+971501112233");
+    expect(parsed.age).toBe(29);
+  });
+  it("requires every field", () => {
+    expect(fullProfileSchema.safeParse({ ...full, nationality: " " }).success).toBe(false);
+    expect(fullProfileSchema.safeParse({ ...full, email: "" }).success).toBe(false);
+    expect(fullProfileSchema.safeParse({ ...full, age: "12" }).success).toBe(false);
+  });
+});
+
+describe("typing answer", () => {
+  it("carries the typing stats, and nothing else", () => {
+    const stats = { seconds: 90, backspaces: 4, keystrokes: 300 };
+    expect(testAnswerSchema.safeParse({ ...ids, answer: { text: "Hello", stats } }).success).toBe(
+      true,
+    );
+    expect(
+      testAnswerSchema.safeParse({
+        ...ids,
+        answer: { text: "Hello", stats: { ...stats, wpm: 99 } },
+      }).success,
+    ).toBe(false);
   });
 });

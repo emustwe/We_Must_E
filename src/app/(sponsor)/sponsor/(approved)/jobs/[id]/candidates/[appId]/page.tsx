@@ -3,19 +3,27 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
-import { getCandidateVideoUrl } from "@/actions/sponsor-candidates";
+import { getCandidateCvUrl, getCandidateVideoUrl } from "@/actions/sponsor-candidates";
+import { CvButton } from "@/components/admin/review-panel";
 import { VideoViewer } from "@/components/admin/application-review";
 import { UnlockButton } from "@/components/sponsors/unlock-button";
 import { getEmployerAccount } from "@/lib/auth/employer";
 import { createClient } from "@/lib/supabase/server";
 import { idSchema } from "@/lib/validations/jobs";
+import { typingResult } from "@/lib/typing";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("candidate");
   return { title: t("title"), robots: { index: false, follow: false } };
 }
 
-type Answer = { options?: number[]; text?: string; number?: number } | null;
+type Answer = {
+  options?: number[];
+  other?: string;
+  text?: string;
+  number?: number;
+  stats?: { seconds: number; backspaces: number };
+} | null;
 type Item = { prompt: string; type: string; options: string[]; answer: Answer };
 type Candidate = {
   id: string;
@@ -28,7 +36,9 @@ type Candidate = {
   test: Item[];
   survey: Item[];
   video_questions: string[];
-  videos: { id: string; seconds: number }[];
+  videos: { id: string; seconds: number; prompt: string | null }[];
+  profile: Record<string, string | number>;
+  has_cv: boolean;
 };
 
 function answerText(q: Item) {
@@ -37,13 +47,41 @@ function answerText(q: Item) {
   if (Array.isArray(a.options))
     return (
       a.options
-        .map((i) => q.options[i])
+        .map((i) =>
+          a.other && /^other\b/i.test(q.options[i] ?? "")
+            ? `${q.options[i]}: ${a.other}`
+            : q.options[i],
+        )
         .filter(Boolean)
         .join(", ") || "—"
     );
+  // Typing test: what was typed, with speed and accuracy.
+  if (q.type === "typing" && typeof a.text === "string" && a.stats) {
+    const r = typingResult(q.options[0] ?? "", a.text, a.stats.seconds);
+    return `${a.text}\n(${r.wpm} WPM · ${r.accuracy}% · ${a.stats.backspaces} backspaces)`;
+  }
   if (typeof a.number === "number") return String(a.number);
   return a.text || "—";
 }
+
+const PROFILE_ORDER = [
+  "preferredName",
+  "age",
+  "gender",
+  "country",
+  "city",
+  "nationality",
+  "languages",
+  "englishLevel",
+  "otherLanguages",
+  "previousEmployment",
+  "previousPosition",
+  "yearsExperience",
+  "previousExperience",
+  "whyInterested",
+  "workEnvironment",
+  "lookingFor",
+];
 
 // A candidate approved by the Wemuste team for this sponsor's job. The name
 // is always visible; everything else opens with 1 E-coin and then stays open.
@@ -54,6 +92,7 @@ export default async function CandidatePage({
   if (!idSchema.safeParse(id).success || !idSchema.safeParse(appId).success) notFound();
   const { employer } = await getEmployerAccount();
   const t = await getTranslations("candidate");
+  const ta = await getTranslations("apply");
   const te = await getTranslations("ecoins");
   const format = await getFormatter();
   const supabase = await createClient();
@@ -159,6 +198,35 @@ export default async function CandidatePage({
         </p>
       </section>
 
+      {Object.keys(c.profile ?? {}).length || c.has_cv ? (
+        <section className="shadow-float rounded-3xl bg-card p-5">
+          <h2 className="mb-3 text-xl font-extrabold">{t("profile")}</h2>
+          <dl className="divide-y">
+            {PROFILE_ORDER.filter((k) => c.profile?.[k] !== undefined).map((k) => (
+              <div key={k} className="py-3 first:pt-0 last:pb-0">
+                <dt className="text-sm text-muted-foreground">{ta(`profile.${k}` as never)}</dt>
+                <dd className="mt-0.5 font-semibold whitespace-pre-line">
+                  {k === "gender"
+                    ? ta(`genderOption.${c.profile[k]}` as never)
+                    : k === "englishLevel"
+                      ? ta(`englishOption.${c.profile[k]}` as never)
+                      : String(c.profile[k])}
+                </dd>
+              </div>
+            ))}
+          </dl>
+          {c.has_cv ? (
+            <div className="mt-4">
+              <CvButton
+                applicationId={c.id}
+                load={getCandidateCvUrl}
+                className="inline-flex h-11 items-center gap-2 rounded-2xl bg-muted px-4 text-sm font-semibold"
+              />
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
       {c.test.length ? (
         <section className="shadow-float rounded-3xl bg-card p-5">
           <h2 className="mb-3 text-xl font-extrabold">{t("testAnswers")}</h2>
@@ -187,8 +255,15 @@ export default async function CandidatePage({
             </ol>
           </div>
           <p className="text-sm text-muted-foreground">{t("videoNote")}</p>
-          {c.videos.map((v) => (
-            <VideoViewer key={v.id} videoId={v.id} load={getCandidateVideoUrl} />
+          {c.videos.map((v, i) => (
+            <div key={v.id} className="space-y-2">
+              {v.prompt ? (
+                <p className="text-sm font-semibold whitespace-pre-line">
+                  {i + 1}. {v.prompt}
+                </p>
+              ) : null}
+              <VideoViewer videoId={v.id} load={getCandidateVideoUrl} />
+            </div>
           ))}
         </section>
       ) : null}

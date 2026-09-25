@@ -8,7 +8,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { StartStep } from "@/components/apply/start-step";
 import { SurveyStep } from "@/components/apply/survey-step";
 import { TestStep } from "@/components/apply/test-step";
-import { VideoStep } from "@/components/apply/video-step";
+import { TaskStep } from "@/components/apply/task-step";
 import type { ApplyView } from "@/server/public-application";
 
 type Job = { title: string; locationLabel: string };
@@ -83,7 +83,7 @@ export function ApplyWizard({ jobId, job, view }: { jobId: string; job: Job; vie
       <main className="mt-6 flex flex-1 flex-col">
         {view.stage === "start" ? <StartStep jobId={jobId} /> : null}
         {view.stage === "test" ? <TestStep key="test" jobId={jobId} view={view} /> : null}
-        {view.stage === "video" ? <VideoStep key="video" jobId={jobId} view={view} /> : null}
+        {view.stage === "video" ? <TaskStep key="video" jobId={jobId} view={view} /> : null}
         {view.stage === "survey" ? <SurveyStep key="survey" jobId={jobId} view={view} /> : null}
       </main>
     </div>

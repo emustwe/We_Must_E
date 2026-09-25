@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState, useTransition, type ReactNode } from "react";
 import { toast } from "sonner";
-import { getVideoUrl, reviewApplication } from "@/actions/admin-applications";
+import { getCvUrl, getVideoUrl, reviewApplication } from "@/actions/admin-applications";
 import { btn } from "@/components/admin/wm";
 import { WmIcon } from "@/components/map/wm-icons";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -82,7 +82,7 @@ export function VideoTile({
           {length}
         </span>
       </button>
-      <span className="text-xs font-bold text-wm-body">{caption}</span>
+      <span className="line-clamp-3 text-xs font-bold text-wm-body sm:w-[152px]">{caption}</span>
     </div>
   );
 }
@@ -181,5 +181,42 @@ export function DecisionBar({
         {t("sponsorsOnly")}
       </span>
     </div>
+  );
+}
+
+// Opens the CV (a 5-minute link; the view is logged). `load` is the admin's
+// or the sponsor's server action.
+export function CvButton({
+  applicationId,
+  load = getCvUrl,
+  className,
+}: {
+  applicationId: string;
+  load?: (id: string) => Promise<import("@/lib/result").ActionResult<{ url: string }>>;
+  className?: string;
+}) {
+  const t = useTranslations("adminUi");
+  const te = useTranslations("errors");
+  const [pending, startTransition] = useTransition();
+  return (
+    <button
+      type="button"
+      disabled={pending}
+      className={className ?? btn("secondary", "xs")}
+      onClick={() =>
+        startTransition(async () => {
+          const result = await load(applicationId);
+          if (!result.ok) toast.error(te(result.error));
+          else window.location.assign(result.data.url);
+        })
+      }
+    >
+      {pending ? (
+        <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+      ) : (
+        <WmIcon name="fileText" size={16} stroke={2.1} />
+      )}
+      {t("openCv")}
+    </button>
   );
 }

@@ -236,7 +236,8 @@ insert into tests (id, title, time_limit_seconds, pass_score, is_active)
 insert into test_questions (id, test_id, type, prompt, options, position, points) values
   ('30000000-0000-0000-0000-0000000000a1', '30000000-0000-0000-0000-000000000001', 'single_choice', 'Q1', '["a","b"]', 0, 1),
   ('30000000-0000-0000-0000-0000000000a2', '30000000-0000-0000-0000-000000000001', 'multi_choice', 'Q2', '["a","b","c"]', 1, 2),
-  ('30000000-0000-0000-0000-0000000000a3', '30000000-0000-0000-0000-000000000001', 'long_text', 'Q3', '[]', 2, 1);
+  ('30000000-0000-0000-0000-0000000000a3', '30000000-0000-0000-0000-000000000001', 'long_text', 'Q3', '[]', 2, 1),
+  ('30000000-0000-0000-0000-0000000000a4', '30000000-0000-0000-0000-000000000001', 'typing', 'Type this', '["Hello team"]', 3, 1);
 insert into test_answer_keys (question_id, correct_options) values
   ('30000000-0000-0000-0000-0000000000a1', '{1}'), ('30000000-0000-0000-0000-0000000000a2', '{0,2}');
 insert into video_question_sets (id, title, is_active) values ('30000000-0000-0000-0000-000000000002', 'Videos', true);
@@ -283,6 +284,9 @@ select ok((select app_start_test(:JC, :TOKA)) > now(), 'starting the test return
 select lives_ok(format($$select app_save_test_answer(%s, %s, '30000000-0000-0000-0000-0000000000a1', '{"options":[1]}')$$, :'JC', :'TOKA'), 'a choice answer is saved');
 select lives_ok(format($$select app_save_test_answer(%s, %s, '30000000-0000-0000-0000-0000000000a2', '{"options":[2,0]}')$$, :'JC', :'TOKA'), 'a multi-choice answer is saved');
 select lives_ok(format($$select app_save_test_answer(%s, %s, '30000000-0000-0000-0000-0000000000a3', '{"text":"I like people"}')$$, :'JC', :'TOKA'), 'a written answer is saved');
+select lives_ok(format($$select app_save_test_answer(%s, %s, '30000000-0000-0000-0000-0000000000a4', '{"text":"Hello team","stats":{"seconds":40,"backspaces":3,"keystrokes":55}}')$$, :'JC', :'TOKA'), 'a typing answer with its stats is saved');
+select throws_ok(format($$select app_save_test_answer(%s, %s, '30000000-0000-0000-0000-0000000000a4', '{"text":"x","stats":{"score":100}}')$$, :'JC', :'TOKA'),
+  '22023', 'invalid_answer', 'unknown typing stats are refused');
 select throws_ok(format($$select app_save_test_answer(%s, %s, '30000000-0000-0000-0000-0000000000a1', '{"options":[0,1]}')$$, :'JC', :'TOKA'),
   '22023', 'invalid_answer', 'two options for a single-choice question are refused');
 select throws_ok(format($$select app_save_test_answer(%s, %s, '30000000-0000-0000-0000-0000000000a1', '{"options":[7]}')$$, :'JC', :'TOKA'),
@@ -300,21 +304,35 @@ select is((select (test_score, test_max_score)::text from applications where id 
 select is((select answer ->> 'options' from application_test_answers where application_id = :AA
             and question_id = '30000000-0000-0000-0000-0000000000a1'), '[1]', 'the late answer did not replace the saved one');
 select is((select current_step::text from applications where id = :AA), 'video', 'after the test comes the video');
-select is((select jsonb_array_length(private.video_prompts(:AA))), 3, 'the video page asks about the test''s questions');
+select is((select jsonb_array_length(private.video_prompts(:AA))), 4, 'the video page asks about the test''s questions');
 
--- One video explains all the answers.
-select throws_ok(format('select app_record_video(%s, %s, ''someone-else/x.webm'', 10, 1000, ''video/webm'')', :'JC', :'TOKA'),
-  '22023', 'invalid_video', 'a video path outside the application folder is refused');
-select throws_ok(format('select app_finish_videos(%s, %s)', :'JC', :'TOKA'), '22023', 'incomplete', 'the video step needs the video');
-select throws_ok(format('select app_record_video(%s, %s, %L, 400, 2000, ''video/webm'')', :'JC', :'TOKA',
-  (select id from applications where draft_token_hash = :TOKA) || '/answer/long.webm'),
-  '22023', 'invalid_video', 'the video can be at most 5 minutes');
-select lives_ok(format('select app_record_video(%s, %s, %L, 12, 2000, ''video/webm'')', :'JC', :'TOKA',
-  (select id from applications where draft_token_hash = :TOKA) || '/answer/one.webm'), 'the video is recorded');
-select is(app_record_video(:JC, :TOKA, (select id from applications where draft_token_hash = :TOKA) || '/answer/two.webm', 65, 2000, 'video/webm'),
-  array[(select id from applications where draft_token_hash = :TOKA) || '/answer/one.webm'], 'recording again replaces the video (the old file is returned for deletion)');
-select is((select count(*)::int from application_videos where application_id = :AA), 1, 'there is only ever one video');
+-- Task: one video per video question, plus the contact details.
+\set APP '(select id from applications where draft_token_hash = ' :TOKA ')'
+select throws_ok(format('select app_record_question_video(%s, %s, %s, ''someone-else/x.webm'', 10, 1000, ''video/webm'')', :'JC', :'TOKA', :'VQ'),
+  '22023', 'invalid_video', 'a video path outside the question folder is refused');
+select throws_ok(format('select app_record_question_video(%s, %s, %s, %L, 40, 2000, ''video/webm'')', :'JC', :'TOKA', :'VQ',
+  (select id from applications where draft_token_hash = :TOKA) || '/30000000-0000-0000-0000-0000000000b1/long.webm'),
+  '22023', 'invalid_video', 'a video longer than its question allows is refused');
+select lives_ok(format('select app_record_question_video(%s, %s, %s, %L, 12, 2000, ''video/webm'')', :'JC', :'TOKA', :'VQ',
+  (select id from applications where draft_token_hash = :TOKA) || '/30000000-0000-0000-0000-0000000000b1/one.webm'), 'a question''s video is recorded');
+select is(app_record_question_video(:JC, :TOKA, :VQ,
+  (select id from applications where draft_token_hash = :TOKA) || '/30000000-0000-0000-0000-0000000000b1/two.webm', 20, 2000, 'video/webm'),
+  (select id from applications where draft_token_hash = :TOKA) || '/30000000-0000-0000-0000-0000000000b1/one.webm',
+  'recording a question again replaces its video (the old file is returned)');
+select throws_ok(format($$select app_save_profile(%s, %s, '{"fullName":"Sara Ali","phone":"12"}')$$, :'JC', :'TOKA'),
+  '22023', 'invalid_input', 'the profile needs a valid phone number');
+select lives_ok(format($$select app_save_profile(%s, %s, '{"fullName":"Sara Ali","phone":"+971501234567","age":"29"}')$$, :'JC', :'TOKA'),
+  'the Task profile is saved');
+select throws_ok(format('select app_finish_videos(%s, %s)', :'JC', :'TOKA'), '22023', 'incomplete', 'every video question needs its video');
+select lives_ok(format('select app_record_question_video(%s, %s, ''30000000-0000-0000-0000-0000000000b2'', %L, 30, 2000, ''video/webm'')', :'JC', :'TOKA',
+  (select id from applications where draft_token_hash = :TOKA) || '/30000000-0000-0000-0000-0000000000b2/a.webm'), 'the second question''s video is recorded');
+select throws_ok(format('select app_record_cv(%s, %s, ''other-app/cv/x.pdf'')', :'JC', :'TOKA'), '22023', 'invalid_input', 'a CV path outside the application is refused');
+select lives_ok(format('select app_record_cv(%s, %s, %L)', :'JC', :'TOKA',
+  (select id from applications where draft_token_hash = :TOKA) || '/cv/cv.pdf'), 'the CV is recorded');
+select is((select count(*)::int from application_videos where application_id = :AA), 2, 'one video per question');
+select ok((select task_started_at is not null from applications where id = :AA), 'the Task clock started');
 select lives_ok(format('select app_finish_videos(%s, %s)', :'JC', :'TOKA'), 'the video completes the video step');
+select ok((select survey_started_at is not null from applications where id = :AA), 'the Survey clock started');
 
 select throws_ok(format($$select app_submit(%s, %s, 'Sara Ali', '+971501234567', '', '{}', 'v1', 'ip', true)$$, :'JC', :'TOKA'),
   '22023', 'incomplete', 'required survey questions must be answered');
@@ -402,7 +420,7 @@ select is((select metadata::text from audit_logs where action = 'application.rev
   '{"to": "approved", "from": "submitted"}', 'the review is audited without personal data');
 select ok(tests.denied_as(:AD, format('select admin_review_application(%s, ''in_progress'', '''')', :'AA'), 'aal2'),
   'an application cannot be sent back to in progress');
-select id as video_id from application_videos where application_id = :AA \gset
+select id as video_id from application_videos where application_id = :AA limit 1 \gset
 
 -- Every video view is logged; only MFA admins may log (and so view).
 select ok(tests.denied_as(:AD, format('select log_video_view(%L)', :'video_id')), 'video views need MFA');
@@ -448,19 +466,24 @@ select ok(tests.denied_as(:E3, $$insert into candidate_unlocks (application_id, 
 
 -- Unlocked: the sponsor sees everything (with the test answers), nobody else does.
 select ok(not tests.denied_as(:E3, format('select sponsor_get_candidate(%L)', :'aa_id')), 'the sponsor can open the unlocked candidate');
-select is((select jsonb_array_length(sponsor_get_candidate(:'aa_id') -> 'test') from (select tests.act_as(:E3, 'aal1')) x), 3,
+select is((select jsonb_array_length(sponsor_get_candidate(:'aa_id') -> 'test') from (select tests.act_as(:E3, 'aal1')) x), 4,
   'the unlocked candidate includes the test answers');
 reset role;
 select is(tests.rows_as(:E1, format('select * from sponsor_list_candidates(%s)', :'JC')), 0, 'another sponsor sees nothing for that job');
 select ok(tests.denied_as(:E1, format('select sponsor_get_candidate(%L)', :'aa_id')), 'another sponsor cannot open the candidate');
 select ok(tests.denied_as(:E1, format('select sponsor_unlock_candidate(%L)', :'aa_id')), 'another sponsor cannot unlock the candidate');
-select is(tests.rows_as(:E3, 'select 1 from application_videos'), 1, 'the sponsor sees the unlocked candidate''s video');
+select is(tests.rows_as(:E3, 'select 1 from application_videos'), 2, 'the sponsor sees the unlocked candidate''s videos');
 select is(tests.rows_as(:E3, 'select 1 from applications'), 0, 'sponsors still cannot read the applications table (admin notes stay private)');
 select tests.run_as(:E3, format('select log_video_view(%L)', :'video_id'));
 select ok(exists (select 1 from audit_logs where action = 'application.video_viewed' and actor_id = :E3::uuid), 'a sponsor''s video view is logged');
 select ok(tests.denied_as(:E1, format('select log_video_view(%L)', :'video_id')), 'another sponsor cannot watch the video');
 insert into storage.objects (bucket_id, name) values ('application-videos', :'aa_id' || '/answer/one.webm');
 select is(tests.rows_as(:E3, $$select 1 from storage.objects where bucket_id = 'application-videos' and name not like 'demo/%'$$), 1, 'storage: the sponsor can read the unlocked video file');
+insert into storage.objects (bucket_id, name) values ('application-cvs', :'aa_id' || '/cv/cv.pdf');
+select is(tests.rows_as(:E3, $$select 1 from storage.objects where bucket_id = 'application-cvs'$$), 1, 'storage: the sponsor can read the unlocked CV');
+select is(tests.rows_as(:E1, $$select 1 from storage.objects where bucket_id = 'application-cvs'$$), 0, 'storage: other sponsors read no CVs');
+select ok((select (sponsor_get_candidate(:'aa_id') ->> 'has_cv')::boolean from (select tests.act_as(:E3, 'aal1')) x), 'the sponsor sees there is a CV');
+reset role;
 select is(tests.rows_as(:E1, $$select 1 from storage.objects where bucket_id = 'application-videos'$$), 0, 'storage: other sponsors read no video files');
 
 -- Cleanup: unfinished applications older than 48 h, never submitted ones.

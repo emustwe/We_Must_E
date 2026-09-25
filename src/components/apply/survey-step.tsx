@@ -4,40 +4,43 @@ import { Check } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
-import { sendPhoneCode, submitApplication, verifyPhoneCode } from "@/actions/apply";
+import { submitApplication } from "@/actions/apply";
+import { SectionTimer } from "@/components/apply/section-timer";
 import { useStepAction } from "@/components/apply/use-step-action";
 import { FormAlert } from "@/components/forms/form-alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { contactSchema } from "@/lib/validations/apply";
 import type { ApplyView, SurveyQuestionView } from "@/server/public-application";
 
 type SurveyView = Extract<ApplyView, { stage: "survey" }>;
-type Answer = { options: number[] } | { text: string } | { number: number };
-type Draft = {
-  contact: { fullName: string; phone: string; email: string };
-  answers: Record<string, Answer>;
-};
+type Answer = { options: number[]; other?: string } | { text: string } | { number: number };
+type Draft = { answers: Record<string, Answer> };
+
+// "Other" options ask for a typed answer.
+export const isOther = (label: string) => /^other\b/i.test(label.trim());
 
 // Answers stay in this tab only (sessionStorage) until the applicant consents
-// and sends them; nothing personal reaches the server before that.
+// and sends them.
 export const draftKey = (jobId: string) => `wm-apply-${jobId}`;
 function loadDraft(jobId: string): Draft {
   try {
     const raw = sessionStorage.getItem(draftKey(jobId));
-    if (raw) return JSON.parse(raw) as Draft;
+    if (raw) return { answers: (JSON.parse(raw) as Draft).answers ?? {} };
   } catch {
     // Storage blocked or corrupt: start empty.
   }
-  return { contact: { fullName: "", phone: "", email: "" }, answers: {} };
+  return { answers: {} };
 }
+
+const otherPicked = (q: SurveyQuestionView, a: { options: number[] }) =>
+  a.options.some((o) => isOther(q.options[o] ?? ""));
 
 const answered = (q: SurveyQuestionView, a: Answer | undefined) =>
   !!a &&
   ("options" in a
-    ? a.options.length > 0
+    ? a.options.length > 0 && (!otherPicked(q, a) || Boolean(a.other?.trim()))
     : "text" in a
       ? a.text.trim().length > 0
       : Number.isFinite(a.number));
@@ -46,16 +49,9 @@ export function SurveyStep({ jobId, view }: { jobId: string; view: SurveyView })
   const t = useTranslations("apply");
   const tAll = useTranslations();
   const { run, pending, error, setError } = useStepAction();
-  const [draft, setDraft] = useState<Draft>({
-    contact: { fullName: "", phone: "", email: "" },
-    answers: {},
-  });
+  const [draft, setDraft] = useState<Draft>({ answers: {} });
   const [loaded, setLoaded] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [missing, setMissing] = useState<Set<string>>(new Set());
-  const [codeSentTo, setCodeSentTo] = useState<string | null>(null);
-  const [verified, setVerified] = useState(!view.requireOtp);
-  const [code, setCode] = useState("");
   const [consent, setConsent] = useState(false);
   const [consentMissing, setConsentMissing] = useState(false);
 
@@ -75,11 +71,6 @@ export function SurveyStep({ jobId, view }: { jobId: string; view: SurveyView })
   }, [draft, jobId, loaded]);
 
   const questions = view.questions;
-  const tr = (key?: string) =>
-    key ? (tAll.has(key as never) ? tAll(key as never) : key) : undefined;
-
-  const setContact = (field: keyof Draft["contact"], value: string) =>
-    setDraft((d) => ({ ...d, contact: { ...d.contact, [field]: value } }));
   const setAnswer = (id: string, value: Answer | undefined) => {
     setMissing((m) => {
       const next = new Set(m);
@@ -97,39 +88,12 @@ export function SurveyStep({ jobId, view }: { jobId: string; view: SurveyView })
   const scrollTo = (id: string) =>
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "center" });
 
-  async function sendCode() {
-    const parsed = contactSchema.shape.phone.safeParse(draft.contact.phone);
-    if (!parsed.success) {
-      setFieldErrors((f) => ({ ...f, phone: "validation.phoneInvalid" }));
-      return;
-    }
-    const sent = await run(() => sendPhoneCode({ jobId, phone: draft.contact.phone }), {
-      refresh: false,
-    });
-    if (sent) setCodeSentTo(parsed.data);
-  }
-
-  async function verify() {
-    const ok = await run(() => verifyPhoneCode({ jobId, code }), { refresh: false });
-    if (ok) setVerified(true);
-  }
-
   // Check everything on the page, then send it all at once.
   async function submit() {
     setError(null);
-    const contact = contactSchema.safeParse(draft.contact);
-    const errors = contact.success
-      ? {}
-      : Object.fromEntries(contact.error.issues.map((i) => [String(i.path[0]), i.message]));
-    setFieldErrors(errors);
     const open = questions.filter((q) => q.required && !answered(q, draft.answers[q.id]));
     setMissing(new Set(open.map((q) => q.id)));
     setConsentMissing(!consent);
-    if (!contact.success) return scrollTo("contact");
-    if (view.requireOtp && !verified) {
-      setError(tAll("errors.phoneUnverified"));
-      return scrollTo("contact");
-    }
     if (open.length) {
       setError(t("answerAll", { count: open.length }));
       return scrollTo(`s-card-${open[0].id}`);
@@ -139,94 +103,36 @@ export function SurveyStep({ jobId, view }: { jobId: string; view: SurveyView })
       return scrollTo("consent");
     }
     const answers = Object.fromEntries(
-      Object.entries(draft.answers).filter(([id, a]) => {
-        const q = questions.find((x) => x.id === id);
-        return q && answered(q, a);
-      }),
+      Object.entries(draft.answers)
+        .filter(([id, a]) => {
+          const q = questions.find((x) => x.id === id);
+          return q && answered(q, a);
+        })
+        .map(([id, a]) => {
+          // Keep the typed "Other" only when "Other" is picked.
+          const q = questions.find((x) => x.id === id)!;
+          if ("options" in a) {
+            return [
+              id,
+              otherPicked(q, a)
+                ? { options: a.options, other: a.other!.trim() }
+                : { options: a.options },
+            ];
+          }
+          return [id, a];
+        }),
     );
     // On success the server redirects to the confirmation page, which clears the draft.
-    await run(() => submitApplication({ jobId, contact: draft.contact, answers, consent: true }), {
+    await run(() => submitApplication({ jobId, answers, consent: true }), {
       refresh: false,
     });
   }
 
   return (
     <div className="flex flex-1 flex-col">
+      <SectionTimer deadline={view.deadline} />
       <h1 className="text-3xl font-extrabold tracking-tight">{t("surveyTitle")}</h1>
       <p className="mt-2 text-sm text-muted-foreground">{t("surveyOnePage")}</p>
-
-      <section id="contact" className="mt-5 scroll-mt-20 space-y-4 rounded-3xl bg-muted/30 p-4">
-        <h2 className="font-bold">{t("contactTitle")}</h2>
-        <TextField
-          id="fullName"
-          label={t("fullName")}
-          value={draft.contact.fullName}
-          onChange={(v) => setContact("fullName", v)}
-          autoComplete="name"
-          error={tr(fieldErrors.fullName)}
-        />
-        <TextField
-          id="phone"
-          label={t("phone")}
-          hint={t("phoneHint")}
-          value={draft.contact.phone}
-          onChange={(v) => {
-            setContact("phone", v);
-            if (view.requireOtp) setVerified(false);
-          }}
-          type="tel"
-          inputMode="tel"
-          autoComplete="tel"
-          error={tr(fieldErrors.phone)}
-        />
-        {view.requireOtp && !verified ? (
-          <div className="space-y-2">
-            {codeSentTo ? (
-              <>
-                <p className="text-sm text-muted-foreground">
-                  {t("codeBody", { phone: codeSentTo })}
-                </p>
-                <TextField
-                  id="code"
-                  label={t("code")}
-                  value={code}
-                  onChange={(v) => setCode(v.replace(/\D/g, "").slice(0, 6))}
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                />
-                <Button
-                  type="button"
-                  size="pill"
-                  disabled={pending || code.length !== 6}
-                  onClick={verify}
-                >
-                  {t("verify")}
-                </Button>
-              </>
-            ) : (
-              <Button
-                type="button"
-                size="pill"
-                variant="secondary"
-                disabled={pending}
-                onClick={sendCode}
-              >
-                {t("sendCode")}
-              </Button>
-            )}
-          </div>
-        ) : null}
-        <TextField
-          id="email"
-          label={`${t("email")} (${t("optional")})`}
-          value={draft.contact.email}
-          onChange={(v) => setContact("email", v)}
-          type="email"
-          inputMode="email"
-          autoComplete="email"
-          error={tr(fieldErrors.email)}
-        />
-      </section>
 
       {questions.length ? (
         <ol className="mt-4 space-y-4">
@@ -297,49 +203,6 @@ export function SurveyStep({ jobId, view }: { jobId: string; view: SurveyView })
   );
 }
 
-function TextField({
-  id,
-  label,
-  hint,
-  error,
-  value,
-  onChange,
-  ...props
-}: {
-  id: string;
-  label: string;
-  hint?: string;
-  error?: string;
-  value: string;
-  onChange: (value: string) => void;
-} & Omit<React.ComponentProps<typeof Input>, "id" | "value" | "onChange">) {
-  return (
-    <div className="space-y-1.5">
-      <Label htmlFor={id}>{label}</Label>
-      <Input
-        id={id}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        aria-invalid={Boolean(error)}
-        aria-describedby={error || hint ? `${id}-note` : undefined}
-        className="h-12 text-base"
-        {...props}
-      />
-      {error || hint ? (
-        <p
-          id={`${id}-note`}
-          className={cn(
-            "text-sm",
-            error ? "font-medium text-destructive" : "text-muted-foreground",
-          )}
-        >
-          {error ?? hint}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
 function QuestionCard({
   question,
   number,
@@ -390,7 +253,8 @@ function QuestionCard({
                         : on
                           ? selected.filter((o) => o !== oi)
                           : [...selected, oi].sort();
-                    onChange(options.length ? { options } : undefined);
+                    const other = value && "options" in value ? value.other : undefined;
+                    onChange(options.length ? { options, other } : undefined);
                   }}
                   className="peer sr-only"
                 />
@@ -408,6 +272,20 @@ function QuestionCard({
               </label>
             );
           })}
+          {value &&
+          "options" in value &&
+          value.options.some((o) => isOther(question.options[o] ?? "")) ? (
+            <div className="pt-1">
+              <Label htmlFor={`s-${question.id}-other`}>{t("otherLabel")}</Label>
+              <Input
+                id={`s-${question.id}-other`}
+                className="mt-1.5 h-12 text-base"
+                maxLength={300}
+                value={value.other ?? ""}
+                onChange={(e) => onChange({ options: value.options, other: e.target.value })}
+              />
+            </div>
+          ) : null}
         </fieldset>
       ) : question.type === "scale" ? (
         <fieldset className="mt-5">

@@ -24,11 +24,24 @@ export async function seedApplication(name: string) {
   );
   q(`select public.app_submit_test($JOB, $TOK)`);
   const appId = q(`select id from public.applications where draft_token_hash = $TOK`);
-  // One video explains all the test answers.
-  const path = `${appId}/answer/answer.webm`;
-  await uploadObject("application-videos", path, WEBM, "video/webm");
-  q(`select public.app_record_video($JOB, $TOK, '${path}', 12, ${WEBM.length}, 'video/webm')`);
-  const paths = [path];
+  // Task: contact details, and one video per video question.
+  q(
+    `select public.app_save_profile($JOB, $TOK, '{"fullName":"${name}","phone":"${PHONE}","email":""}')`,
+  );
+  const questions = q(
+    `select id from public.video_questions where set_id = (select video_set_id from public.applications where id = '${appId}') and is_active order by position`,
+  )
+    .split("\n")
+    .filter(Boolean);
+  const paths: string[] = [];
+  for (const question of questions) {
+    const path = `${appId}/${question}/answer.webm`;
+    await uploadObject("application-videos", path, WEBM, "video/webm");
+    q(
+      `select public.app_record_question_video($JOB, $TOK, '${question}', '${path}', 12, ${WEBM.length}, 'video/webm')`,
+    );
+    paths.push(path);
+  }
   q(`select public.app_finish_videos($JOB, $TOK)`);
   q(`select public.app_submit($JOB, $TOK, '${name}', '${PHONE}', '', (
        select jsonb_object_agg(id::text, case type

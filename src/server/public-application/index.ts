@@ -6,6 +6,7 @@ import { serverEnv } from "@/lib/env.server";
 import { logError } from "@/lib/log";
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { detectFileKind } from "@/lib/security/file-signature";
+import { basicProfileSchema, fullProfileSchema } from "@/lib/validations/apply";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Json } from "@/types/database";
 import { getSmsProvider, hashCode, newCode, OTP_MAX_ATTEMPTS, OTP_TTL_MINUTES } from "./otp";
@@ -17,6 +18,8 @@ import { clearToken, issueToken, readTokenHash } from "./token";
 // returns answer keys, scores or other applicants' data.
 
 export const VIDEO_BUCKET = "application-videos";
+export const CV_BUCKET = "application-cvs";
+const MAX_CV_BYTES = 5 * 1024 * 1024;
 export const CONSENT_VERSION = "2026-10-v2";
 const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
 // One video answers all the questions; the database allows up to 5 minutes.
@@ -26,10 +29,13 @@ const db = () => createAdminClient();
 
 export type TestQuestionView = {
   id: string;
-  type: "single_choice" | "multi_choice" | "short_text" | "long_text";
+  type: "single_choice" | "multi_choice" | "short_text" | "long_text" | "typing";
   prompt: string;
+  // For "typing": one item, the paragraph to type.
   options: string[];
+  timeLimitSeconds: number | null;
 };
+export type Profile = Record<string, string | number>;
 export type SurveyQuestionView = {
   id: string;
   type: "single_choice" | "multi_choice" | "short_text" | "long_text" | "number" | "scale";
@@ -51,12 +57,25 @@ export type ApplyView =
   | {
       stage: "video";
       steps: Steps;
-      // The questions the one video answers (the test's, or the video set's).
+      // "questions": one video per video question. "one": one video about the
+      // test's questions (when the job has no video questions).
+      mode: "questions" | "one";
+      questions: { id: string; prompt: string; maxSeconds: number; recorded: boolean }[];
       prompts: string[];
       maxSeconds: number;
       recorded: boolean;
+      fullProfile: boolean;
+      profile: Profile | null;
+      hasCv: boolean;
+      requireOtp: boolean;
+      deadline: string | null;
     }
-  | { stage: "survey"; steps: Steps; questions: SurveyQuestionView[]; requireOtp: boolean };
+  | {
+      stage: "survey";
+      steps: Steps;
+      questions: SurveyQuestionView[];
+      deadline: string | null;
+    };
 export type Steps = { test: boolean; video: boolean };
 
 type AppRow = {
@@ -66,7 +85,15 @@ type AppRow = {
   video_set_id: string | null;
   survey_id: string | null;
   test_started_at: string | null;
+  task_started_at: string | null;
+  survey_started_at: string | null;
+  profile: Json | null;
+  cv_path: string | null;
+  jobs: { full_profile: boolean } | null;
 };
+
+const deadlineFrom = (start: string | null, seconds: number | null | undefined) =>
+  start && seconds ? new Date(new Date(start).getTime() + seconds * 1000).toISOString() : null;
 
 async function currentApplication(
   jobId: string,
@@ -75,7 +102,9 @@ async function currentApplication(
   if (!tokenHash) return null;
   const { data } = await db()
     .from("applications")
-    .select("id, current_step, test_id, video_set_id, survey_id, test_started_at")
+    .select(
+      "id, current_step, test_id, video_set_id, survey_id, test_started_at, task_started_at, survey_started_at, profile, cv_path, jobs(full_profile)",
+    )
     .eq("job_id", jobId)
     .eq("draft_token_hash", tokenHash)
     .eq("status", "in_progress")
@@ -100,9 +129,9 @@ async function stepsFor(app: AppRow): Promise<Steps> {
           .eq("is_active", true)
       : null,
   ]);
-  const test = (tests?.count ?? 0) > 0;
-  // The video page explains the test questions, so it exists with a test too.
-  return { test, video: test || (videos?.count ?? 0) > 0 };
+  void videos;
+  // Every application has the Task step: it holds the contact details.
+  return { test: (tests?.count ?? 0) > 0, video: true };
 }
 
 const asOptions = (value: Json) =>
@@ -121,7 +150,7 @@ export async function getApplyView(jobId: string): Promise<ApplyView> {
       // Never select answer keys: the applicant only gets prompts and options.
       db()
         .from("test_questions")
-        .select("id, type, prompt, options")
+        .select("id, type, prompt, options, time_limit_seconds")
         .eq("test_id", app.test_id!)
         .order("position"),
       db()
@@ -139,49 +168,89 @@ export async function getApplyView(jobId: string): Promise<ApplyView> {
         app.test_started_at && limit
           ? new Date(new Date(app.test_started_at).getTime() + limit * 1000).toISOString()
           : null,
-      questions: (questions ?? []).map((q) => ({ ...q, options: asOptions(q.options) })),
+      questions: (questions ?? []).map((q) => ({
+        id: q.id,
+        type: q.type,
+        prompt: q.prompt,
+        options: asOptions(q.options),
+        timeLimitSeconds: q.time_limit_seconds,
+      })),
       answers: Object.fromEntries((answers ?? []).map((a) => [a.question_id, a.answer])),
     };
   }
 
   if (app.current_step === "video") {
-    // The same questions as the test, explained in one video; without a test,
-    // the live video questions.
-    const [{ data: testQs }, { data: videoQs }, { data: videos }] = await Promise.all([
-      app.test_id
-        ? db().from("test_questions").select("prompt").eq("test_id", app.test_id).order("position")
-        : Promise.resolve({ data: [] as { prompt: string }[] }),
-      app.video_set_id
-        ? db()
-            .from("video_questions")
-            .select("prompt")
-            .eq("set_id", app.video_set_id)
-            .eq("is_active", true)
-            .order("position")
-        : Promise.resolve({ data: [] as { prompt: string }[] }),
-      db().from("application_videos").select("id").eq("application_id", app.id),
-    ]);
-    const prompts = (testQs?.length ? testQs : (videoQs ?? [])).map((q) => q.prompt);
+    // One video per video question; without video questions, one video about
+    // the test's questions.
+    const [{ data: set }, { data: testQs }, { data: videoQs }, { data: videos }] =
+      await Promise.all([
+        app.video_set_id
+          ? db()
+              .from("video_question_sets")
+              .select("time_limit_seconds")
+              .eq("id", app.video_set_id)
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
+        app.test_id
+          ? db()
+              .from("test_questions")
+              .select("prompt")
+              .eq("test_id", app.test_id)
+              .order("position")
+          : Promise.resolve({ data: [] as { prompt: string }[] }),
+        app.video_set_id
+          ? db()
+              .from("video_questions")
+              .select("id, prompt, max_seconds")
+              .eq("set_id", app.video_set_id)
+              .eq("is_active", true)
+              .order("position")
+          : Promise.resolve({ data: [] as { id: string; prompt: string; max_seconds: number }[] }),
+        db().from("application_videos").select("id, question_id").eq("application_id", app.id),
+      ]);
+    const done = new Set((videos ?? []).map((v) => v.question_id));
+    const perQuestion = (videoQs ?? []).length > 0;
+    const profile =
+      app.profile && typeof app.profile === "object" && !Array.isArray(app.profile)
+        ? (app.profile as Profile)
+        : null;
     return {
       stage: "video",
       steps,
-      prompts,
+      mode: perQuestion ? "questions" : "one",
+      questions: (videoQs ?? []).map((q) => ({
+        id: q.id,
+        prompt: q.prompt,
+        maxSeconds: q.max_seconds,
+        recorded: done.has(q.id),
+      })),
+      prompts: perQuestion ? [] : (testQs ?? []).map((q) => q.prompt),
       maxSeconds: VIDEO_MAX_SECONDS,
-      recorded: Boolean(videos?.length),
+      recorded: !perQuestion && Boolean(videos?.length),
+      fullProfile: Boolean(app.jobs?.full_profile),
+      profile,
+      hasCv: Boolean(app.cv_path),
+      requireOtp: serverEnv.REQUIRE_PHONE_OTP,
+      deadline: deadlineFrom(app.task_started_at, set?.time_limit_seconds),
     };
   }
 
-  const { data: questions } = app.survey_id
-    ? await db()
-        .from("survey_questions")
-        .select("id, type, prompt, options, required")
-        .eq("survey_id", app.survey_id)
-        .order("position")
-    : { data: [] };
+  const [{ data: questions }, { data: survey }] = await Promise.all([
+    app.survey_id
+      ? db()
+          .from("survey_questions")
+          .select("id, type, prompt, options, required")
+          .eq("survey_id", app.survey_id)
+          .order("position")
+      : Promise.resolve({ data: [] }),
+    app.survey_id
+      ? db().from("surveys").select("time_limit_seconds").eq("id", app.survey_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
   return {
     stage: "survey",
     steps,
-    requireOtp: serverEnv.REQUIRE_PHONE_OTP,
+    deadline: deadlineFrom(app.survey_started_at, survey?.time_limit_seconds),
     questions: (questions ?? []).map((q) => ({ ...q, options: asOptions(q.options) })),
   };
 }
@@ -251,12 +320,14 @@ export const submitTest = (jobId: string) =>
 export async function createVideoUpload(
   jobId: string,
   mime: "video/webm" | "video/mp4" | "video/quicktime",
+  questionId?: string,
 ): Promise<ActionResult<{ path: string; signedUrl: string; token: string }>> {
   const current = await currentApplication(jobId);
   if (!current) return fail("sessionExpired");
   if (current.app.current_step !== "video") return fail("wrongStep");
   const ext = { "video/webm": "webm", "video/mp4": "mp4", "video/quicktime": "mov" }[mime];
-  const path = `${current.app.id}/answer/${randomUUID()}.${ext}`;
+  // One folder per question ("answer": the one video about the test).
+  const path = `${current.app.id}/${questionId ?? "answer"}/${randomUUID()}.${ext}`;
   const { data, error } = await db().storage.from(VIDEO_BUCKET).createSignedUploadUrl(path);
   if (error || !data) {
     logError("app-video-upload-url", error);
@@ -274,7 +345,14 @@ export async function confirmVideo(
 ): Promise<ActionResult> {
   const current = await currentApplication(jobId);
   if (!current) return fail("sessionExpired");
-  if (!path.startsWith(`${current.app.id}/answer/`) || path.includes("..")) {
+  const parts = path.split("/");
+  const questionId = parts[1] === "answer" ? null : parts[1];
+  if (
+    parts.length !== 3 ||
+    parts[0] !== current.app.id ||
+    path.includes("..") ||
+    (questionId !== null && !/^[0-9a-f-]{36}$/.test(questionId))
+  ) {
     return fail("invalidFile");
   }
   const storage = db().storage.from(VIDEO_BUCKET);
@@ -305,14 +383,27 @@ export async function confirmVideo(
     return fail("invalidFile");
   }
 
-  const { data: replaced, error } = await db().rpc("app_record_video", {
-    p_job_id: jobId,
-    p_token_hash: current.tokenHash,
-    p_storage_path: path,
-    p_duration_seconds: Math.min(VIDEO_MAX_SECONDS, Math.max(1, Math.round(durationSeconds))),
-    p_size_bytes: size,
-    p_mime_type: mime,
-  });
+  const seconds = Math.min(VIDEO_MAX_SECONDS, Math.max(1, Math.round(durationSeconds)));
+  const { data: replaced, error } = questionId
+    ? await db()
+        .rpc("app_record_question_video", {
+          p_job_id: jobId,
+          p_token_hash: current.tokenHash,
+          p_question_id: questionId,
+          p_storage_path: path,
+          p_duration_seconds: seconds,
+          p_size_bytes: size,
+          p_mime_type: mime,
+        })
+        .then((r) => ({ data: r.data ? [r.data] : [], error: r.error }))
+    : await db().rpc("app_record_video", {
+        p_job_id: jobId,
+        p_token_hash: current.tokenHash,
+        p_storage_path: path,
+        p_duration_seconds: seconds,
+        p_size_bytes: size,
+        p_mime_type: mime,
+      });
   if (error) {
     await storage.remove([path]);
     return dbFail("app-record-video", error);
@@ -329,6 +420,91 @@ export const finishVideos = (jobId: string) =>
     (t) => db().rpc("app_finish_videos", { p_job_id: jobId, p_token_hash: t }),
     "app-finish-videos",
   );
+
+// ------------------------------------------------------------------ Task profile + CV
+// Checks every field (the full profile when the job asks for it) and saves it.
+export async function saveProfile(
+  jobId: string,
+  input: Record<string, string | number>,
+): Promise<ActionResult<{ fieldErrors?: Record<string, string> }>> {
+  const current = await currentApplication(jobId);
+  if (!current) return fail("sessionExpired");
+  const schema = current.app.jobs?.full_profile ? fullProfileSchema : basicProfileSchema;
+  const parsed = schema.safeParse(input);
+  if (!parsed.success) {
+    const fieldErrors: Record<string, string> = {};
+    for (const issue of parsed.error.issues) fieldErrors[String(issue.path[0])] ??= issue.message;
+    return fail("invalidInput", fieldErrors);
+  }
+  const { error } = await db().rpc("app_save_profile", {
+    p_job_id: jobId,
+    p_token_hash: current.tokenHash,
+    p_profile: parsed.data,
+  });
+  return error ? dbFail("app-save-profile", error) : ok({});
+}
+
+export async function createCvUpload(
+  jobId: string,
+  kind: "pdf" | "docx",
+): Promise<ActionResult<{ path: string; signedUrl: string; token: string }>> {
+  const current = await currentApplication(jobId);
+  if (!current) return fail("sessionExpired");
+  if (current.app.current_step !== "video") return fail("wrongStep");
+  const path = `${current.app.id}/cv/${randomUUID()}.${kind}`;
+  const { data, error } = await db().storage.from(CV_BUCKET).createSignedUploadUrl(path);
+  if (error || !data) {
+    logError("app-cv-upload-url", error);
+    return fail("generic");
+  }
+  return ok({ path, signedUrl: data.signedUrl, token: data.token });
+}
+
+// Checks the uploaded CV (size, PDF or Word from its first bytes) and records it.
+export async function confirmCv(jobId: string, path: string): Promise<ActionResult> {
+  const current = await currentApplication(jobId);
+  if (!current) return fail("sessionExpired");
+  const parts = path.split("/");
+  if (
+    parts.length !== 3 ||
+    parts[0] !== current.app.id ||
+    parts[1] !== "cv" ||
+    path.includes("..")
+  ) {
+    return fail("invalidFile");
+  }
+  const storage = db().storage.from(CV_BUCKET);
+  const { data: listing } = await storage.list(`${current.app.id}/cv`, {
+    search: parts[2],
+    limit: 1,
+  });
+  const object = listing?.find((o) => o.name === parts[2]);
+  const size = Number(object?.metadata?.size ?? 0);
+  let kind: string | null = null;
+  if (object) {
+    const { data: signed } = await storage.createSignedUrl(path, 60);
+    if (signed) {
+      const res = await fetch(signed.signedUrl, { headers: { range: "bytes=0-15" } });
+      kind = res.ok ? detectFileKind(new Uint8Array(await res.arrayBuffer())) : null;
+    }
+  }
+  const expected = parts[2].endsWith(".pdf") ? "pdf" : "zip"; // DOCX is a ZIP container
+  if (!object || size < 1 || size > MAX_CV_BYTES || kind !== expected) {
+    if (object) await storage.remove([path]);
+    return fail("invalidFile");
+  }
+  const { data: old, error } = await db().rpc("app_record_cv", {
+    p_job_id: jobId,
+    p_token_hash: current.tokenHash,
+    p_storage_path: path,
+  });
+  if (error) {
+    await storage.remove([path]);
+    return dbFail("app-record-cv", error);
+  }
+  if (old && old !== path) await storage.remove([old]);
+  return ok(undefined);
+}
 
 // ------------------------------------------------------------------ phone code (optional)
 export async function sendPhoneCode(jobId: string, phoneE164: string): Promise<ActionResult> {
@@ -394,28 +570,26 @@ async function phoneVerified(applicationId: string, phoneE164: string) {
 }
 
 // ------------------------------------------------------------------ submit
+// The contact details come from the Task step's saved profile.
 export async function submitApplication(
   jobId: string,
-  input: {
-    fullName: string;
-    phoneE164: string;
-    email: string | null;
-    answers: Record<string, Json>;
-  },
+  answers: Record<string, Json>,
   ipHash: string,
 ): Promise<ActionResult> {
   const current = await currentApplication(jobId);
   if (!current) return fail("sessionExpired");
+  const profile = (current.app.profile ?? {}) as Profile;
+  const phone = String(profile.phone ?? "");
   const { error } = await db().rpc("app_submit", {
     p_job_id: jobId,
     p_token_hash: current.tokenHash,
-    p_full_name: input.fullName,
-    p_phone_e164: input.phoneE164,
-    p_email: input.email ?? "",
-    p_answers: input.answers,
+    p_full_name: String(profile.fullName ?? ""),
+    p_phone_e164: phone,
+    p_email: String(profile.email ?? ""),
+    p_answers: answers,
     p_consent_version: CONSENT_VERSION,
     p_ip_hash: ipHash,
-    p_phone_verified: await phoneVerified(current.app.id, input.phoneE164),
+    p_phone_verified: await phoneVerified(current.app.id, phone),
   });
   if (error) return dbFail("app-submit", error);
   await clearToken(jobId);
@@ -444,6 +618,17 @@ export async function cleanupAbandoned(hours = 48) {
         if (removeError) throw removeError;
         files += paths.length;
       }
+    }
+  }
+  // Their CVs too.
+  const cvs = db().storage.from(CV_BUCKET);
+  for (const id of ids) {
+    const { data: objects } = await cvs.list(`${id}/cv`, { limit: 100 });
+    const paths = (objects ?? []).map((o) => `${id}/cv/${o.name}`);
+    if (paths.length) {
+      const { error: removeError } = await cvs.remove(paths);
+      if (removeError) throw removeError;
+      files += paths.length;
     }
   }
   if (!ids.length) return { applications: 0, files };

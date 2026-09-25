@@ -9,6 +9,7 @@ import { fail, ok, type ActionResult } from "@/lib/result";
 import { createClient } from "@/lib/supabase/server";
 import { toFieldErrors } from "@/lib/validations/auth";
 import { reviewSchema, videoViewSchema } from "@/lib/validations/admin";
+import { idSchema } from "@/lib/validations/jobs";
 
 const VIDEO_URL_SECONDS = 300;
 
@@ -62,6 +63,29 @@ export async function getVideoUrl(input: unknown): Promise<ActionResult<{ url: s
     .createSignedUrl(video.storage_path, VIDEO_URL_SECONDS);
   if (error || !data) {
     logError("admin-video-url", error);
+    return fail("generic");
+  }
+  return ok({ url: data.signedUrl });
+}
+
+// A 5-minute link to an applicant's CV. The view is logged first.
+export async function getCvUrl(applicationId: unknown): Promise<ActionResult<{ url: string }>> {
+  const id = idSchema.safeParse(applicationId);
+  if (!id.success) return fail("invalidInput");
+  const supabase = await admin();
+  const { data: app } = await supabase
+    .from("applications")
+    .select("cv_path")
+    .eq("id", id.data)
+    .maybeSingle();
+  if (!app?.cv_path) return fail("notFound");
+  const { error: logErr } = await supabase.rpc("log_cv_view", { p_application_id: id.data });
+  if (logErr) return dbFail("admin-cv-view", logErr);
+  const { data, error } = await supabase.storage
+    .from("application-cvs")
+    .createSignedUrl(app.cv_path, VIDEO_URL_SECONDS, { download: true });
+  if (error || !data) {
+    logError("admin-cv-url", error);
     return fail("generic");
   }
   return ok({ url: data.signedUrl });

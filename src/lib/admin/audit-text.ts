@@ -13,6 +13,7 @@ export type AuditRow = {
 
 export type AuditKey =
   | "videoViewed"
+  | "cvViewed"
   | "appApproved"
   | "appRejected"
   | "appReviewed"
@@ -94,6 +95,8 @@ export function describeAudit(row: AuditRow): Described {
         tone: "blue",
         chip: str(m.video) ? { kind: "text", text: short(str(m.video)) } : null,
       };
+    case "application.cv_viewed":
+      return { ...base, key: "cvViewed", icon: "fileText", tone: "blue" };
     case "application.reviewed": {
       const to = str(m.to);
       return {

@@ -53,3 +53,30 @@ export async function unlockCandidate(
   revalidatePath("/sponsor", "layout");
   return ok({ balance: data });
 }
+
+// A 5-minute link to an unlocked candidate's CV (the view is logged first).
+export async function getCandidateCvUrl(
+  applicationId: unknown,
+): Promise<ActionResult<{ url: string }>> {
+  const parsed = idSchema.safeParse(applicationId);
+  if (!parsed.success) return fail("invalidInput");
+  const profile = await requireRole("employer");
+  if (!(await withinRateLimit("mediaViewPerEmployer", profile.id))) return fail("rateLimited");
+  const supabase = await createClient();
+  const { data: candidate, error: readErr } = await supabase.rpc("sponsor_get_candidate", {
+    p_application_id: parsed.data,
+  });
+  if (readErr) return dbFail("sponsor-cv-read", readErr);
+  const path = (candidate as { cv_path?: string | null } | null)?.cv_path;
+  if (!path) return fail("notFound");
+  const { error: logErr } = await supabase.rpc("log_cv_view", { p_application_id: parsed.data });
+  if (logErr) return dbFail("sponsor-cv-view", logErr);
+  const { data, error } = await supabase.storage
+    .from("application-cvs")
+    .createSignedUrl(path, 300, { download: true });
+  if (error || !data) {
+    logError("sponsor-cv-url", error);
+    return fail("generic");
+  }
+  return ok({ url: data.signedUrl });
+}

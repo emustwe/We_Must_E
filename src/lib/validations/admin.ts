@@ -25,7 +25,7 @@ export const testSchema = z.strictObject({
   timeLimitMinutes: z.coerce.number().int().min(0).max(120),
 });
 
-const optionList = z.array(z.string().trim().min(1).max(200)).max(8);
+const optionList = z.array(z.string().trim().min(1).max(200)).max(12);
 
 export const surveyQuestionSchema = z
   .strictObject({

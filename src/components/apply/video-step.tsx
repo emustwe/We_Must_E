@@ -3,17 +3,16 @@
 import { Camera, CheckCircle2, Circle, RotateCcw, Square, Upload } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { confirmVideo, createVideoUpload, finishVideos } from "@/actions/apply";
-import { useStepAction } from "@/components/apply/use-step-action";
+import { confirmVideo, createVideoUpload } from "@/actions/apply";
 import { FormAlert } from "@/components/forms/form-alert";
 import { Button } from "@/components/ui/button";
 import { clientEnv } from "@/lib/env";
 import { cn } from "@/lib/utils";
 import type { ApplyView } from "@/server/public-application";
 
-type VideoView = Extract<ApplyView, { stage: "video" }>;
+export type VideoView = Extract<ApplyView, { stage: "video" }>;
 type VideoMime = "video/webm" | "video/mp4" | "video/quicktime";
-const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
+export const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
 
 // Length of a video file, read by the browser (0 if it can't tell).
 function videoSeconds(url: string) {
@@ -47,7 +46,7 @@ const getFormat = () => (cachedFormat === undefined ? (cachedFormat = pickFormat
 const noSubscribe = () => () => {};
 
 // PUT to the signed upload URL with progress (fetch has no upload progress).
-function uploadWithProgress(url: string, blob: Blob, onProgress: (percent: number) => void) {
+export function uploadWithProgress(url: string, blob: Blob, onProgress: (percent: number) => void) {
   return new Promise<void>((resolve, reject) => {
     const body = new FormData();
     body.append("cacheControl", "3600");
@@ -65,62 +64,61 @@ function uploadWithProgress(url: string, blob: Blob, onProgress: (percent: numbe
   });
 }
 
-export function VideoStep({ jobId, view }: { jobId: string; view: VideoView }) {
+// Task, no video questions: one video about the test's questions.
+export function OneVideo({
+  jobId,
+  view,
+  stream,
+  onStream,
+  onRecorded,
+}: {
+  jobId: string;
+  view: VideoView;
+  stream: MediaStream | null;
+  onStream: (stream: MediaStream) => void;
+  onRecorded: () => void;
+}) {
   const t = useTranslations("apply");
-  const { run, pending, error } = useStepAction();
   const [recorded, setRecorded] = useState(view.recorded);
-  const [stream, setStream] = useState<MediaStream | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-
-  // Stop the camera when leaving the step.
-  useEffect(() => () => streamRef.current?.getTracks().forEach((track) => track.stop()), []);
-
-  function next() {
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    void run(() => finishVideos(jobId));
-  }
-
-  // Already uploaded (e.g. after a reload): continue, or record again.
   if (recorded) {
     return (
-      <div className="flex flex-1 flex-col">
-        <h1 className="text-3xl font-extrabold tracking-tight">{t("videoTitle")}</h1>
-        <p className="mt-3 flex items-center gap-2 rounded-2xl bg-success/10 px-4 py-3 text-sm font-semibold">
+      <div>
+        <p className="flex items-center gap-2 rounded-2xl bg-success/10 px-4 py-3 text-sm font-semibold">
           <CheckCircle2 className="size-5 shrink-0 text-success" aria-hidden="true" />
           {t("videoSaved")}
         </p>
         <PromptList prompts={view.prompts} />
-        <div className="mt-auto space-y-3 pt-8">
-          <FormAlert message={error} />
-          <Button size="touch" className="w-full" disabled={pending} onClick={next}>
-            {t("continue")}
-          </Button>
-          <Button
-            size="touch"
-            variant="secondary"
-            className="w-full"
-            disabled={pending}
-            onClick={() => setRecorded(false)}
-          >
-            <RotateCcw className="size-4" aria-hidden="true" />
-            {t("retake")}
-          </Button>
-        </div>
+        <Button
+          size="touch"
+          variant="secondary"
+          className="mt-3 w-full"
+          onClick={() => setRecorded(false)}
+        >
+          <RotateCcw className="size-4" aria-hidden="true" />
+          {t("retake")}
+        </Button>
       </div>
     );
   }
-
   return (
     <Recorder
       jobId={jobId}
+      compact
       question={{ id: "answer", prompt: "", maxSeconds: view.maxSeconds }}
-      prompts={view.prompts}
+      header={
+        <>
+          <p className="text-sm text-muted-foreground">
+            {t("oneVideoBody", { time: `${Math.floor(view.maxSeconds / 60)}:00` })}
+          </p>
+          <PromptList prompts={view.prompts} />
+        </>
+      }
       stream={stream}
-      onStream={(s) => {
-        streamRef.current = s;
-        setStream(s);
+      onStream={onStream}
+      onDone={() => {
+        setRecorded(true);
+        onRecorded();
       }}
-      onDone={next}
     />
   );
 }
@@ -143,20 +141,25 @@ function PromptList({ prompts }: { prompts: string[] }) {
 
 type Phase = "camera" | "ready" | "countdown" | "recording" | "review" | "uploading";
 
-function Recorder({
+export function Recorder({
   jobId,
   question,
-  prompts,
+  questionId,
+  header,
   stream,
   onStream,
   onDone,
+  compact = false,
 }: {
   jobId: string;
   question: Question;
-  prompts: string[];
+  // The video question this answers (none: the one video about the test).
+  questionId?: string;
+  header: React.ReactNode;
   stream: MediaStream | null;
   onStream: (stream: MediaStream) => void;
   onDone: () => void;
+  compact?: boolean;
 }) {
   const t = useTranslations("apply");
   const te = useTranslations("errors");
@@ -299,7 +302,7 @@ function Recorder({
     setPhase("uploading");
     setProgress(0);
     try {
-      const target = await createVideoUpload({ jobId, mime: clip.mime });
+      const target = await createVideoUpload({ jobId, mime: clip.mime, questionId });
       if (!target.ok) throw new Error(target.error);
       await uploadWithProgress(target.data.signedUrl, clip.blob, setProgress);
       const confirmed = await confirmVideo({
@@ -323,14 +326,8 @@ function Recorder({
   const remaining = Math.max(0, question.maxSeconds - elapsed);
 
   return (
-    <div className="flex flex-1 flex-col">
-      <h1 className="text-2xl font-extrabold tracking-tight">{t("oneVideoTitle")}</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {t("oneVideoBody", {
-          time: `${Math.floor(question.maxSeconds / 60)}:${String(question.maxSeconds % 60).padStart(2, "0")}`,
-        })}
-      </p>
-      <PromptList prompts={prompts} />
+    <div className={cn("flex flex-col", !compact && "flex-1")}>
+      {header}
 
       <div className="relative mt-4 aspect-[3/4] overflow-hidden rounded-[1.75rem] bg-foreground/90 sm:aspect-video">
         {phase === "review" || phase === "uploading" ? (
@@ -386,7 +383,7 @@ function Recorder({
           })}
         </p>
       ) : null}
-      <div className="mt-auto space-y-3 pt-6">
+      <div className={cn("space-y-3", compact ? "pt-4" : "mt-auto pt-6")}>
         <FormAlert message={error} />
         {format === null && (phase === "camera" || phase === "ready") ? (
           <FormAlert message={t("noCamera")} />

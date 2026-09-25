@@ -175,16 +175,20 @@ export type Database = {
           applicant_id: string | null
           created_at: string
           current_step: Database["public"]["Enums"]["application_step"]
+          cv_path: string | null
           draft_expires_at: string
           draft_token_hash: string | null
           id: string
           ip_hash: string | null
           job_id: string
+          profile: Json | null
           reviewed_at: string | null
           reviewed_by: string | null
           status: Database["public"]["Enums"]["application_status"]
           submitted_at: string | null
           survey_id: string | null
+          survey_started_at: string | null
+          task_started_at: string | null
           test_id: string | null
           test_max_score: number | null
           test_percent: number | null
@@ -199,16 +203,20 @@ export type Database = {
           applicant_id?: string | null
           created_at?: string
           current_step?: Database["public"]["Enums"]["application_step"]
+          cv_path?: string | null
           draft_expires_at?: string
           draft_token_hash?: string | null
           id?: string
           ip_hash?: string | null
           job_id: string
+          profile?: Json | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: Database["public"]["Enums"]["application_status"]
           submitted_at?: string | null
           survey_id?: string | null
+          survey_started_at?: string | null
+          task_started_at?: string | null
           test_id?: string | null
           test_max_score?: number | null
           test_percent?: number | null
@@ -223,16 +231,20 @@ export type Database = {
           applicant_id?: string | null
           created_at?: string
           current_step?: Database["public"]["Enums"]["application_step"]
+          cv_path?: string | null
           draft_expires_at?: string
           draft_token_hash?: string | null
           id?: string
           ip_hash?: string | null
           job_id?: string
+          profile?: Json | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: Database["public"]["Enums"]["application_status"]
           submitted_at?: string | null
           survey_id?: string | null
+          survey_started_at?: string | null
+          task_started_at?: string | null
           test_id?: string | null
           test_max_score?: number | null
           test_percent?: number | null
@@ -527,7 +539,9 @@ export type Database = {
           country_name: string | null
           created_at: string
           description: string
+          display_company: string | null
           employer_id: string
+          full_profile: boolean
           id: string
           lat: number
           lng: number
@@ -552,7 +566,9 @@ export type Database = {
           country_name?: string | null
           created_at?: string
           description: string
+          display_company?: string | null
           employer_id: string
+          full_profile?: boolean
           id?: string
           lat: number
           lng: number
@@ -577,7 +593,9 @@ export type Database = {
           country_name?: string | null
           created_at?: string
           description?: string
+          display_company?: string | null
           employer_id?: string
+          full_profile?: boolean
           id?: string
           lat?: number
           lng?: number
@@ -747,6 +765,7 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
+          time_limit_seconds: number | null
           title: string
           updated_at: string
           version: number
@@ -755,6 +774,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          time_limit_seconds?: number | null
           title: string
           updated_at?: string
           version?: number
@@ -763,6 +783,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          time_limit_seconds?: number | null
           title?: string
           updated_at?: string
           version?: number
@@ -801,6 +822,7 @@ export type Database = {
           position: number
           prompt: string
           test_id: string
+          time_limit_seconds: number | null
           type: Database["public"]["Enums"]["test_question_type"]
           updated_at: string
         }
@@ -812,6 +834,7 @@ export type Database = {
           position: number
           prompt: string
           test_id: string
+          time_limit_seconds?: number | null
           type?: Database["public"]["Enums"]["test_question_type"]
           updated_at?: string
         }
@@ -823,6 +846,7 @@ export type Database = {
           position?: number
           prompt?: string
           test_id?: string
+          time_limit_seconds?: number | null
           type?: Database["public"]["Enums"]["test_question_type"]
           updated_at?: string
         }
@@ -871,6 +895,7 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
+          time_limit_seconds: number | null
           title: string
           updated_at: string
         }
@@ -878,6 +903,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          time_limit_seconds?: number | null
           title: string
           updated_at?: string
         }
@@ -885,6 +911,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          time_limit_seconds?: number | null
           title?: string
           updated_at?: string
         }
@@ -1028,6 +1055,22 @@ export type Database = {
         Args: { p_job_id: string; p_token_hash: string }
         Returns: undefined
       }
+      app_record_cv: {
+        Args: { p_job_id: string; p_storage_path: string; p_token_hash: string }
+        Returns: string
+      }
+      app_record_question_video: {
+        Args: {
+          p_duration_seconds: number
+          p_job_id: string
+          p_mime_type: string
+          p_question_id: string
+          p_size_bytes: number
+          p_storage_path: string
+          p_token_hash: string
+        }
+        Returns: string
+      }
       app_record_video: {
         Args: {
           p_duration_seconds: number
@@ -1038,6 +1081,10 @@ export type Database = {
           p_token_hash: string
         }
         Returns: string[]
+      }
+      app_save_profile: {
+        Args: { p_job_id: string; p_profile: Json; p_token_hash: string }
+        Returns: undefined
       }
       app_save_test_answer: {
         Args: {
@@ -1105,6 +1152,7 @@ export type Database = {
         Args: { p_kind: string; p_rows: number }
         Returns: undefined
       }
+      log_cv_view: { Args: { p_application_id: string }; Returns: undefined }
       log_sponsor_change: {
         Args: { p_change: string; p_employer_id: string }
         Returns: undefined
@@ -1183,6 +1231,7 @@ export type Database = {
         | "multi_choice"
         | "short_text"
         | "long_text"
+        | "typing"
       user_role: "employee" | "employer" | "admin"
       video_provider: "supabase" | "mux"
     }
@@ -1343,6 +1392,7 @@ export const Constants = {
         "multi_choice",
         "short_text",
         "long_text",
+        "typing",
       ],
       user_role: ["employee", "employer", "admin"],
       video_provider: ["supabase", "mux"],

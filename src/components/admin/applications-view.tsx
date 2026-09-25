@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { FilterSelect } from "@/components/admin/filter-select";
-import { DecisionBar, MoreToggle, ShowAll, VideoTile } from "@/components/admin/review-panel";
+import {
+  CvButton,
+  DecisionBar,
+  MoreToggle,
+  ShowAll,
+  VideoTile,
+} from "@/components/admin/review-panel";
 import {
   APP_PILL,
   Avatar,
@@ -14,6 +20,7 @@ import {
 } from "@/components/admin/wm";
 import { WmIcon, type IconName } from "@/components/map/wm-icons";
 import { createClient } from "@/lib/supabase/server";
+import { typingResult } from "@/lib/typing";
 import { cn } from "@/lib/utils";
 import { filterQuery, parseFilters, sinceFor } from "@/lib/admin/app-filters";
 import type { Json } from "@/types/database";
@@ -260,14 +267,63 @@ function answerText(q: { type: string; options: Json }, a: Json | undefined) {
   if (q.type === "single_choice" || q.type === "multi_choice") {
     const picked = field(a, "options");
     const opts = asOptions(q.options);
+    const other = field(a, "other");
     return (Array.isArray(picked) ? picked : [])
       .filter((x): x is number => typeof x === "number")
-      .map((i) => opts[i])
+      .map((i) =>
+        typeof other === "string" && /^other\b/i.test(opts[i] ?? "")
+          ? `${opts[i]}: ${other}`
+          : opts[i],
+      )
       .filter(Boolean)
       .join(", ");
   }
   const v = field(a, "text") ?? field(a, "number");
   return v === undefined || v === null ? null : String(v);
+}
+
+const PROFILE_ORDER = [
+  "preferredName",
+  "age",
+  "gender",
+  "country",
+  "city",
+  "nationality",
+  "languages",
+  "englishLevel",
+  "otherLanguages",
+  "previousEmployment",
+  "previousPosition",
+  "yearsExperience",
+  "previousExperience",
+  "whyInterested",
+  "workEnvironment",
+  "lookingFor",
+];
+
+// Speed, accuracy, backspaces and wrong words of a typing answer.
+function typingSummary(options: Json, a: Json | undefined) {
+  const paragraph = asOptions(options)[0] ?? "";
+  const text = field(a, "text");
+  const stats = field(a, "stats");
+  if (typeof text !== "string" || !stats || typeof stats !== "object" || Array.isArray(stats))
+    return null;
+  const seconds = Number(stats.seconds) || 1;
+  const r = typingResult(paragraph, text, seconds);
+  return {
+    numbers: {
+      wpm: r.wpm,
+      accuracy: r.accuracy,
+      backspaces: Number(stats.backspaces) || 0,
+      seconds,
+      wrong: r.wrongWords.length,
+      missing: r.missingWords,
+    },
+    wrong: r.wrongWords
+      .slice(0, 20)
+      .map((w) => `${w.typed || "—"} → ${w.expected || "(extra)"}`)
+      .join(", "),
+  };
 }
 
 function Section({
@@ -304,7 +360,7 @@ async function ApplicationPanel({ id }: { id: string }) {
   const { data: app } = await supabase
     .from("applications")
     .select(
-      "id, status, submitted_at, admin_notes, test_id, survey_id, applicant_id, applicants(full_name, phone_e164, email), jobs(title, location_label, employer_profiles(company_name))",
+      "id, status, submitted_at, admin_notes, test_id, survey_id, applicant_id, profile, cv_path, applicants(full_name, phone_e164, email), jobs(title, location_label, employer_profiles(company_name))",
     )
     .eq("id", id)
     .neq("status", "in_progress")
@@ -330,7 +386,7 @@ async function ApplicationPanel({ id }: { id: string }) {
       .eq("application_id", app.id),
     supabase
       .from("application_videos")
-      .select("id, duration_seconds")
+      .select("id, duration_seconds, video_questions(prompt, position)")
       .eq("application_id", app.id)
       .order("uploaded_at"),
     app.survey_id
@@ -359,6 +415,24 @@ async function ApplicationPanel({ id }: { id: string }) {
       .maybeSingle(),
   ]);
 
+  // The Task profile (the contact fields are in the header and "…").
+  const ta = await getTranslations("apply");
+  const profile =
+    app.profile && typeof app.profile === "object" && !Array.isArray(app.profile)
+      ? (app.profile as Record<string, Json>)
+      : {};
+  const profileRows = PROFILE_ORDER.filter(
+    (k) => profile[k] !== undefined && profile[k] !== "",
+  ).map((k) => {
+    const v = String(profile[k]);
+    const shown =
+      k === "gender"
+        ? ta(`genderOption.${v}` as never)
+        : k === "englishLevel"
+          ? ta(`englishOption.${v}` as never)
+          : v;
+    return [ta(`profile.${k}` as never), shown] as const;
+  });
   const testAnswer = new Map((testAs.data ?? []).map((a) => [a.question_id, a.answer]));
   const surveyAnswer = new Map((surveyAs.data ?? []).map((a) => [a.question_id, a.answer]));
   const surveyItems = (surveyQs.data ?? []).map((q) => ({
@@ -452,6 +526,24 @@ async function ApplicationPanel({ id }: { id: string }) {
         ))}
       </div>
 
+      {profileRows.length ? (
+        <Section
+          icon="building"
+          title={t("profileTitle")}
+          meta={app.cv_path ? t("cvAttached") : ""}
+        >
+          <dl className="m-0 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+            {profileRows.map(([label, value]) => (
+              <div key={label} className="flex min-w-0 flex-col gap-0.5">
+                <dt className="text-xs font-semibold text-wm-caption">{label}</dt>
+                <dd className="m-0 text-sm font-bold break-words whitespace-pre-line">{value}</dd>
+              </div>
+            ))}
+          </dl>
+          {app.cv_path ? <CvButton applicationId={app.id} /> : null}
+        </Section>
+      ) : null}
+
       <Section
         icon="flask"
         title={test.data?.title ? displayTitle(test.data.title) : t("testAnswers")}
@@ -463,11 +555,23 @@ async function ApplicationPanel({ id }: { id: string }) {
           <ol className="m-0 flex list-none flex-col gap-2.5 p-0">
             {testQs.data.map((q, i) => {
               const text = answerText(q, testAnswer.get(q.id));
+              const typing =
+                q.type === "typing" ? typingSummary(q.options, testAnswer.get(q.id)) : null;
               return (
                 <li key={q.id} className="flex flex-col gap-0.5">
-                  <span className="text-[13px] font-medium text-wm-slate">
+                  <span className="text-[13px] font-medium whitespace-pre-line text-wm-slate">
                     {i + 1}. {q.prompt}
                   </span>
+                  {typing ? (
+                    <span className="my-1 rounded-xl bg-wm-tint px-3 py-2 text-[13px] font-bold text-wm-blue">
+                      {t("typingResult", typing.numbers)}
+                      {typing.wrong ? (
+                        <span className="mt-1 block font-medium text-wm-body">
+                          {t("typingWrong")}: {typing.wrong}
+                        </span>
+                      ) : null}
+                    </span>
+                  ) : null}
                   <span
                     className={cn(
                       "text-sm font-bold whitespace-pre-line",
@@ -490,14 +594,21 @@ async function ApplicationPanel({ id }: { id: string }) {
       >
         {videos.data?.length ? (
           <div className="flex flex-wrap gap-2.5">
-            {videos.data.map((v) => (
-              <VideoTile
-                key={v.id}
-                videoId={v.id}
-                length={mmss(v.duration_seconds)}
-                caption={t("videoExplains")}
-              />
-            ))}
+            {[...videos.data]
+              .sort(
+                (a, b) =>
+                  (a.video_questions?.position ?? 999) - (b.video_questions?.position ?? 999),
+              )
+              .map((v, i) => (
+                <VideoTile
+                  key={v.id}
+                  videoId={v.id}
+                  length={mmss(v.duration_seconds)}
+                  caption={
+                    v.video_questions ? `${i + 1}. ${v.video_questions.prompt}` : t("videoExplains")
+                  }
+                />
+              ))}
           </div>
         ) : null}
       </Section>

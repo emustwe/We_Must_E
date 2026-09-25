@@ -54,3 +54,33 @@ export async function answerAll(page: Page) {
       await card.locator("textarea").fill("Happy to help.");
   }
 }
+
+// A 2-second WebM made in the browser, used as a video "picked from the phone".
+export async function makeVideoFile(page: Page) {
+  const base64 = await page.evaluate(async () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 320;
+    canvas.height = 240;
+    const ctx = canvas.getContext("2d")!;
+    const rec = new MediaRecorder(canvas.captureStream(15), { mimeType: "video/webm" });
+    const chunks: Blob[] = [];
+    rec.ondataavailable = (e) => chunks.push(e.data);
+    let hue = 0;
+    const timer = setInterval(() => {
+      ctx.fillStyle = `hsl(${(hue += 12) % 360} 70% 50%)`;
+      ctx.fillRect(0, 0, 320, 240);
+    }, 60);
+    rec.start(200);
+    await new Promise((r) => setTimeout(r, 2000));
+    await new Promise((r) => {
+      rec.onstop = r;
+      rec.stop();
+    });
+    clearInterval(timer);
+    const bytes = new Uint8Array(await new Blob(chunks).arrayBuffer());
+    let binary = "";
+    for (const b of bytes) binary += String.fromCharCode(b);
+    return btoa(binary);
+  });
+  return { name: "answer.webm", mimeType: "video/webm", buffer: Buffer.from(base64, "base64") };
+}

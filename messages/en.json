@@ -175,7 +175,10 @@
     "acceptConsent": "Please tick the box to agree before sending.",
     "notesTooLong": "Keep notes under 2000 characters.",
     "countryRequired": "Choose the country.",
-    "locationOutside": "This location is outside the area where jobs can be posted."
+    "locationOutside": "This location is outside the area where jobs can be posted.",
+    "required": "Please answer this.",
+    "tooLong": "This is too long.",
+    "ageRange": "Please enter an age between 16 and 80."
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",
@@ -396,7 +399,8 @@
       "short_text": "Short text",
       "long_text": "Long text",
       "number": "Number",
-      "scale": "Scale 1–5"
+      "scale": "Scale 1–5",
+      "typing": "Typing test"
     },
     "options": "Answers",
     "optionPlaceholder": "Answer {n}",
@@ -739,17 +743,17 @@
     "close": "Leave application",
     "leaveConfirm": "Leave now? Your progress is saved on this device for 24 hours.",
     "progress": "Step {current} of {total}",
-    "stepTest": "Quick test",
-    "stepVideo": "Short video",
-    "stepSurvey": "About you",
+    "stepTest": "Test",
+    "stepVideo": "Task",
+    "stepSurvey": "Survey",
     "introTitle": "Apply in 3 short steps",
     "introBody": "It takes about 10 minutes. You don't need an account, and you can pause and come back on this device within 24 hours.",
-    "introTest": "A few questions, all on one page",
-    "introVideo": "Explain your answers in one short video",
-    "introSurvey": "Your contact details and a few questions, on one page",
+    "introTest": "Skills and work questions, on one page",
+    "introVideo": "Your profile, CV and short video answers",
+    "introSurvey": "Questions about your work style and interests",
     "start": "Start application",
     "starting": "Starting…",
-    "testTitle": "Quick test",
+    "testTitle": "Test",
     "testIntro": "{count, plural, one {# question} other {# questions}}. Answer honestly; there are no trick questions.",
     "testTimed": "You'll have {minutes, plural, one {# minute} other {# minutes}} once you start. The timer keeps running if you leave.",
     "testUntimed": "There is no time limit.",
@@ -783,7 +787,7 @@
     "recorded": "Recorded",
     "continue": "Continue",
     "noCamera": "This browser can't record here. You can upload a video from your phone instead.",
-    "surveyTitle": "About you",
+    "surveyTitle": "Survey",
     "contactTitle": "How can we reach you?",
     "contactBody": "Only the Wemuste team sees this. We share it with a sponsor only if we shortlist you.",
     "fullName": "Full name",
@@ -830,7 +834,80 @@
     "answerAll": "{count, plural, one {# question still needs an answer.} other {# questions still need an answer.}}",
     "finishTitle": "Finish the test?",
     "surveyOnePage": "Only the Wemuste team sees this. We share it with a sponsor only if we shortlist you.",
-    "checking": "Checking your connection…"
+    "checking": "Checking your connection…",
+    "sectionTimeUp": "Time is up. Please finish now.",
+    "otherLabel": "Please tell us what",
+    "taskTitle": "Task",
+    "taskIntro": "Tell us about yourself, add your CV, then answer each video question.",
+    "profileGroup": {
+      "personal": "Personal information",
+      "professional": "Professional background",
+      "additional": "Additional information"
+    },
+    "profile": {
+      "fullName": "Full name",
+      "preferredName": "Preferred name",
+      "age": "Age",
+      "gender": "Gender",
+      "country": "Country",
+      "city": "City / Location",
+      "nationality": "Nationality",
+      "phone": "Phone number",
+      "email": "Email",
+      "languages": "Languages",
+      "englishLevel": "English level",
+      "otherLanguages": "Other languages",
+      "previousEmployment": "Previous employment",
+      "previousPosition": "Previous job position",
+      "yearsExperience": "Years of experience",
+      "previousExperience": "Previous work experience",
+      "whyInterested": "Why are you interested in this position?",
+      "workEnvironment": "What type of work environment do you prefer?",
+      "lookingFor": "What are you looking for in your next job?"
+    },
+    "profileHint": {
+      "phone": "Include your country code, e.g. +971 50 123 4567.",
+      "otherLanguages": "Write \"None\" if you don't speak other languages.",
+      "previousEmployment": "The company you worked for most recently.",
+      "yearsExperience": "In years, e.g. 3."
+    },
+    "choose": "Choose…",
+    "genderOption": {
+      "male": "Male",
+      "female": "Female"
+    },
+    "englishOption": {
+      "beginner": "Beginner",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced",
+      "fluent": "Fluent",
+      "native": "Native"
+    },
+    "fixFields": "Please fill in the highlighted fields.",
+    "cvRequired": "Please upload your CV.",
+    "videosRequired": "{count, plural, one {# video answer is still missing.} other {# video answers are still missing.}}",
+    "videosTitle": "Video interview",
+    "videosIntro": "{count, plural, one {Record # short video.} other {Record # short videos, one for each question.}} You can record again before continuing.",
+    "videoQuestionOf": "Question {current} of {total}",
+    "upToSeconds": "up to {seconds} seconds",
+    "recordAnswer": "Record answer",
+    "noVideos": "No video questions for this job.",
+    "cvLabel": "Resume / CV",
+    "cvHint": "PDF or Word (.docx), up to 5 MB.",
+    "cvSaved": "Your CV is uploaded.",
+    "cvReplace": "Replace CV",
+    "cvUpload": "Upload CV",
+    "cvType": "Please upload a PDF or Word (.docx) file.",
+    "cvTooBig": "This file is too big. The limit is 5 MB.",
+    "typingTitle": "Typing test",
+    "typingStart": "Start typing test",
+    "typingIntro": "Type the paragraph below exactly as shown. You have {time}. The timer starts when you press Start. Copying and pasting is turned off.",
+    "typingLabel": "Type the paragraph here",
+    "typingDone": "Typing test finished",
+    "typingStats": "{wpm} words per minute · {accuracy}% accurate · {backspaces} backspaces · {wrong} wrong words",
+    "typingTimeUp": "Time is up for the typing test.",
+    "typingFinish": "Finish typing",
+    "typingLeft": "Typing time left"
   },
   "applicationStatus": {
     "in_progress": "Unfinished",
@@ -850,12 +927,13 @@
     "call": "Call",
     "whatsapp": "WhatsApp",
     "email": "Email",
-    "videos": "Video answer",
+    "videos": "Video answers",
     "videoNote": "Links work for 5 minutes. Every view is recorded.",
     "answers": "Their answers",
     "privacy": "This candidate's details are private. Use them only for this job, and don't copy or share them outside Wemuste.",
     "videoAnswersTo": "One video answering these questions:",
-    "testAnswers": "Test answers"
+    "testAnswers": "Test answers",
+    "profile": "Profile"
   },
   "ecoins": {
     "balanceLabel": "{count, plural, one {You have # E-coin} other {You have # E-coins}}",
@@ -988,7 +1066,8 @@
       "answerKey": "Set test answers",
       "exportApplications": "Exported applications",
       "exportAudit": "Exported the audit log",
-      "other": "Other action"
+      "other": "Other action",
+      "cvViewed": "Opened a CV"
     },
     "activity": {
       "videoViewed": "viewed a video answer on an <t>application</t>",
@@ -1012,7 +1091,8 @@
       "answerKey": "set <t>test</t> answers",
       "exportApplications": "exported applications",
       "exportAudit": "exported the audit log",
-      "other": "did something"
+      "other": "did something",
+      "cvViewed": "opened the CV on an <t>application</t>"
     },
     "change": "{from} to {to}",
     "statusWord": {
@@ -1210,6 +1290,11 @@
     "hideDetails": "Hide details",
     "noAudit": "No entries match.",
     "prev": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "openCv": "Open CV",
+    "profileTitle": "Profile",
+    "cvAttached": "CV attached",
+    "typingResult": "{wpm} WPM · {accuracy}% accurate · {backspaces} backspaces · {wrong} wrong words · {missing} words missing · {seconds}s",
+    "typingWrong": "Wrong words (typed → expected)"
   }
 }

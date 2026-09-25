@@ -16,7 +16,8 @@ import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 
-type QType = "single_choice" | "multi_choice" | "short_text" | "long_text" | "number" | "scale";
+type QType =
+  "single_choice" | "multi_choice" | "short_text" | "long_text" | "number" | "scale" | "typing";
 export type EditableQuestion = {
   id: string;
   prompt: string;
@@ -112,14 +113,17 @@ export function QuestionEditor({
                   >
                     <ArrowDown className="size-4" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={t("editQuestion")}
-                    onClick={() => setEditing(q.id)}
-                  >
-                    <Pencil className="size-4" />
-                  </Button>
+                  {/* Typing questions (paragraph + timer) are set up by the Wemuste team. */}
+                  {q.type === "typing" ? null : (
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={t("editQuestion")}
+                      onClick={() => setEditing(q.id)}
+                    >
+                      <Pencil className="size-4" />
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="icon-sm"

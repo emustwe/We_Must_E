@@ -2,43 +2,48 @@
 
 import { Check, Clock, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { saveTestAnswer, saveTestAnswers, startTest, submitTest } from "@/actions/apply";
+import { mmss, useCountdown } from "@/components/apply/section-timer";
 import { useStepAction } from "@/components/apply/use-step-action";
 import { FormAlert } from "@/components/forms/form-alert";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { typingResult, type TypingStats } from "@/lib/typing";
 import { cn } from "@/lib/utils";
 import type { ApplyView } from "@/server/public-application";
 import type { Json } from "@/types/database";
 
 type TestView = Extract<ApplyView, { stage: "test" }>;
-type Answer = { options: number[] } | { text: string };
+type Answer = { options: number[] } | { text: string; stats?: TypingStats };
 
 function fromSaved(value: Json | undefined): Answer | undefined {
   if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
   if (Array.isArray(value.options))
     return { options: value.options.filter((o) => typeof o === "number") };
-  if (typeof value.text === "string") return { text: value.text };
+  if (typeof value.text === "string") {
+    const st = value.stats;
+    return st && typeof st === "object" && !Array.isArray(st)
+      ? {
+          text: value.text,
+          stats: {
+            seconds: Number(st.seconds) || 0,
+            backspaces: Number(st.backspaces) || 0,
+            keystrokes: Number(st.keystrokes) || 0,
+          },
+        }
+      : { text: value.text };
+  }
   return undefined;
 }
 
+// A finished typing test counts even if the time ran out before anything was typed.
 const isAnswered = (a: Answer | undefined) =>
-  a ? ("options" in a ? a.options.length > 0 : a.text.trim().length > 0) : false;
-
-// A clock that ticks every second in the browser. On the server (and during
-// hydration) it is null, so the rendered time never differs between the two.
-function subscribeClock(onTick: () => void) {
-  const id = window.setInterval(onTick, 1000);
-  return () => window.clearInterval(id);
-}
-const clockNow = () => Math.floor(Date.now() / 1000);
-
-function useCountdown(deadline: string | null) {
-  const now = useSyncExternalStore(subscribeClock, clockNow, () => null);
-  if (!deadline || now === null) return null;
-  return Math.max(0, Math.floor(new Date(deadline).getTime() / 1000) - now);
-}
+  a
+    ? "options" in a
+      ? a.options.length > 0
+      : Boolean(a.stats) || a.text.trim().length > 0
+    : false;
 
 export function TestStep({ jobId, view }: { jobId: string; view: TestView }) {
   const t = useTranslations("apply");
@@ -231,9 +236,16 @@ function TestQuestions({ jobId, view }: { jobId: string; view: TestView }) {
             >
               <h2 className="font-bold">
                 <span className="text-muted-foreground">{i + 1}. </span>
-                {q.prompt}
+                <span className="whitespace-pre-line">{q.prompt}</span>
               </h2>
-              {q.type === "single_choice" || q.type === "multi_choice" ? (
+              {q.type === "typing" ? (
+                <TypingQuestion
+                  paragraph={q.options[0] ?? ""}
+                  seconds={q.timeLimitSeconds ?? 120}
+                  answer={answer && "text" in answer ? answer : undefined}
+                  onDone={(a) => setAnswer(q.id, a, 0)}
+                />
+              ) : q.type === "single_choice" || q.type === "multi_choice" ? (
                 <fieldset className="mt-3 space-y-2">
                   <legend className="mb-1 text-xs text-muted-foreground">
                     {q.type === "single_choice" ? t("pickOne") : t("pickMany")}
@@ -317,6 +329,130 @@ function TestQuestions({ jobId, view }: { jobId: string; view: TestView }) {
           {pending ? t("saving") : t("finishTest")}
         </Button>
       </div>
+    </div>
+  );
+}
+
+// The typing test: the paragraph, its own timer (from Start), no pasting.
+// Counts keystrokes and backspaces; speed, accuracy and wrong words come from
+// comparing the text with the paragraph.
+function TypingQuestion({
+  paragraph,
+  seconds,
+  answer,
+  onDone,
+}: {
+  paragraph: string;
+  seconds: number;
+  answer: { text: string; stats?: TypingStats } | undefined;
+  onDone: (answer: { text: string; stats: TypingStats }) => void;
+}) {
+  const t = useTranslations("apply");
+  const [phase, setPhase] = useState<"idle" | "typing" | "done">(answer?.stats ? "done" : "idle");
+  const [text, setText] = useState(answer?.text ?? "");
+  const [deadline, setDeadline] = useState<string | null>(null);
+  const counts = useRef({ backspaces: 0, keystrokes: 0, started: 0 });
+  const box = useRef<HTMLTextAreaElement>(null);
+  const left = useCountdown(deadline);
+
+  const finish = useCallback(
+    (typed: string) => {
+      const used = Math.min(seconds, Math.round((Date.now() - counts.current.started) / 1000));
+      setPhase("done");
+      onDone({
+        text: typed,
+        stats: {
+          seconds: Math.max(1, used),
+          backspaces: counts.current.backspaces,
+          keystrokes: counts.current.keystrokes,
+        },
+      });
+    },
+    [onDone, seconds],
+  );
+
+  // Time up: what was typed so far is the answer.
+  useEffect(() => {
+    if (phase !== "typing" || left !== 0) return;
+    const id = window.setTimeout(() => finish(text), 0);
+    return () => window.clearTimeout(id);
+  }, [left, phase, finish, text]);
+
+  const result =
+    phase === "done" && answer?.stats
+      ? typingResult(paragraph, answer.text, answer.stats.seconds)
+      : null;
+
+  return (
+    <div className="mt-3 space-y-3">
+      <p className="text-sm text-muted-foreground">{t("typingIntro", { time: mmss(seconds) })}</p>
+      <p
+        className="rounded-2xl border border-input bg-background p-4 text-base leading-relaxed select-none"
+        onCopy={(e) => e.preventDefault()}
+      >
+        {paragraph}
+      </p>
+      {phase === "idle" ? (
+        <Button
+          size="pill"
+          onClick={() => {
+            counts.current = { backspaces: 0, keystrokes: 0, started: Date.now() };
+            setDeadline(new Date(Date.now() + seconds * 1000).toISOString());
+            setPhase("typing");
+            window.setTimeout(() => box.current?.focus(), 0);
+          }}
+        >
+          {t("typingStart")}
+        </Button>
+      ) : null}
+      {phase !== "idle" ? (
+        <>
+          {phase === "typing" && left !== null ? (
+            <p className="text-sm font-bold tabular-nums">
+              {t("typingLeft")}: {mmss(left)}
+            </p>
+          ) : null}
+          <label htmlFor="typing-box" className="sr-only">
+            {t("typingLabel")}
+          </label>
+          <textarea
+            id="typing-box"
+            ref={box}
+            rows={6}
+            maxLength={3000}
+            value={phase === "done" && answer ? answer.text : text}
+            readOnly={phase === "done"}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Backspace" || e.key === "Delete") counts.current.backspaces += 1;
+              if (e.key.length === 1 || e.key === "Backspace" || e.key === "Enter")
+                counts.current.keystrokes += 1;
+            }}
+            onPaste={(e) => e.preventDefault()}
+            onDrop={(e) => e.preventDefault()}
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+            className="w-full resize-y rounded-2xl border border-input bg-background px-4 py-3 text-base outline-none read-only:bg-muted/40 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          />
+          {phase === "typing" ? (
+            <Button size="pill" variant="secondary" onClick={() => finish(text)}>
+              {t("typingFinish")}
+            </Button>
+          ) : null}
+          {result && answer?.stats ? (
+            <p className="rounded-2xl bg-success/10 px-4 py-3 text-sm font-semibold" role="status">
+              {t("typingDone")}:{" "}
+              {t("typingStats", {
+                wpm: result.wpm,
+                accuracy: result.accuracy,
+                backspaces: answer.stats.backspaces,
+                wrong: result.wrongWords.length,
+              })}
+            </p>
+          ) : null}
+        </>
+      ) : null}
     </div>
   );
 }

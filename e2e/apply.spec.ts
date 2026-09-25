@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
 import { env, psql, removeObjects } from "./db";
 import { waitForEmail } from "./mailpit";
 
@@ -6,13 +6,13 @@ import { waitForEmail } from "./mailpit";
 const JOB_TITLE = "[SAMPLE] Weekend barista";
 const jobId = () => psql(`select id from public.jobs where title = '${JOB_TITLE}'`);
 
-async function recordAnswer(page: Page) {
+async function recordAnswer(page: Locator) {
   if (await page.getByRole("button", { name: "Turn on camera" }).isVisible()) {
     await page.getByRole("button", { name: "Turn on camera" }).click();
   }
   await page.getByRole("button", { name: "Start recording" }).click();
   await expect(page.getByText(/^Recording \d/)).toBeVisible({ timeout: 10_000 });
-  await page.waitForTimeout(1500);
+  await page.page().waitForTimeout(1500);
   await page.getByRole("button", { name: "Stop" }).click();
   await page.getByRole("button", { name: "Use this video" }).click();
 }
@@ -43,7 +43,7 @@ test("a visitor applies in 3 steps without an account, and nothing reaches the e
   await page.getByRole("button", { name: "Start application" }).click();
 
   // --- Test (timed on the server): every question on one page, autosaved.
-  await expect(page.getByText("Step 1 of 3 · Quick test")).toBeVisible();
+  await expect(page.getByText("Step 1 of 3 · Test")).toBeVisible();
   await page.getByRole("button", { name: "Start the test" }).click();
   await expect(page.getByText("0 of 3 answered")).toBeVisible();
   await expect(page.getByText("Time left")).toBeAttached(); // the timer
@@ -66,31 +66,35 @@ test("a visitor applies in 3 steps without an account, and nothing reaches the e
   await expect(confirm).toBeVisible();
   await confirm.getByRole("button", { name: "Finish test" }).click();
 
-  // --- Video: one video explaining the same test questions.
-  await expect(page.getByText("Step 2 of 3 · Short video")).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Explain your answers in one video" }),
-  ).toBeVisible();
-  const prompts = page.locator("main ol li");
-  await expect(prompts).toHaveCount(3);
-  await expect(prompts.nth(0)).toContainText("A customer is upset about a late order");
-  await expect(prompts.nth(2)).toContainText("why do you want this job?");
-  await expect(page.getByText(/Up to 5:00 in total/)).toBeVisible();
-  await recordAnswer(page);
+  // --- Task: contact details, then one video per video question (fake camera).
+  await expect(page.getByText("Step 2 of 3 · Task")).toBeVisible();
+  await page.getByLabel("Full name").fill("Sara Ahmed");
+  await page.getByLabel("Phone number").fill("12");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByText("Please enter a valid phone number")).toBeVisible();
+  await page.getByLabel("Phone number").fill("050 111 2233");
+  const cards = page.locator("#videos ol > li");
+  await expect(cards).toHaveCount(2);
+  await expect(cards.nth(0)).toContainText("[SAMPLE] Introduce yourself in 30 seconds.");
+  await expect(cards.nth(0)).toContainText("up to 45 seconds");
+  // Continuing without the videos is refused.
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByText("2 video answers are still missing.")).toBeVisible();
+  for (let i = 0; i < 2; i++) {
+    const card = cards.nth(i);
+    await card.getByRole("button", { name: "Record answer" }).click();
+    await recordAnswer(card);
+    await expect(card.getByText("Your video is saved.")).toBeVisible({ timeout: 20_000 });
+  }
+  await page.getByRole("button", { name: "Continue" }).click();
 
-  // --- Survey: contact details and every question on one page.
-  await expect(page.getByText("Step 3 of 3 · About you")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "How can we reach you?" })).toBeVisible();
+  // --- Survey: every question on one page, then consent.
+  await expect(page.getByText("Step 3 of 3 · Survey")).toBeVisible();
   const consent = page.getByRole("checkbox", {
     name: /I agree that Wemuste stores my information/,
   });
   await expect(consent).not.toBeChecked(); // never pre-ticked
-  await page.getByLabel("Full name").fill("Sara Ahmed");
-  await page.getByLabel("Phone number").fill("12");
   await page.getByText("This week").click();
-  await page.getByRole("button", { name: "Send application" }).click();
-  await expect(page.getByText("Please enter a valid phone number")).toBeVisible();
-  await page.getByLabel("Phone number").fill("050 111 2233");
   await page.getByRole("button", { name: "Send application" }).click();
   await expect(page.getByText("Please answer this question.")).toBeVisible(); // the kinds of work
   await page.getByText("Retail").click();
@@ -104,7 +108,7 @@ test("a visitor applies in 3 steps without an account, and nothing reaches the e
   await expect(page.getByRole("heading", { name: "Application sent" })).toBeVisible();
   await expect(page.getByText("We'll contact you if you're shortlisted.")).toBeVisible();
 
-  // Stored once, not scored, with the one video in private storage.
+  // Stored once, not scored, with a video per question in private storage.
   const row = psql(
     `select a.status || '|' || (a.test_score is null) || '|' || p.phone_e164 || '|' ||
             (select count(*) from public.application_videos v where v.application_id = a.id) || '|' ||
@@ -113,7 +117,7 @@ test("a visitor applies in 3 steps without an account, and nothing reaches the e
        from public.applications a join public.applicants p on p.id = a.applicant_id
       where a.job_id = '${id}'`,
   );
-  expect(row).toBe("submitted|true|+971501112233|1|1|true");
+  expect(row).toBe("submitted|true|+971501112233|2|2|true");
 
   // The team is told, without personal data; the employer is not.
   const email = await waitForEmail("admin@wemuste.local", /New application to review/, since);

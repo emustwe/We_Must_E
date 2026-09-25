@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { loginAsAdmin } from "./admin-session";
 import { psql, removeObjects } from "./db";
-import { acceptConfirms, answerAll, login, signOut, unique } from "./helpers";
+import { acceptConfirms, answerAll, login, makeVideoFile, signOut, unique } from "./helpers";
 
 // The whole journey, with whatever questions are live (so it keeps working
 // when the admin replaces the [SAMPLE] content):
@@ -10,36 +10,6 @@ import { acceptConfirms, answerAll, login, signOut, unique } from "./helpers";
 const SPONSOR = "employer@wemuste.local";
 const PHONE_LOCAL = "050 777 8899";
 const PHONE = "+971507778899";
-
-// A 2-second WebM made in the browser, used as a video "picked from the phone".
-async function makeVideoFile(page: Page) {
-  const base64 = await page.evaluate(async () => {
-    const canvas = document.createElement("canvas");
-    canvas.width = 320;
-    canvas.height = 240;
-    const ctx = canvas.getContext("2d")!;
-    const rec = new MediaRecorder(canvas.captureStream(15), { mimeType: "video/webm" });
-    const chunks: Blob[] = [];
-    rec.ondataavailable = (e) => chunks.push(e.data);
-    let hue = 0;
-    const timer = setInterval(() => {
-      ctx.fillStyle = `hsl(${(hue += 12) % 360} 70% 50%)`;
-      ctx.fillRect(0, 0, 320, 240);
-    }, 60);
-    rec.start(200);
-    await new Promise((r) => setTimeout(r, 2000));
-    await new Promise((r) => {
-      rec.onstop = r;
-      rec.stop();
-    });
-    clearInterval(timer);
-    const bytes = new Uint8Array(await new Blob(chunks).arrayBuffer());
-    let binary = "";
-    for (const b of bytes) binary += String.fromCharCode(b);
-    return btoa(binary);
-  });
-  return { name: "answer.webm", mimeType: "video/webm", buffer: Buffer.from(base64, "base64") };
-}
 
 test.afterEach(async () => {
   const paths = psql(
@@ -69,7 +39,7 @@ test("full journey: apply with test, video and survey -> admin approves -> spons
   await page.getByRole("button", { name: "Start application" }).click();
 
   // Step 1: the test, every question on one page (every step must be there).
-  await expect(page.getByText(/Step 1 of 3 · Quick test/)).toBeVisible();
+  await expect(page.getByText(/Step 1 of 3 · Test/)).toBeVisible();
   await page.getByRole("button", { name: "Start the test" }).click();
   await expect(page.getByText(/^0 of \d+ answered$/)).toBeVisible();
   const testPrompts = await page.locator("main ol > li h2").allTextContents();
@@ -77,21 +47,25 @@ test("full journey: apply with test, video and survey -> admin approves -> spons
   await expect(page.getByText(/^(\d+) of \1 answered/)).toBeVisible();
   await page.getByRole("button", { name: "Finish test" }).click();
 
-  // Step 2: one video explaining the same questions
+  // Step 2: Task — contact details, then a video per video question
   // (picked from the phone here; recording is covered in apply.spec).
-  await expect(page.getByText(/Step 2 of 3 · Short video/)).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Explain your answers in one video" }),
-  ).toBeVisible();
-  await expect(page.locator("main ol li")).toHaveCount(testPrompts.length);
-  await page.getByLabel("Upload a video from my phone").setInputFiles(await makeVideoFile(page));
-  await expect(page.getByText(/^Recorded \d:\d\d/)).toBeVisible();
-  await page.getByRole("button", { name: "Use this video" }).click();
-
-  // Step 3: contact, the survey questions and consent, on one page.
-  await expect(page.getByText(/Step 3 of 3 · About you/)).toBeVisible();
+  await expect(page.getByText(/Step 2 of 3 · Task/)).toBeVisible();
   await page.getByLabel("Full name").fill(name);
   await page.getByLabel("Phone number").fill(PHONE_LOCAL);
+  const cards = page.locator("#videos ol > li");
+  const video = await makeVideoFile(page);
+  const total = await cards.count();
+  expect(total, "every video question is listed").toBeGreaterThan(0);
+  for (let i = 0; i < total; i++) {
+    await cards.nth(i).getByRole("button", { name: "Record answer" }).click();
+    await cards.nth(i).getByLabel("Upload a video from my phone").setInputFiles(video);
+    await cards.nth(i).getByRole("button", { name: "Use this video" }).click();
+    await expect(cards.nth(i).getByText("Your video is saved.")).toBeVisible({ timeout: 20_000 });
+  }
+  await page.getByRole("button", { name: "Continue" }).click();
+
+  // Step 3: the survey questions and consent, on one page.
+  await expect(page.getByText(/Step 3 of 3 · Survey/)).toBeVisible();
   await answerAll(page);
   await page.getByText(/I agree that Wemuste stores my information/).click();
   await page.getByRole("button", { name: "Send application" }).click();
@@ -106,7 +80,7 @@ test("full journey: apply with test, video and survey -> admin approves -> spons
   );
   const [tests, videos, survey] = counts.split("|").map(Number);
   expect(tests, "test answers saved").toBeGreaterThan(0);
-  expect(videos, "one video saved").toBe(1);
+  expect(videos, "a video per question saved").toBe(total);
   expect(survey, "survey answers saved").toBeGreaterThan(0);
 
   // ---------------------------------------------------------------- admin
