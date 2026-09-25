@@ -119,12 +119,18 @@ export function GradeForm({
 }
 
 // Asks the server for a 5-minute link (the view is logged), then plays it.
+// `load` is the admin's or the sponsor's server action.
 export function VideoViewer({
   applicationId,
   questionId,
+  load = getVideoUrl,
 }: {
   applicationId: string;
   questionId: string;
+  load?: (input: {
+    applicationId: string;
+    questionId: string;
+  }) => Promise<import("@/lib/result").ActionResult<{ url: string }>>;
 }) {
   const t = useTranslations("admin");
   const te = useTranslations("errors");
@@ -147,7 +153,7 @@ export function VideoViewer({
       disabled={pending}
       onClick={() =>
         startTransition(async () => {
-          const result = await getVideoUrl({ applicationId, questionId });
+          const result = await load({ applicationId, questionId });
           if (!result.ok) toast.error(te(result.error));
           else setUrl(result.data.url);
         })

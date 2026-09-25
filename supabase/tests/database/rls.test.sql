@@ -157,7 +157,26 @@ select tests.run_as(:E1, $$insert into jobs (employer_id, title, description, lo
 \set JA '(select id from jobs where title = ''Weekend barista'')'
 \set JB '(select id from jobs where title = ''Flyer helper'')'
 
-select is((select status::text from jobs where id = :JA), 'published', 'a new job is live immediately');
+select is((select status::text from jobs where id = :JA), 'pending', 'a new job waits for admin review');
+select is(tests.rows_as(null, 'select * from get_public_jobs(-90, -180, 90, 180)'), 0, 'jobs waiting for review are not on the public map');
+select ok(tests.denied_as(:E1, format('update jobs set status = ''published'' where id = %s', :'JA')), 'sponsors cannot publish their own job');
+select ok(tests.denied_as(:AD, format('select admin_review_job(%s, true, '''')', :'JA')), 'admin without MFA cannot approve jobs');
+select ok(tests.denied_as(:E1, format('select admin_review_job(%s, true, '''')', :'JA'), 'aal2'), 'sponsors cannot approve jobs');
+select tests.run_as(:AD, format('select admin_review_job(%s, false, ''Please add the hours'')', :'JB'), 'aal2');
+select is((select status::text || '|' || review_note from jobs where id = :JB), 'rejected|Please add the hours',
+  'a rejected job keeps the reason for the sponsor');
+select tests.run_as(:E1, format('update jobs set description = ''Hand out flyers at the mall, 4-8pm.'' where id = %s', :'JB'));
+select is((select status::text || '|' || coalesce(review_note, '-') from jobs where id = :JB), 'pending|-',
+  'editing a rejected job sends it back for review');
+select tests.run_as(:AD, format('select admin_review_job(%s, true, '''')', :'JA'), 'aal2');
+select tests.run_as(:AD, format('select admin_review_job(%s, true, '''')', :'JB'), 'aal2');
+select is((select count(*)::int from jobs where status = 'published' and published_at is not null and reviewed_by = :AD::uuid), 2,
+  'approved jobs go live, with the reviewer recorded');
+select ok(exists (select 1 from audit_logs where action = 'job.approved') and exists (select 1 from audit_logs where action = 'job.rejected'),
+  'job approvals and rejections are audited');
+select tests.run_as(:E1, format('update jobs set description = ''Make coffee for our customers, weekends.'' where id = %s', :'JA'));
+select is((select status::text from jobs where id = :JA), 'pending', 'editing a live job sends it back for review');
+select tests.run_as(:AD, format('select admin_review_job(%s, true, '''')', :'JA'), 'aal2');
 select ok((select abs(public_lat - lat) <= 0.00136 and abs(public_lng - lng) <= 0.0016
              and (public_lat, public_lng) <> (lat, lng) from jobs where id = :JA),
   'the public pin is rounded to about 300 m');
@@ -184,6 +203,7 @@ select ok(tests.denied_as(:E1, format('update jobs set status = ''hidden'' where
 select ok(tests.denied_as(:E1, format('update jobs set status = ''removed'' where id = %s', :'JA')), 'employer cannot remove a job');
 select tests.run_as(:E1, format('update jobs set title = ''Weekend barista'', location_label = ''JBR, Dubai'' where id = %s', :'JA'));
 select is((select location_label from jobs where id = :JA), 'JBR, Dubai', 'employer edits their own job');
+select tests.run_as(:AD, format('select admin_review_job(%s, true, '''')', :'JA'), 'aal2');
 select tests.run_as(:E1, format('update jobs set status = ''closed'' where id = %s', :'JB'));
 select ok((select closed_at is not null from jobs where id = :JB), 'employer closes their own job');
 select ok(tests.denied_as(:E1, format('update jobs set status = ''published'' where id = %s', :'JB')), 'employer cannot re-open a closed job');
@@ -228,6 +248,7 @@ insert into survey_questions (id, survey_id, type, prompt, options, required, po
 select tests.run_as(:E3, $$insert into jobs (employer_id, title, description, location_label, lat, lng)
   values (auth.uid(), 'Apply here', 'A job open for applications.', 'Deira, Dubai', 25.27, 55.31),
          (auth.uid(), 'Other job', 'Another open job for applications.', 'Karama, Dubai', 25.24, 55.30)$$);
+update jobs set status = 'published' where title in ('Apply here', 'Other job');
 \set JC '(select id from jobs where title = ''Apply here'')'
 \set JD '(select id from jobs where title = ''Other job'')'
 \set TOKA '''token-a-0123456789-0123456789-0123456789'''
@@ -334,6 +355,7 @@ select ok(tests.denied_as(null, $$insert into storage.objects (bucket_id, name) 
 -- ---------------------------------------------------------------------------
 select tests.run_as(:E3, format('update jobs set country_code = ''AE'', country_name = ''United Arab Emirates'', city = ''Dubai'' where id = %s', :'JC'));
 select is((select city from jobs where id = :JC), 'Dubai', 'sponsors set the country and city of their job');
+select tests.run_as(:AD, format('select admin_review_job(%s, true, '''')', :'JC'), 'aal2');
 select ok(tests.denied_as(:E3, format('update jobs set country_code = ''uae'' where id = %s', :'JC')), 'country codes must be two capital letters');
 select is((select sponsor_name || '|' || city || '|' || country_code from get_public_jobs(-90, -180, 90, 180) where id = :JC),
   'Invited Co|Dubai|AE', 'the public map shows the sponsor name, city and country');
@@ -352,6 +374,12 @@ select ok(tests.denied_as(:E3, format('select log_sponsor_change(%L, ''logo'')',
 select ok(tests.denied_as(:AD, format('select log_sponsor_change(%L, ''deleted'')', :E3)), 'admin without MFA cannot delete sponsors');
 select tests.run_as(:AD, format('select log_sponsor_change(%L, ''password'')', :E3), 'aal2');
 select ok(exists (select 1 from audit_logs where action = 'sponsor.password' and target_id = :E3::uuid), 'admin password changes are logged');
+
+-- Sponsors see approved candidates only (required tests 3, 8, 9) ----------------------
+select is(tests.rows_as(:E3, format('select * from sponsor_list_candidates(%s)', :'JC')), 0, 'before approval the sponsor sees no candidates');
+select id as aa_id from applications a where a.job_id = (select id from jobs where title = 'Apply here') \gset
+select ok(tests.denied_as(:E3, format('select sponsor_get_candidate(%L)', :'aa_id')), 'an unapproved application cannot be opened by the sponsor');
+select is(tests.rows_as(:E3, 'select 1 from application_videos'), 0, 'the sponsor sees no videos before approval');
 
 -- Admin review (required test 7: admin writes fail without MFA).
 \set Q3 '''30000000-0000-0000-0000-0000000000a3'''
@@ -391,6 +419,23 @@ select ok(tests.denied_as(:AD, $$select admin_activate_video_set('30000000-0000-
   'a video set without questions cannot go live');
 select ok(tests.denied_as(:AD, format('select admin_set_answer_key(%s, ''{0}'')', :'Q3'), 'aal2'),
   'written questions cannot have an answer key');
+
+-- After approval: the sponsor who owns the job sees the candidate, nobody else does.
+select is(tests.rows_as(:E3, format('select * from sponsor_list_candidates(%s)', :'JC')), 1, 'the sponsor sees the approved candidate for their job');
+select ok(not tests.denied_as(:E3, format('select sponsor_get_candidate(%L)', :'aa_id')), 'the sponsor can open the approved candidate');
+select is((select sponsor_get_candidate(:'aa_id') ->> 'full_name' from (select tests.act_as(:E3, 'aal1')) x), 'Sara A.',
+  'the candidate shows the applicant''s name');
+reset role;
+select is(tests.rows_as(:E1, format('select * from sponsor_list_candidates(%s)', :'JC')), 0, 'another sponsor sees nothing for that job');
+select ok(tests.denied_as(:E1, format('select sponsor_get_candidate(%L)', :'aa_id')), 'another sponsor cannot open the candidate');
+select is(tests.rows_as(:E3, 'select 1 from application_videos'), 1, 'the sponsor sees the approved candidate''s video');
+select is(tests.rows_as(:E3, 'select 1 from applications'), 0, 'sponsors still cannot read the applications table (admin notes stay private)');
+select tests.run_as(:E3, format('select log_video_view(%L, %s)', :'aa_id', :'VQ'));
+select ok(exists (select 1 from audit_logs where action = 'application.video_viewed' and actor_id = :E3::uuid), 'a sponsor''s video view is logged');
+select ok(tests.denied_as(:E1, format('select log_video_view(%L, %s)', :'aa_id', :'VQ')), 'another sponsor cannot watch the video');
+insert into storage.objects (bucket_id, name) values ('application-videos', :'aa_id' || '/' || :VQ || '/one.webm');
+select is(tests.rows_as(:E3, $$select 1 from storage.objects where bucket_id = 'application-videos' and name not like 'demo/%'$$), 1, 'storage: the sponsor can read the approved video file');
+select is(tests.rows_as(:E1, $$select 1 from storage.objects where bucket_id = 'application-videos'$$), 0, 'storage: other sponsors read no video files');
 
 -- Cleanup: unfinished applications older than 48 h, never submitted ones.
 select app_start(:JD, 'token-c-0123456789-0123456789-0123456789', 'ip');

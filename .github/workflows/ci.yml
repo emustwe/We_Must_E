@@ -63,7 +63,7 @@ jobs:
         with:
           version: latest
       - name: Start local Supabase (applies migrations and seed)
-        run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector,realtime,supavisor,postgres-meta
+        run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor,postgres-meta
       - name: RLS and privilege tests (pgTAP)
         run: supabase test db
       - name: Write .env.local for the local stack

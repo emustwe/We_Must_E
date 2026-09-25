@@ -41,6 +41,13 @@ async function openList(page: Page) {
 
 test.beforeEach(({ page }) => stubMapTiler(page));
 
+// Jobs left behind by an earlier, interrupted run would change what's nearest.
+test.beforeAll(() => {
+  psql(
+    `delete from public.jobs where title like 'Pop-up stall helper %' or title like 'Leaflet helper %'`,
+  );
+});
+
 const sponsorName = psql(
   `select company_name from public.employer_profiles where contact_email = 'employer@wemuste.local'`,
 );
@@ -58,7 +65,11 @@ test("anyone can browse live jobs on the map and open one, without an account", 
   // Country, then city, filter the jobs.
   await page.getByRole("button", { name: "United Arab Emirates", exact: true }).click();
   await expect(page.getByLabel("Country", { exact: true })).toHaveValue("AE");
-  await page.getByLabel("City", { exact: true }).selectOption({ label: "Sharjah (1)" });
+  // Any city can be searched; cities with jobs are listed.
+  await page.getByRole("button", { name: /All cities/ }).click();
+  const cities = page.getByRole("region", { name: "Cities in United Arab Emirates" });
+  await expect(cities.getByRole("combobox", { name: "Search any city" })).toBeVisible();
+  await cities.getByRole("button", { name: /^Sharjah/ }).click();
   await page.getByRole("button", { name: /^List ·/ }).click();
   const near = page.getByRole("region", { name: "All jobs" });
   await expect(near.getByRole("heading", { name: "Jobs in Sharjah" })).toBeVisible();
@@ -102,10 +113,11 @@ test("with location allowed, the nearest jobs come first", async ({ page, contex
   await expect(list.getByText("[SAMPLE] Bike delivery rider")).toHaveCount(0);
 });
 
-test("an employer posts a job that appears on the map, and an admin can hide it", async ({
+test("a sponsor's job waits for approval, then appears live on an open map; hiding removes it live", async ({
   page,
+  browser,
 }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(150_000);
   const title = `Pop-up stall helper ${unique()}`;
 
   await login(page, "employer@wemuste.local");
@@ -122,24 +134,58 @@ test("an employer posts a job that appears on the map, and an admin can hide it"
   await expect(page.getByLabel("Country")).toHaveValue("AE");
   await expect(page.getByLabel("City")).toHaveValue("Dubai");
   await page.getByRole("button", { name: "Post job" }).click();
-  await expect(page.getByText("Your job is live on the map.")).toBeVisible();
-  await expect(page.getByText("Live", { exact: true })).toBeVisible();
-
-  let list = await openList(page);
-  await expect(list.getByRole("button", { name: new RegExp(title) })).toBeVisible();
-
-  // Admin hides it: it leaves the public map.
-  await page.goto("/sponsor");
+  await expect(page.getByText(/sent to the Wemuste team/)).toBeVisible();
+  await expect(page.getByText("Waiting for review", { exact: true })).toBeVisible();
   await signOut(page);
+
+  // A visitor already has the map open (another browser). The job isn't there yet.
+  const visitorContext = await browser.newContext();
+  const visitor = await visitorContext.newPage();
+  await stubMapTiler(visitor);
+  await visitor.goto("/");
+  await visitor.getByRole("button", { name: "Not now" }).click();
+  await visitor.getByRole("button", { name: /^List ·/ }).click();
+  const visitorList = visitor.getByRole("region", { name: "All jobs" });
+  await expect(visitorList.getByText("[SAMPLE] Weekend barista")).toBeVisible();
+  await expect(visitorList.getByRole("button", { name: new RegExp(title) })).toHaveCount(0);
+
+  // Admin approves: the job appears on the visitor's open map without a reload.
   await loginAsAdmin(page);
-  await page.goto("/admin/jobs");
+  await page.goto("/admin/jobs?status=pending");
   const row = page.getByRole("listitem").filter({ hasText: title });
-  await row.getByRole("button", { name: "Hide" }).click();
-  await expect(row.getByText("Hidden by Wemuste")).toBeVisible();
+  await row.getByRole("button", { name: "Approve" }).click();
+  await expect(page.getByText("Approved. The job is now on the map.")).toBeVisible();
+  await expect(visitorList.getByRole("button", { name: new RegExp(title) })).toBeVisible({
+    timeout: 5_000,
+  });
 
-  list = await openList(page);
-  await expect(list.getByText("[SAMPLE] Weekend barista")).toBeVisible();
-  await expect(list.getByRole("button", { name: new RegExp(title) })).toHaveCount(0);
+  // Admin hides it: it leaves the open map, again without a reload.
+  await page.goto("/admin/jobs?status=published");
+  await page
+    .getByRole("listitem")
+    .filter({ hasText: title })
+    .getByRole("button", { name: "Hide" })
+    .click();
+  await expect(visitorList.getByRole("button", { name: new RegExp(title) })).toHaveCount(0, {
+    timeout: 5_000,
+  });
+  await visitorContext.close();
 
-  await psql(`delete from public.jobs where title = '${title}'`);
+  // A rejected job shows the reason to the sponsor.
+  const second = `Leaflet helper ${unique()}`;
+  psql(`insert into public.jobs (employer_id, title, description, location_label, lat, lng, country_code, country_name, city)
+        select user_id, '${second}', 'Hand out leaflets near the metro.', 'Deira', 25.27, 55.31, 'AE', 'United Arab Emirates', 'Dubai'
+          from public.employer_profiles where contact_email = 'employer@wemuste.local'`);
+  await page.goto("/admin/jobs?status=pending");
+  const pendingRow = page.getByRole("listitem").filter({ hasText: second });
+  await pendingRow.getByRole("button", { name: "Reject" }).click();
+  await pendingRow.getByLabel(/Why can't it be approved/).fill("Please add the working hours.");
+  await pendingRow.getByRole("button", { name: "Send back to sponsor" }).click();
+  await expect(page.getByText("Sent back to the sponsor.")).toBeVisible();
+  await signOut(page);
+  await login(page, "employer@wemuste.local");
+  await page.getByRole("link", { name: new RegExp(second) }).click();
+  await expect(page.getByText("Reason: Please add the working hours.")).toBeVisible();
+
+  psql(`delete from public.jobs where title in ('${title}', '${second}')`);
 });

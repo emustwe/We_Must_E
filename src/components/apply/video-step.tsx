@@ -27,14 +27,17 @@ function videoSeconds(url: string) {
 }
 type Question = VideoView["questions"][number];
 
-// Recording format: the first one this browser supports (Safari records MP4).
+// Recording format: MP4 (H.264) first, because it plays everywhere, including
+// iPhones and Safari, and knows its own length. WebM is the fallback.
 function pickFormat() {
   if (typeof MediaRecorder === "undefined") return null;
   const candidates = [
+    { type: "video/mp4;codecs=avc1.42E01E,mp4a.40.2", mime: "video/mp4" as const },
+    { type: "video/mp4;codecs=avc1,mp4a", mime: "video/mp4" as const },
+    { type: "video/mp4", mime: "video/mp4" as const },
     { type: "video/webm;codecs=vp9,opus", mime: "video/webm" as const },
     { type: "video/webm;codecs=vp8,opus", mime: "video/webm" as const },
     { type: "video/webm", mime: "video/webm" as const },
-    { type: "video/mp4", mime: "video/mp4" as const },
   ];
   return candidates.find((c) => MediaRecorder.isTypeSupported(c.type)) ?? null;
 }
@@ -223,20 +226,43 @@ function Recorder({
   function record() {
     const fmt = format;
     if (!stream || !fmt) return;
+    // The camera can be taken by another app; ask for it again if so.
+    if (stream.getTracks().some((track) => track.readyState !== "live")) {
+      setPhase("camera");
+      setError(t("cameraLost"));
+      return;
+    }
     const chunks: Blob[] = [];
-    const rec = new MediaRecorder(stream, { mimeType: fmt.type, videoBitsPerSecond: 1_500_000 });
-    rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+    let rec: MediaRecorder;
+    try {
+      rec = new MediaRecorder(stream, { mimeType: fmt.type, videoBitsPerSecond: 1_500_000 });
+    } catch {
+      setPhase("ready");
+      setError(t("recordingFailed"));
+      return;
+    }
+    rec.ondataavailable = (e) => {
+      if (e.data.size) chunks.push(e.data);
+    };
+    rec.onerror = () => setError(t("recordingFailed"));
     rec.onstop = () => {
       const seconds = Math.max(1, Math.round((Date.now() - startedAt.current) / 1000));
       // Upload with the plain type (no codecs) so storage accepts it.
       const blob = new Blob(chunks, { type: fmt.mime });
+      // Nothing (or almost nothing) captured: say so instead of showing an empty video.
+      if (blob.size < 2048) {
+        setPhase("ready");
+        setError(t("recordingFailed"));
+        return;
+      }
       setClip({ blob, url: URL.createObjectURL(blob), seconds, mime: fmt.mime });
       setPhase("review");
     };
     recorder.current = rec;
     startedAt.current = Date.now();
     setElapsed(0);
-    rec.start(1000);
+    setError(null);
+    rec.start(500);
     setPhase("recording");
   }
 
@@ -354,6 +380,13 @@ function Recorder({
         ) : null}
       </div>
 
+      {phase === "review" && clip ? (
+        <p className="mt-3 rounded-2xl bg-success/10 px-4 py-3 text-sm font-medium" role="status">
+          {t("recordedHint", {
+            time: `${Math.floor(clip.seconds / 60)}:${String(clip.seconds % 60).padStart(2, "0")}`,
+          })}
+        </p>
+      ) : null}
       <div className="mt-auto space-y-3 pt-6">
         <FormAlert message={error} />
         {format === null && (phase === "camera" || phase === "ready") ? (

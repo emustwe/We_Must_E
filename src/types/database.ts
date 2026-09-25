@@ -465,7 +465,10 @@ export type Database = {
           location_label: string
           public_lat: number
           public_lng: number
-          published_at: string
+          published_at: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           status: Database["public"]["Enums"]["job_status"]
           survey_id: string | null
           test_id: string | null
@@ -487,7 +490,10 @@ export type Database = {
           location_label: string
           public_lat?: number
           public_lng?: number
-          published_at?: string
+          published_at?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: Database["public"]["Enums"]["job_status"]
           survey_id?: string | null
           test_id?: string | null
@@ -509,7 +515,10 @@ export type Database = {
           location_label?: string
           public_lat?: number
           public_lng?: number
-          published_at?: string
+          published_at?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: Database["public"]["Enums"]["job_status"]
           survey_id?: string | null
           test_id?: string | null
@@ -524,6 +533,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "employer_profiles"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "jobs_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "jobs_survey_id_fkey"
@@ -893,6 +909,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_review_job: {
+        Args: { p_approve: boolean; p_job_id: string; p_note: string }
+        Returns: undefined
+      }
       admin_set_answer_key: {
         Args: { p_correct_options: number[]; p_question_id: string }
         Returns: undefined
@@ -1018,6 +1038,20 @@ export type Database = {
         Returns: undefined
       }
       record_account_deletion: { Args: never; Returns: undefined }
+      sponsor_get_candidate: {
+        Args: { p_application_id: string }
+        Returns: Json
+      }
+      sponsor_list_candidates: {
+        Args: { p_job_id: string; p_page?: number }
+        Returns: {
+          application_id: string
+          full_name: string
+          reviewed_at: string
+          test_percent: number
+          total: number
+        }[]
+      }
     }
     Enums: {
       application_status: "in_progress" | "submitted" | "approved" | "rejected"
@@ -1029,7 +1063,13 @@ export type Database = {
         | "full_time"
         | "flexible"
       employer_status: "pending" | "approved" | "suspended"
-      job_status: "published" | "hidden" | "closed" | "removed"
+      job_status:
+        | "pending"
+        | "published"
+        | "hidden"
+        | "closed"
+        | "removed"
+        | "rejected"
       question_type:
         | "single_choice"
         | "multi_choice"
@@ -1184,7 +1224,14 @@ export const Constants = {
         "flexible",
       ],
       employer_status: ["pending", "approved", "suspended"],
-      job_status: ["published", "hidden", "closed", "removed"],
+      job_status: [
+        "pending",
+        "published",
+        "hidden",
+        "closed",
+        "removed",
+        "rejected",
+      ],
       question_type: [
         "single_choice",
         "multi_choice",

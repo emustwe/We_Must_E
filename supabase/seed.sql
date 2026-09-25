@@ -98,3 +98,5 @@ insert into public.jobs (employer_id, title, description, location_label, lat, l
 update public.jobs set country_code = 'AE', country_name = 'United Arab Emirates',
   city = case when location_label like '%Sharjah%' then 'Sharjah'
               when location_label like '%Abu Dhabi%' then 'Abu Dhabi' else 'Dubai' end;
+-- Sample jobs are already approved.
+update public.jobs set status = 'published';

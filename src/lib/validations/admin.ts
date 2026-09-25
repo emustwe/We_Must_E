@@ -6,6 +6,12 @@ export const adminJobStatusSchema = z.strictObject({
   status: z.enum(["published", "hidden", "closed", "removed"]),
 });
 
+export const jobReviewSchema = z.strictObject({
+  jobId: idSchema,
+  approve: z.boolean(),
+  note: z.string().trim().max(500),
+});
+
 const title = z
   .string()
   .trim()

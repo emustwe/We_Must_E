@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/session";
 import { dbFail } from "@/lib/db-errors";
+import { notifyAdmins } from "@/lib/email/notify";
 import { jobAreaBounds } from "@/lib/jobs/area";
 import { countryName } from "@/lib/geo/countries";
 import { isInside } from "@/lib/jobs/meta";
@@ -59,9 +60,9 @@ export async function createJob(input: unknown): Promise<ActionResult> {
     .single();
   if (error) return dbFail("create-job", error);
 
-  // Live immediately: refresh the employer list and the public map.
+  // New jobs wait for an admin; tell the team.
+  notifyAdmins("newJob");
   revalidatePath("/sponsor");
-  revalidatePath("/");
   redirect(`/sponsor/jobs/${data.id}?posted=1`);
 }
 
@@ -77,13 +78,16 @@ export async function updateJob(jobId: unknown, input: unknown): Promise<ActionR
     .from("jobs")
     .update(toRow(parsed.data))
     .eq("id", id.data)
-    .select("id");
+    .select("id, status");
   if (error) return dbFail("update-job", error);
   if (!data?.length) return fail("notFound");
 
+  // Changes to a live job send it back for review (the database decides).
+  const inReview = data[0].status === "pending";
+  if (inReview) notifyAdmins("newJob");
   revalidatePath(`/sponsor/jobs/${id.data}`);
   revalidatePath("/");
-  redirect(`/sponsor/jobs/${id.data}?saved=1`);
+  redirect(`/sponsor/jobs/${id.data}?${inReview ? "review=1" : "saved=1"}`);
 }
 
 // Employers can only close a published job (the database enforces this too).

@@ -3,6 +3,7 @@
 import {
   BadgeCheck,
   Banknote,
+  ChevronDown,
   List,
   LocateFixed,
   Lock,
@@ -19,10 +20,11 @@ import { PlaceSearch } from "@/components/map/place-search";
 import { Logo } from "@/components/brand/logo";
 import { SponsorLogo } from "@/components/sponsors/sponsor-logo";
 import { buttonVariants } from "@/components/ui/button";
-import { COUNTRIES, countryName } from "@/lib/geo/countries";
+import { COUNTRIES, countryName, normaliseCity } from "@/lib/geo/countries";
 import { distanceKm, type Bounds } from "@/lib/jobs/meta";
 import { findCountry } from "@/lib/map/geocode";
-import type { PublicJob } from "@/lib/jobs/public-queries";
+import { useLiveJobs } from "@/components/explore/use-live-jobs";
+import { placeLine, type PublicJob } from "@/lib/jobs/public-job";
 import { cn } from "@/lib/utils";
 
 const ExploreMap = dynamic(() => import("@/components/explore/explore-map"), {
@@ -36,16 +38,6 @@ type Origin = { point: [number, number]; kind: "me" | "place"; label: string };
 type LocState = "checking" | "prompt" | "locating" | "denied" | "done";
 
 const PROMPT_KEY = "wm-location-prompt";
-
-// "Dubai Marina, Dubai, United Arab Emirates" without repeating a part the
-// place name already contains.
-function placeLine(job: PublicJob, withCountry = true) {
-  const parts = [job.locationLabel];
-  const has = (x: string) => parts.some((p) => p.toLowerCase().includes(x.toLowerCase()));
-  if (job.city && !has(job.city)) parts.push(job.city);
-  if (withCountry && job.countryName && !has(job.countryName)) parts.push(job.countryName);
-  return parts.join(", ");
-}
 
 // The area around some jobs, to fit the map to them.
 function boundsOf(jobs: PublicJob[]): MapTarget | null {
@@ -89,7 +81,7 @@ export function TrustLines({ className }: { className?: string }) {
 }
 
 export function JobExplorer({
-  jobs,
+  jobs: initialJobs,
   bounds,
   initialJobId,
 }: {
@@ -98,6 +90,8 @@ export function JobExplorer({
   initialJobId: string | null;
 }) {
   const t = useTranslations("explore");
+  // Live: approved jobs appear (and closed ones disappear) without a reload.
+  const jobs = useLiveJobs(initialJobs, bounds);
   const format = useFormatter();
   const [selectedId, setSelectedId] = useState<string | null>(
     initialJobId && jobs.some((j) => j.id === initialJobId) ? initialJobId : null,
@@ -107,6 +101,9 @@ export function JobExplorer({
   const [distance, setDistance] = useState<Distance>(null);
   const [country, setCountry] = useState<string | null>(null);
   const [city, setCity] = useState<string | null>(null);
+  // A searched city also matches jobs within 25 km of its centre.
+  const [cityCenter, setCityCenter] = useState<[number, number] | null>(null);
+  const [cityPanel, setCityPanel] = useState(false);
   const [target, setTarget] = useState<MapTarget | null>(() => {
     const job = jobs.find((j) => j.id === initialJobId);
     return job ? { center: [job.lat, job.lng], zoom: 14 } : boundsOf(jobs);
@@ -183,6 +180,7 @@ export function JobExplorer({
   async function chooseCountry(code: string | null) {
     setCountry(code);
     setCity(null);
+    setCityCenter(null);
     setLocState("done");
     if (!code) {
       setTarget(boundsOf(jobs));
@@ -209,8 +207,14 @@ export function JobExplorer({
     }
   }
 
-  function chooseCity(name: string | null) {
+  function chooseCity(name: string | null, center: [number, number] | null = null) {
     setCity(name);
+    setCityCenter(center);
+    setCityPanel(false);
+    if (center) {
+      setTarget({ center, zoom: 11 });
+      return;
+    }
     const inArea = jobs.filter((j) => j.countryCode === country && (!name || j.city === name));
     const fit = boundsOf(inArea);
     if (fit) setTarget(fit);
@@ -237,11 +241,13 @@ export function JobExplorer({
     const list = withDistance.filter(
       ({ job, km }) =>
         (!country || job.countryCode === country) &&
-        (!city || job.city === city) &&
+        (!city ||
+          job.city?.toLowerCase() === city.toLowerCase() ||
+          (cityCenter !== null && distanceKm(cityCenter, [job.lat, job.lng]) <= 25)) &&
         (!distance || !origin || (km ?? 0) <= distance),
     );
     return origin ? [...list].sort((a, b) => (a.km ?? 0) - (b.km ?? 0)) : list;
-  }, [withDistance, distance, origin, country, city]);
+  }, [withDistance, distance, origin, country, city, cityCenter]);
   const areaLabel = city ?? (country ? countryName(country) : null);
 
   const selected = selectedId ? withDistance.find((j) => j.job.id === selectedId) : undefined;
@@ -354,28 +360,20 @@ export function JobExplorer({
             </optgroup>
           </select>
           {country ? (
-            <>
-              <label className="sr-only" htmlFor="wm-city">
-                {t("city")}
-              </label>
-              <select
-                id="wm-city"
-                value={city ?? ""}
-                disabled={!cities.length}
-                onChange={(e) => chooseCity(e.target.value || null)}
-                className={cn(
-                  "shadow-float h-10 max-w-44 shrink-0 rounded-full border-0 ps-3.5 pe-8 text-sm font-semibold disabled:opacity-60",
-                  city ? "bg-primary text-primary-foreground" : "bg-background",
-                )}
-              >
-                <option value="">{cities.length ? t("allCities") : t("noCities")}</option>
-                {cities.map(([name, count]) => (
-                  <option key={name} value={name}>
-                    {name} ({count})
-                  </option>
-                ))}
-              </select>
-            </>
+            <button
+              type="button"
+              onClick={() => setCityPanel((v) => !v)}
+              aria-expanded={cityPanel}
+              aria-controls="wm-city-panel"
+              className={cn(
+                "shadow-float flex h-10 max-w-44 shrink-0 items-center gap-1 rounded-full ps-3.5 pe-3 text-sm font-semibold",
+                city ? "bg-primary text-primary-foreground" : "bg-background",
+              )}
+            >
+              <span className="truncate">{city ?? t("allCities")}</span>
+              <ChevronDown className="size-4 shrink-0" aria-hidden="true" />
+              <span className="sr-only"> ({t("city")})</span>
+            </button>
           ) : null}
           <div
             role="group"
@@ -401,6 +399,75 @@ export function JobExplorer({
           </div>
         </div>
       </div>
+
+      {/* City picker: any city in the chosen country (search), or one with jobs */}
+      {cityPanel && country ? (
+        <section
+          id="wm-city-panel"
+          aria-labelledby="wm-city-title"
+          className="shadow-float animate-in-fast absolute inset-x-3 top-32 z-[1002] max-h-[70dvh] overflow-y-auto rounded-[1.75rem] bg-background p-4 sm:start-4 sm:end-auto sm:w-96"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <h2 id="wm-city-title" className="text-lg font-extrabold">
+              {t("cityIn", { country: countryName(country) })}
+            </h2>
+            <button
+              type="button"
+              onClick={() => setCityPanel(false)}
+              className="flex size-9 items-center justify-center rounded-full hover:bg-muted"
+              aria-label={t("closeCities")}
+            >
+              <X className="size-4" aria-hidden="true" />
+            </button>
+          </div>
+          <PlaceSearch
+            bounds={bounds}
+            country={country}
+            kind="city"
+            autoFocus
+            placeholder={t("searchCity")}
+            className="mt-3"
+            onPick={(place) =>
+              chooseCity(normaliseCity(place.label.split(",")[0] ?? place.label), [
+                place.lat,
+                place.lng,
+              ])
+            }
+          />
+          <ul className="mt-3 space-y-1">
+            <li>
+              <button
+                type="button"
+                onClick={() => chooseCity(null)}
+                className={cn(
+                  "flex h-11 w-full items-center rounded-2xl px-3 text-start text-sm font-semibold hover:bg-muted",
+                  !city && "bg-muted",
+                )}
+              >
+                {t("allCities")}
+              </button>
+            </li>
+            {cities.map(([name, count]) => (
+              <li key={name}>
+                <button
+                  type="button"
+                  onClick={() => chooseCity(name)}
+                  className={cn(
+                    "flex h-11 w-full items-center justify-between rounded-2xl px-3 text-start text-sm font-semibold hover:bg-muted",
+                    city === name && "bg-muted",
+                  )}
+                >
+                  <span>{name}</span>
+                  <span className="text-muted-foreground">{t("jobsCount", { count })}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          {!cities.length ? (
+            <p className="mt-2 text-sm text-muted-foreground">{t("noCitiesYet")}</p>
+          ) : null}
+        </section>
+      ) : null}
 
       {/* Location prompt with a country fallback */}
       {(locState === "prompt" || locState === "denied") && !selected && view === "map" ? (

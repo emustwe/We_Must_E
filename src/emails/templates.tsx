@@ -22,6 +22,54 @@ export const TEMPLATES = {
       />
     ),
   },
+  newJob: {
+    subject: "New job to review",
+    render: (site: string) => (
+      <EmailLayout
+        preview="A sponsor posted a job that needs your review"
+        heading="New job to review"
+        body="A sponsor posted a job. It appears on the map after you approve it."
+        cta="Review jobs"
+        href={`${site}/admin/jobs?status=pending`}
+      />
+    ),
+  },
+  jobApproved: {
+    subject: "Your job is live on Wemuste",
+    render: (site: string) => (
+      <EmailLayout
+        preview="Your job is now on the map"
+        heading="Your job is live"
+        body="The Wemuste team approved your job. It is now on the map, and people can apply."
+        cta="See your jobs"
+        href={`${site}/sponsor`}
+      />
+    ),
+  },
+  jobRejected: {
+    subject: "Your job needs changes",
+    render: (site: string) => (
+      <EmailLayout
+        preview="Your job was not approved yet"
+        heading="Your job needs changes"
+        body="The Wemuste team couldn't approve your job yet. Log in to see why, edit the job and send it again."
+        cta="See your jobs"
+        href={`${site}/sponsor`}
+      />
+    ),
+  },
+  newCandidate: {
+    subject: "You have a new candidate",
+    render: (site: string) => (
+      <EmailLayout
+        preview="The Wemuste team shared a candidate with you"
+        heading="You have a new candidate"
+        body="The Wemuste team approved an application for one of your jobs. Log in to see the candidate."
+        cta="See candidates"
+        href={`${site}/sponsor`}
+      />
+    ),
+  },
   sponsorAccount: {
     subject: "Your Wemuste sponsor account",
     render: (site: string, login: LoginDetails) => (

@@ -278,7 +278,8 @@
       "employers": "Sponsors",
       "jobs": "Live jobs",
       "employees": "Job seekers",
-      "toReview": "Applications to review"
+      "toReview": "Applications to review",
+      "jobsToReview": "Jobs to review"
     },
     "needsAttention": "Needs your attention",
     "awaitingReview": "{count, plural, =0 {No profiles waiting} one {# profile waiting for review} other {# profiles waiting for review}}",
@@ -422,7 +423,7 @@
     "approveEmployer": "Approve",
     "resendInvite": "Resend invite",
     "inviteResent": "Invite sent again.",
-    "jobsBody": "Every job posted by sponsors. Hide or remove anything that breaks the rules; all changes are logged.",
+    "jobsBody": "Every job posted by sponsors. New jobs wait here until you approve them; then they appear on the map at once. All changes are logged.",
     "jobPublish": "Put back on map",
     "jobHide": "Hide",
     "jobClose": "Close",
@@ -507,7 +508,15 @@
     "passwordChangedEmailed": "Password changed and emailed to the sponsor.",
     "deleteSponsor": "Delete sponsor",
     "deleteSponsorBody": "This deletes the sponsor's login, logo, all their jobs and every application to those jobs, including videos. It can't be undone. To only stop them for now, use Suspend instead.",
-    "typeCompanyToDelete": "Type \"{company}\" to confirm"
+    "typeCompanyToDelete": "Type \"{company}\" to confirm",
+    "approveJob": "Approve",
+    "rejectJob": "Reject",
+    "rejectReason": "Why can't it be approved? The sponsor sees this.",
+    "rejectReasonPlaceholder": "e.g. Please add the working hours and remove the phone number from the description.",
+    "sendBack": "Send back to sponsor",
+    "jobApprovedToast": "Approved. The job is now on the map.",
+    "jobRejectedToast": "Sent back to the sponsor.",
+    "rejectedBecause": "Sent back: {reason}"
   },
   "legal": {
     "placeholder": "PLACEHOLDER — client/lawyer to replace.",
@@ -548,11 +557,13 @@
     "published": "Live",
     "hidden": "Hidden by Wemuste",
     "closed": "Closed",
-    "removed": "Removed by Wemuste"
+    "removed": "Removed by Wemuste",
+    "pending": "Waiting for review",
+    "rejected": "Needs changes"
   },
   "employerJob": {
     "back": "Your jobs",
-    "posted": "Your job is live on the map.",
+    "posted": "Thanks! Your job was sent to the Wemuste team. It appears on the map as soon as it's approved.",
     "saved": "Changes saved.",
     "edit": "Edit",
     "close": "Close job",
@@ -560,8 +571,20 @@
     "closedToast": "Job closed.",
     "hiddenNotice": "Wemuste has hidden this job from the map. Contact support if you have questions.",
     "applicantsTitle": "Candidates",
-    "noApplicants": "No approved candidates yet. People who apply are reviewed by Wemuste first; approved ones appear here.",
-    "privateLocation": "Only you and Wemuste see the exact point. The public map shows an approximate pin."
+    "noApplicants": "No candidates yet. People who apply are reviewed by the Wemuste team first; approved candidates appear here and we email you.",
+    "privateLocation": "Only you and Wemuste see the exact point. The public map shows an approximate pin.",
+    "sentForReview": "Changes saved. The job is back in review and returns to the map once approved.",
+    "pendingNotice": "Waiting for review. The Wemuste team checks every job before it appears on the map. We'll email you when it's live.",
+    "rejectedNotice": "The Wemuste team couldn't approve this job yet.",
+    "rejectedReason": "Reason: {reason}",
+    "rejectedHint": "Edit the job and save it to send it for review again.",
+    "candidatesCount": "{count, plural, one {# candidate} other {# candidates}}",
+    "approvedOn": "Shared {date}",
+    "score": "Score {score}%",
+    "noScore": "No test",
+    "prev": "Previous",
+    "next": "Next",
+    "editNote": "Editing a live job sends it back for review before the changes appear on the map."
   },
   "jobForm": {
     "newTitle": "Post a job",
@@ -650,9 +673,12 @@
     "allCountriesGroup": "All countries",
     "countriesWithJobs": "Countries with jobs",
     "allCities": "All cities",
-    "noCities": "No cities yet",
     "orChooseCountry": "Or choose a country",
-    "listIn": "Jobs in {place}"
+    "listIn": "Jobs in {place}",
+    "cityIn": "Cities in {country}",
+    "closeCities": "Close city list",
+    "searchCity": "Search any city",
+    "noCitiesYet": "No jobs in this country yet. Search for a city to look around it."
   },
   "apply": {
     "title": "Apply",
@@ -737,7 +763,10 @@
     "uploadVideo": "Upload a video from my phone",
     "fileType": "Please choose an MP4, MOV or WebM video.",
     "fileTooLong": "This video is too big. The limit is 100 MB.",
-    "videoTooLong": "This video is too long. Keep it under {seconds} seconds."
+    "videoTooLong": "This video is too long. Keep it under {seconds} seconds.",
+    "recordingFailed": "The recording didn't work. Please try again, or upload a video from your phone instead.",
+    "cameraLost": "The camera was turned off or is used by another app. Tap Turn on camera again.",
+    "recordedHint": "Recorded {time}. Watch it, then tap \"Use this video\" to save it, or record again."
   },
   "applicationStatus": {
     "in_progress": "Unfinished",
@@ -750,5 +779,17 @@
     "choose": "Upload logo",
     "change": "Change logo",
     "saved": "Logo saved."
+  },
+  "candidate": {
+    "title": "Candidate",
+    "approvedOn": "Shared with you on {date}",
+    "score": "Test score {score}%",
+    "call": "Call",
+    "whatsapp": "WhatsApp",
+    "email": "Email",
+    "videos": "Video answers",
+    "videoNote": "Links work for 5 minutes. Every view is recorded.",
+    "answers": "Their answers",
+    "privacy": "This candidate's details are private. Use them only for this job, and don't copy or share them outside Wemuste."
   }
 }

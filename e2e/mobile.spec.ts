@@ -150,3 +150,84 @@ test("admin pages fit a small phone", async ({ page }) => {
     psql(`delete from public.applicants where phone_e164 = '${PHONE}'`);
   }
 });
+
+// The map must never draw over the sticky header/menu while scrolling, and
+// pop-ups (search results, city list, job sheet) must sit above the map.
+async function expectOnTop(page: Page, selector: string, label: string) {
+  const onTop = await page.evaluate((sel) => {
+    const el = document.querySelector(sel);
+    if (!el) return "missing";
+    if (el.tagName !== "HEADER" && el.tagName !== "NAV") el.scrollIntoView({ block: "nearest" });
+    const r = el.getBoundingClientRect();
+    const hit = document.elementFromPoint(r.left + r.width / 2, r.top + Math.min(r.height / 2, 20));
+    return hit && (el === hit || el.contains(hit)) ? "ok" : `covered by ${hit?.className}`;
+  }, selector);
+  expect(onTop, `${label} is covered`).toBe("ok");
+}
+
+test("maps stay under menus and pop-ups on a phone", async ({ page }) => {
+  test.setTimeout(150_000);
+  await page.route("https://api.maptiler.com/**", (route) => {
+    const url = new URL(route.request().url());
+    if (!url.pathname.startsWith("/geocoding/")) return route.fulfill({ status: 204 });
+    return route.fulfill({
+      json: {
+        features: [
+          {
+            place_name: "Dubai Marina, Dubai, United Arab Emirates",
+            center: [55.1403, 25.0805],
+            properties: { country_code: "ae" },
+            context: [{ id: "country.1", text: "United Arab Emirates", country_code: "ae" }],
+          },
+        ],
+      },
+    });
+  });
+
+  // Public map: search results, the city list and the job sheet.
+  await page.goto("/");
+  await page.getByRole("button", { name: "Not now" }).click();
+  await page.getByRole("combobox", { name: /Search a city or area/ }).fill("Marina");
+  await expect(page.getByRole("option").first()).toBeVisible();
+  await expectOnTop(page, '[role="listbox"]', "public search results");
+  await page.screenshot({ path: test.info().outputPath("map-search.png") });
+  await page.keyboard.press("Escape");
+  await page.getByLabel("Country", { exact: true }).selectOption("AE");
+  await page.getByRole("button", { name: /All cities/ }).click();
+  await expectOnTop(page, "#wm-city-panel", "city list");
+  await page.screenshot({ path: test.info().outputPath("map-cities.png") });
+  await page.getByRole("button", { name: "Close city list" }).click();
+  await page.getByRole("button", { name: /^List ·/ }).click();
+  await page.getByRole("button", { name: /\[SAMPLE\] Weekend barista/ }).click();
+  await expectOnTop(page, '[aria-labelledby="wm-job-title"]', "job sheet");
+  await page.screenshot({ path: test.info().outputPath("map-sheet.png") });
+
+  // Sponsor job form: place-search results over the picker map; header over the map.
+  await login(page, "employer@wemuste.local");
+  await expect(page).toHaveURL(/\/sponsor$/);
+  await page.goto("/sponsor/jobs/new");
+  await page.getByRole("combobox", { name: "Search a place or area" }).fill("Marina");
+  await expect(page.getByRole("option").first()).toBeVisible();
+  await expectOnTop(page, '[role="listbox"]', "place search results over the picker map");
+  await page.keyboard.press("Escape");
+  await page.locator(".leaflet-container").scrollIntoViewIfNeeded();
+  await page.evaluate(() => {
+    const map = document.querySelector(".leaflet-container")!;
+    window.scrollBy(0, map.getBoundingClientRect().top - 40);
+  });
+  await expectOnTop(page, "header", "sponsor header over the picker map");
+  await page.screenshot({ path: test.info().outputPath("sponsor-form-scrolled.png") });
+  await signOut(page);
+
+  // Admin jobs map under the sticky header and menu.
+  await loginAsAdmin(page);
+  await page.goto("/admin/jobs");
+  await page.locator(".leaflet-container").waitFor();
+  await page.evaluate(() => {
+    const map = document.querySelector(".leaflet-container")!;
+    window.scrollBy(0, map.getBoundingClientRect().top - 60);
+  });
+  await expectOnTop(page, "header", "admin header over the jobs map");
+  await expectOnTop(page, 'nav[aria-label="Admin"]', "admin menu over the jobs map");
+  await page.screenshot({ path: test.info().outputPath("admin-jobs-scrolled.png") });
+});

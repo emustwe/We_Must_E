@@ -4,11 +4,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdminMfa } from "@/lib/auth/session";
 import { dbFail } from "@/lib/db-errors";
+import { notifySponsor } from "@/lib/email/notify";
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { createClient } from "@/lib/supabase/server";
 import { toFieldErrors } from "@/lib/validations/auth";
 import {
   adminJobStatusSchema,
+  jobReviewSchema,
   promptSchema,
   surveyQuestionSchema,
   surveySchema,
@@ -37,6 +39,31 @@ export async function adminSetJobStatus(input: unknown): Promise<ActionResult> {
   });
   if (error) return dbFail("admin-job-status", error);
   revalidatePath("/admin/jobs");
+  revalidatePath("/");
+  return ok(undefined);
+}
+
+// Approve a sponsor's job (it goes live on the map) or send it back with a reason.
+export async function adminReviewJob(input: unknown): Promise<ActionResult> {
+  const parsed = jobReviewSchema.safeParse(input);
+  if (!parsed.success) return fail("invalidInput");
+  const supabase = await admin();
+  const { jobId, approve, note } = parsed.data;
+  const { data: job } = await supabase
+    .from("jobs")
+    .select("employer_id")
+    .eq("id", jobId)
+    .maybeSingle();
+  if (!job) return fail("notFound");
+  const { error } = await supabase.rpc("admin_review_job", {
+    p_job_id: jobId,
+    p_approve: approve,
+    p_note: note,
+  });
+  if (error) return dbFail("admin-review-job", error);
+  notifySponsor(approve ? "jobApproved" : "jobRejected", job.employer_id);
+  revalidatePath("/admin/jobs");
+  revalidatePath("/admin");
   revalidatePath("/");
   return ok(undefined);
 }

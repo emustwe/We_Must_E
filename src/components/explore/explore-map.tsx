@@ -14,7 +14,7 @@ import {
 import { initials } from "@/lib/sponsors/initials";
 import { logoUrl } from "@/lib/sponsors/logo";
 import type { Bounds } from "@/lib/jobs/meta";
-import type { PublicJob } from "@/lib/jobs/public-queries";
+import type { PublicJob } from "@/lib/jobs/public-job";
 
 export type { MapTarget };
 

@@ -17,7 +17,8 @@ function buildCsp(nonce: string) {
     "style-src 'self' 'unsafe-inline'",
     `img-src 'self' blob: data: ${supabase.origin} ${MAP_ORIGIN}`,
     "font-src 'self'",
-    `connect-src 'self' ${supabase.origin} wss://${supabase.host} ${TURNSTILE_ORIGIN} ${MAP_ORIGIN}`,
+    // Live map updates use Supabase Realtime over a websocket (ws:// only locally).
+    `connect-src 'self' ${supabase.origin} ${supabase.protocol === "https:" ? "wss" : "ws"}://${supabase.host} ${TURNSTILE_ORIGIN} ${MAP_ORIGIN}`,
     `media-src 'self' blob: ${supabase.origin}`,
     `frame-src ${TURNSTILE_ORIGIN}`,
     "worker-src 'self' blob:",

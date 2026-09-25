@@ -15,12 +15,18 @@ export default async function EditJobPage({ params }: PageProps<"/sponsor/jobs/[
   const { id } = await params;
   if (!idSchema.safeParse(id).success) notFound();
   const job = await getOwnJob(id);
-  if (job.status !== "published" && job.status !== "closed") notFound();
+  if (!["pending", "published", "closed", "rejected"].includes(job.status)) notFound();
   const t = await getTranslations("jobForm");
+  const te = await getTranslations("employerJob");
 
   return (
     <div className="mx-auto max-w-2xl pt-2">
-      <h1 className="mb-6 text-3xl font-extrabold tracking-tight">{t("editTitle")}</h1>
+      <h1 className="mb-2 text-3xl font-extrabold tracking-tight">{t("editTitle")}</h1>
+      {job.status === "published" ? (
+        <p className="mb-6 text-sm text-muted-foreground">{te("editNote")}</p>
+      ) : (
+        <div className="mb-6" />
+      )}
       <div className="shadow-float rounded-[2rem] bg-card p-5 sm:p-8">
         <JobForm
           jobId={job.id}

@@ -2,7 +2,8 @@ import { expect, test } from "@playwright/test";
 import { loginAsAdmin } from "./admin-session";
 import { psql, removeObjects } from "./db";
 import { JOB, PHONE, seedApplication } from "./seed-application";
-import { unique } from "./helpers";
+import { login, signOut, unique } from "./helpers";
+import { waitForEmail } from "./mailpit";
 
 test("an admin reviews an application: marks, grading, logged video views, approval", async ({
   page,
@@ -71,6 +72,32 @@ test("an admin reviews an application: marks, grading, logged video views, appro
     await expect(
       page.getByRole("link", { name: "application", exact: true }).first(),
     ).toHaveAttribute("href", `/admin/applications/${appId}`);
+
+    // The sponsor who posted the job now sees the candidate (and was emailed).
+    const since = new Date(Date.now() - 60_000);
+    const sponsorEmail = "employer@wemuste.local";
+    const notice = await waitForEmail(sponsorEmail, /You have a new candidate/, since);
+    expect(JSON.stringify(notice)).not.toContain(name);
+    await signOut(page);
+    await login(page, sponsorEmail);
+    await page.getByRole("link", { name: new RegExp(JOB.replace(/[[\]]/g, "\\$&")) }).click();
+    await page.getByRole("link", { name: new RegExp(name) }).click();
+    await expect(page.getByRole("heading", { name })).toBeVisible();
+    await expect(page.getByText(PHONE)).toBeVisible();
+    await expect(page.getByText("Latte art")).toBeVisible();
+    await expect(page.getByText("Friendly, good answers.")).toHaveCount(0); // admin notes stay private
+    await page
+      .getByRole("button", { name: /Play video/ })
+      .first()
+      .click();
+    await expect(page.locator("video").first()).toHaveAttribute(
+      "src",
+      /\/storage\/v1\/object\/sign\//,
+    );
+    expect(
+      psql(`select count(*) from public.audit_logs a join public.profiles p on p.id = a.actor_id
+            where a.action = 'application.video_viewed' and a.target_id = '${appId}' and p.role = 'employer'`),
+    ).toBe("1");
   } finally {
     await removeObjects("application-videos", paths);
     psql(`delete from public.applicants where phone_e164 = '${PHONE}'`);

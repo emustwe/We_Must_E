@@ -241,6 +241,9 @@
 .leaflet-container {
   font: inherit;
   background: var(--muted);
+  /* Keep Leaflet's layers (z-index 400-1000) inside the map, so the map never
+     draws over sticky headers, menus or pop-ups while scrolling. */
+  isolation: isolate;
 }
 .leaflet-control-attribution {
   font-size: 10px;

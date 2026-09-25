@@ -20,7 +20,7 @@ export default async function EmployerJobsPage() {
   const supabase = await createClient();
   const { data: jobs } = await supabase
     .from("jobs")
-    .select("id, title, location_label, status, published_at")
+    .select("id, title, location_label, status, published_at, created_at")
     .eq("employer_id", profile.id)
     .neq("status", "removed")
     .order("created_at", { ascending: false });
@@ -70,7 +70,7 @@ export default async function EmployerJobsPage() {
                   </span>
                   <span className="mt-1 block text-xs text-muted-foreground">
                     {t("postedOn", {
-                      date: format.dateTime(new Date(job.published_at), {
+                      date: format.dateTime(new Date(job.published_at ?? job.created_at), {
                         day: "numeric",
                         month: "short",
                       }),

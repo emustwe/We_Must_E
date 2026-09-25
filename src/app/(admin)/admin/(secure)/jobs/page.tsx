@@ -3,10 +3,12 @@ import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { adminSetJobStatus } from "@/actions/admin-panel";
 import { ActionButton } from "@/components/admin/action-button";
+import { JobReviewButtons } from "@/components/admin/job-review-buttons";
 import { AdminJobsMap } from "@/components/admin/jobs-map";
 import { PageTitle } from "@/components/admin/ui";
 import { JobStatusBadge } from "@/components/employer/job-status-badge";
 import type { JobStatus } from "@/lib/jobs/meta";
+import { placeLine } from "@/lib/jobs/public-job";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 
@@ -15,10 +17,19 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("jobsTitle") };
 }
 
-const STATUSES = ["published", "hidden", "closed", "removed"] as const satisfies JobStatus[];
+const STATUSES = [
+  "pending",
+  "published",
+  "rejected",
+  "hidden",
+  "closed",
+  "removed",
+] as const satisfies JobStatus[];
 
-// Moderation actions offered for each status.
+// Moderation actions offered for each status (pending jobs get Approve/Reject).
 const ACTIONS: Record<JobStatus, JobStatus[]> = {
+  pending: ["removed"],
+  rejected: ["removed"],
   published: ["hidden", "closed", "removed"],
   hidden: ["published", "closed", "removed"],
   closed: ["published", "removed"],
@@ -35,7 +46,7 @@ export default async function AdminJobsPage({ searchParams }: PageProps<"/admin/
   let request = supabase
     .from("jobs")
     .select(
-      "id, title, description, location_label, lat, lng, status, published_at, employer_profiles(company_name)",
+      "id, title, description, location_label, city, country_name, lat, lng, status, published_at, created_at, review_note, employer_profiles(company_name)",
     )
     .order("created_at", { ascending: false })
     .limit(300);
@@ -44,6 +55,8 @@ export default async function AdminJobsPage({ searchParams }: PageProps<"/admin/
 
   const filterHref = (s?: JobStatus) => (s ? `/admin/jobs?status=${s}` : "/admin/jobs");
   const actionLabel: Record<JobStatus, string> = {
+    pending: "",
+    rejected: "",
     published: t("jobPublish"),
     hidden: t("jobHide"),
     closed: t("jobClose"),
@@ -93,11 +106,25 @@ export default async function AdminJobsPage({ searchParams }: PageProps<"/admin/
                   <JobStatusBadge status={job.status} />
                 </div>
                 <p className="mt-0.5 text-sm text-muted-foreground">
-                  {job.employer_profiles?.company_name} · {job.location_label} ·{" "}
-                  {format.dateTime(new Date(job.published_at), { dateStyle: "medium" })}
+                  {job.employer_profiles?.company_name} ·{" "}
+                  {placeLine({
+                    locationLabel: job.location_label,
+                    city: job.city,
+                    countryName: job.country_name,
+                  })}{" "}
+                  ·{" "}
+                  {format.dateTime(new Date(job.published_at ?? job.created_at), {
+                    dateStyle: "medium",
+                  })}
                 </p>
                 <p className="mt-2 line-clamp-3 text-sm whitespace-pre-line">{job.description}</p>
+                {job.status === "rejected" && job.review_note ? (
+                  <p className="mt-2 rounded-xl bg-destructive/10 px-3 py-2 text-sm">
+                    {t("rejectedBecause", { reason: job.review_note })}
+                  </p>
+                ) : null}
                 <div className="mt-3 flex flex-wrap gap-2">
+                  {job.status === "pending" ? <JobReviewButtons jobId={job.id} /> : null}
                   {ACTIONS[job.status].map((next) => (
                     <ActionButton
                       key={next}

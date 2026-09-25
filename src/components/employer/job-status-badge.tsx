@@ -3,6 +3,8 @@ import type { JobStatus } from "@/lib/jobs/meta";
 import { cn } from "@/lib/utils";
 
 const TONE: Record<JobStatus, string> = {
+  pending: "bg-brand-accent/20 text-brand-accent-foreground dark:text-brand-accent",
+  rejected: "bg-destructive/10 text-destructive",
   published: "bg-success/15 text-success",
   hidden: "bg-brand-accent/20 text-brand-accent-foreground dark:text-brand-accent",
   closed: "bg-muted text-muted-foreground",

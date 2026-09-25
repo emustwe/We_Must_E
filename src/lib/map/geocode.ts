@@ -60,6 +60,8 @@ export async function searchPlaces(
   bounds: Bounds,
   signal?: AbortSignal,
   country?: string | null,
+  // "city" limits results to towns and cities.
+  kind: "any" | "city" = "any",
 ): Promise<Place[]> {
   const q = text.trim();
   if (q.length < 2) return [];
@@ -70,6 +72,7 @@ export async function searchPlaces(
       limit: "5",
       ...(world ? {} : { bbox: `${bounds.west},${bounds.south},${bounds.east},${bounds.north}` }),
       ...(country ? { country: country.toLowerCase() } : {}),
+      ...(kind === "city" ? { types: "municipality,locality,place,county" } : {}),
     },
     signal,
   );

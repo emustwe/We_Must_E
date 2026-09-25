@@ -16,9 +16,13 @@ export function PlaceSearch({
   className,
   inputClassName,
   country,
+  kind = "any",
+  autoFocus,
 }: {
   bounds: Bounds;
   country?: string | null;
+  kind?: "any" | "city";
+  autoFocus?: boolean;
   onPick: (place: Place) => void;
   placeholder: string;
   className?: string;
@@ -40,7 +44,7 @@ export function PlaceSearch({
     const timer = window.setTimeout(async () => {
       setLoading(true);
       try {
-        setResults(await searchPlaces(q, bounds, controller.signal, country));
+        setResults(await searchPlaces(q, bounds, controller.signal, country, kind));
         setActive(-1);
       } catch {
         // Aborted or offline: keep the previous results.
@@ -52,7 +56,7 @@ export function PlaceSearch({
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [query, bounds, country]);
+  }, [query, bounds, country, kind]);
 
   useEffect(() => {
     function onDown(e: PointerEvent) {
@@ -88,6 +92,7 @@ export function PlaceSearch({
         value={query}
         autoComplete="off"
         enterKeyHint="search"
+        autoFocus={autoFocus}
         onChange={(e) => {
           setQuery(e.target.value);
           setOpen(true);

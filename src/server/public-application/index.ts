@@ -1,8 +1,7 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { after } from "next/server";
 import { dbFail } from "@/lib/db-errors";
-import { sendEmail } from "@/lib/email/send";
+import { notifyAdmins } from "@/lib/email/notify";
 import { serverEnv } from "@/lib/env.server";
 import { logError } from "@/lib/log";
 import { fail, ok, type ActionResult } from "@/lib/result";
@@ -421,8 +420,7 @@ export async function submitApplication(
   await clearToken(jobId);
 
   // Tell the team, without any personal data in the email.
-  const to = serverEnv.ADMIN_NOTIFY_EMAIL;
-  if (to) after(() => sendEmail("newApplication", to));
+  notifyAdmins("newApplication");
   return ok(undefined);
 }
 
