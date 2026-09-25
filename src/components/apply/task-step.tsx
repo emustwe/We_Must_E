@@ -12,6 +12,7 @@ import {
   verifyPhoneCode,
 } from "@/actions/apply";
 import { SectionTimer } from "@/components/apply/section-timer";
+import { QuestionText } from "@/components/apply/question-text";
 import { useStepAction } from "@/components/apply/use-step-action";
 import {
   OneVideo,
@@ -196,7 +197,7 @@ export function TaskStep({ jobId, view }: { jobId: string; view: VideoView }) {
 
       {view.fullProfile ? (
         FULL.map((g) => (
-          <section key={g.group} className="mt-5 space-y-4 rounded-3xl bg-muted/30 p-4">
+          <section key={g.group} className="mt-5 space-y-4 rounded-3xl bg-white p-5 shadow-wm-1">
             <h2 className="font-bold">{t(`profileGroup.${g.group}`)}</h2>
             {g.fields.map((f) => (
               <ProfileField
@@ -221,7 +222,7 @@ export function TaskStep({ jobId, view }: { jobId: string; view: VideoView }) {
           </section>
         ))
       ) : (
-        <section className="mt-5 space-y-4 rounded-3xl bg-muted/30 p-4">
+        <section className="mt-5 space-y-4 rounded-3xl bg-white p-5 shadow-wm-1">
           <h2 className="font-bold">{t("contactTitle")}</h2>
           {BASIC.map((f) => (
             <ProfileField
@@ -237,7 +238,7 @@ export function TaskStep({ jobId, view }: { jobId: string; view: VideoView }) {
       )}
 
       {view.requireOtp && !verified ? (
-        <div className="mt-3 space-y-2 rounded-3xl bg-muted/30 p-4">
+        <div className="mt-3 space-y-2 rounded-3xl bg-white p-5 shadow-wm-1">
           {codeSentTo ? (
             <>
               <p className="text-sm text-muted-foreground">
@@ -299,14 +300,15 @@ export function TaskStep({ jobId, view }: { jobId: string; view: VideoView }) {
                       "scroll-mt-20 rounded-3xl border-2 p-4",
                       videosMissing && !done
                         ? "border-destructive/60"
-                        : "border-transparent bg-muted/30",
+                        : "border-transparent bg-white shadow-wm-1",
                     )}
                   >
                     <p className="text-xs font-bold text-muted-foreground">
                       {t("videoQuestionOf", { current: i + 1, total: view.questions.length })} ·{" "}
                       {t("upToSeconds", { seconds: q.maxSeconds })}
                     </p>
-                    <h3 className="mt-1 font-bold whitespace-pre-line">{q.prompt}</h3>
+                    <h3 className="sr-only">{q.prompt}</h3>
+                    <QuestionText prompt={q.prompt} className="mt-2" aria-hidden />
                     {open === q.id ? (
                       <Recorder
                         jobId={jobId}
@@ -406,7 +408,7 @@ function ProfileField({
           {...common}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="h-12 w-full rounded-xl border border-input bg-background px-3 text-base"
+          className="h-12 w-full rounded-xl border border-input bg-white px-3 text-base"
         >
           <option value="">{t("choose")}</option>
           {(field.kind === "gender" ? GENDERS : ENGLISH_LEVELS).map((o) => (
@@ -422,7 +424,7 @@ function ProfileField({
           maxLength={2000}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full resize-y rounded-2xl border border-input bg-background px-4 py-3 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="w-full resize-y rounded-2xl border border-input bg-white px-4 py-3 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
         />
       ) : (
         <Input

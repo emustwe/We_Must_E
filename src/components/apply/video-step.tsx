@@ -128,7 +128,10 @@ function PromptList({ prompts }: { prompts: string[] }) {
   return (
     <ol className="mt-4 space-y-2">
       {prompts.map((prompt, i) => (
-        <li key={i} className="flex gap-3 rounded-2xl bg-muted/60 px-4 py-3 text-sm font-semibold">
+        <li
+          key={i}
+          className="flex gap-3 rounded-2xl bg-white px-4 py-3 text-sm font-semibold shadow-wm-1"
+        >
           <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
             {i + 1}
           </span>

@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { submitApplication } from "@/actions/apply";
 import { SectionTimer } from "@/components/apply/section-timer";
+import { QuestionText } from "@/components/apply/question-text";
 import { useStepAction } from "@/components/apply/use-step-action";
 import { FormAlert } from "@/components/forms/form-alert";
 import { Button } from "@/components/ui/button";
@@ -142,7 +143,9 @@ export function SurveyStep({ jobId, view }: { jobId: string; view: SurveyView })
               id={`s-card-${q.id}`}
               className={cn(
                 "scroll-mt-20 rounded-3xl border-2 p-4",
-                missing.has(q.id) ? "border-destructive/60" : "border-transparent bg-muted/30",
+                missing.has(q.id)
+                  ? "border-destructive/60"
+                  : "border-transparent bg-white shadow-wm-1",
               )}
             >
               <QuestionCard
@@ -163,7 +166,9 @@ export function SurveyStep({ jobId, view }: { jobId: string; view: SurveyView })
         id="consent"
         className={cn(
           "mt-4 scroll-mt-20 rounded-3xl border-2 p-4",
-          consentMissing && !consent ? "border-destructive/60" : "border-transparent bg-muted/30",
+          consentMissing && !consent
+            ? "border-destructive/60"
+            : "border-transparent bg-white shadow-wm-1",
         )}
       >
         <label className="flex cursor-pointer items-start gap-3">
@@ -176,7 +181,9 @@ export function SurveyStep({ jobId, view }: { jobId: string; view: SurveyView })
           <span
             className={cn(
               "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-md border-2 peer-focus-visible:ring-3 peer-focus-visible:ring-ring/50",
-              consent ? "border-primary bg-primary text-primary-foreground" : "border-border",
+              consent
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-[#C3CBD7] bg-white",
             )}
             aria-hidden="true"
           >
@@ -218,13 +225,13 @@ function QuestionCard({
   const selected = value && "options" in value ? value.options : [];
   return (
     <>
-      <h2 className="font-bold">
-        <span className="text-muted-foreground">{number}. </span>
-        {question.prompt}
-        {question.required ? null : (
-          <span className="ms-1 text-sm font-normal text-muted-foreground">({t("optional")})</span>
-        )}
+      <h2 className="sr-only">
+        {number}. {question.prompt}
       </h2>
+      <QuestionText number={number} prompt={question.prompt} aria-hidden />
+      {question.required ? null : (
+        <p className="mt-1 text-sm text-muted-foreground">({t("optional")})</p>
+      )}
       {question.type === "single_choice" || question.type === "multi_choice" ? (
         <fieldset className="mt-3 space-y-2">
           <legend className="mb-2 text-sm text-muted-foreground">
@@ -239,7 +246,7 @@ function QuestionCard({
                   "flex min-h-14 cursor-pointer items-center gap-3 rounded-2xl border-2 px-4 py-3 font-semibold transition-colors",
                   on
                     ? "border-primary bg-primary/5"
-                    : "border-transparent bg-muted/60 hover:bg-muted",
+                    : "border-transparent bg-wm-mist hover:bg-wm-tint",
                 )}
               >
                 <input
@@ -262,7 +269,9 @@ function QuestionCard({
                   className={cn(
                     "flex size-6 shrink-0 items-center justify-center border-2 peer-focus-visible:ring-3 peer-focus-visible:ring-ring/50",
                     question.type === "single_choice" ? "rounded-full" : "rounded-md",
-                    on ? "border-primary bg-primary text-primary-foreground" : "border-border",
+                    on
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-[#C3CBD7] bg-white",
                   )}
                   aria-hidden="true"
                 >
@@ -300,7 +309,7 @@ function QuestionCard({
                     "flex h-14 cursor-pointer items-center justify-center rounded-2xl border-2 text-lg font-bold",
                     on
                       ? "border-primary bg-primary text-primary-foreground"
-                      : "border-transparent bg-muted/60",
+                      : "border-transparent bg-wm-mist",
                   )}
                 >
                   <input
@@ -349,7 +358,7 @@ function QuestionCard({
             placeholder={t("answerPlaceholder")}
             value={value && "text" in value ? value.text : ""}
             onChange={(e) => onChange(e.target.value ? { text: e.target.value } : undefined)}
-            className="w-full resize-y rounded-2xl border border-input bg-background px-4 py-3 text-base outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="w-full resize-y rounded-2xl border border-input bg-white px-4 py-3 text-base outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           />
         </div>
       )}

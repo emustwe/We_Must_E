@@ -54,7 +54,7 @@ export function StartStep({ jobId }: { jobId: string }) {
       <p className="mt-2 text-muted-foreground">{t("introBody")}</p>
       <ol className="mt-6 space-y-3">
         {items.map(({ icon: Icon, text }, i) => (
-          <li key={text} className="flex items-center gap-3 rounded-3xl bg-muted/60 p-4">
+          <li key={text} className="flex items-center gap-3 rounded-3xl bg-white p-5 shadow-wm-1">
             <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-background">
               <Icon className="size-5 text-primary" aria-hidden="true" />
             </span>

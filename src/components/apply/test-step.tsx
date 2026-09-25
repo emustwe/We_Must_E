@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { saveTestAnswer, saveTestAnswers, startTest, submitTest } from "@/actions/apply";
 import { mmss, useCountdown } from "@/components/apply/section-timer";
+import { QuestionText } from "@/components/apply/question-text";
 import { useStepAction } from "@/components/apply/use-step-action";
 import { FormAlert } from "@/components/forms/form-alert";
 import { Button } from "@/components/ui/button";
@@ -56,7 +57,7 @@ export function TestStep({ jobId, view }: { jobId: string; view: TestView }) {
         <p className="mt-2 text-muted-foreground">
           {t("testIntro", { count: view.questions.length })}
         </p>
-        <p className="mt-4 flex items-start gap-2 rounded-3xl bg-muted/60 p-4 text-sm">
+        <p className="mt-4 flex items-start gap-2 rounded-3xl bg-white p-5 text-sm shadow-wm-1">
           <Clock className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
           {view.timeLimitSeconds
             ? t("testTimed", { minutes: Math.ceil(view.timeLimitSeconds / 60) })
@@ -231,13 +232,13 @@ function TestQuestions({ jobId, view }: { jobId: string; view: TestView }) {
               id={`q-${q.id}`}
               className={cn(
                 "scroll-mt-20 rounded-3xl border-2 p-4",
-                flagged ? "border-destructive/60" : "border-transparent bg-muted/30",
+                flagged ? "border-destructive/60" : "border-transparent bg-white shadow-wm-1",
               )}
             >
-              <h2 className="font-bold">
-                <span className="text-muted-foreground">{i + 1}. </span>
-                <span className="whitespace-pre-line">{q.prompt}</span>
+              <h2 className="sr-only">
+                {i + 1}. {q.prompt}
               </h2>
+              <QuestionText number={i + 1} prompt={q.prompt} aria-hidden />
               {q.type === "typing" ? (
                 <TypingQuestion
                   paragraph={q.options[0] ?? ""}
@@ -259,7 +260,7 @@ function TestQuestions({ jobId, view }: { jobId: string; view: TestView }) {
                           "flex min-h-12 cursor-pointer items-center gap-3 rounded-2xl border-2 px-4 py-2.5 text-sm font-semibold transition-colors",
                           on
                             ? "border-primary bg-primary/5"
-                            : "border-transparent bg-background hover:bg-muted",
+                            : "border-transparent bg-wm-mist hover:bg-wm-tint",
                         )}
                       >
                         <input
@@ -288,7 +289,7 @@ function TestQuestions({ jobId, view }: { jobId: string; view: TestView }) {
                             q.type === "single_choice" ? "rounded-full" : "rounded-md",
                             on
                               ? "border-primary bg-primary text-primary-foreground"
-                              : "border-border",
+                              : "border-[#C3CBD7] bg-white",
                           )}
                           aria-hidden="true"
                         >
@@ -311,7 +312,7 @@ function TestQuestions({ jobId, view }: { jobId: string; view: TestView }) {
                     value={answer && "text" in answer ? answer.text : ""}
                     onChange={(e) => setAnswer(q.id, { text: e.target.value }, 900)}
                     placeholder={t("writeAnswer")}
-                    className="w-full resize-y rounded-2xl border border-input bg-background px-4 py-3 text-base outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                    className="w-full resize-y rounded-2xl border border-input bg-white px-4 py-3 text-base outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                   />
                 </div>
               )}
@@ -387,7 +388,7 @@ function TypingQuestion({
     <div className="mt-3 space-y-3">
       <p className="text-sm text-muted-foreground">{t("typingIntro", { time: mmss(seconds) })}</p>
       <p
-        className="rounded-2xl border border-input bg-background p-4 text-base leading-relaxed select-none"
+        className="rounded-2xl border border-input bg-wm-mist p-4 text-base leading-relaxed select-none"
         onCopy={(e) => e.preventDefault()}
       >
         {paragraph}
@@ -433,7 +434,7 @@ function TypingQuestion({
             autoComplete="off"
             autoCorrect="off"
             spellCheck={false}
-            className="w-full resize-y rounded-2xl border border-input bg-background px-4 py-3 text-base outline-none read-only:bg-muted/40 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="w-full resize-y rounded-2xl border border-input bg-white px-4 py-3 text-base outline-none read-only:bg-muted/40 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           />
           {phase === "typing" ? (
             <Button size="pill" variant="secondary" onClick={() => finish(text)}>

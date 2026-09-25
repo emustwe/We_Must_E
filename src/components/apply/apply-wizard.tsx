@@ -51,7 +51,7 @@ export function ApplyWizard({ jobId, job, view }: { jobId: string; job: Job; vie
             }
           }}
           aria-label={t("close")}
-          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted hover:bg-muted/70"
+          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white shadow-wm-1 hover:bg-wm-mist"
         >
           <X className="size-4" aria-hidden="true" />
         </Link>
@@ -73,7 +73,7 @@ export function ApplyWizard({ jobId, job, view }: { jobId: string; job: Job; vie
             {steps.map((s, i) => (
               <span
                 key={s}
-                className={`h-1.5 flex-1 rounded-full ${i < current ? "bg-primary" : "bg-muted"}`}
+                className={`h-1.5 flex-1 rounded-full ${i < current ? "bg-primary" : "bg-wm-line"}`}
               />
             ))}
           </div>
