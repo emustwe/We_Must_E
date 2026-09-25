@@ -403,9 +403,9 @@
     "markCorrect": "Mark as the correct answer",
     "cancel": "Cancel",
     "samplesNote": "[SAMPLE] items are placeholders. The client provides the real questions.",
-    "promptsBody": "Applicants answer the questions of the live set in short videos. New jobs use the live set.",
+    "promptsBody": "Applicants see all questions of the live set on one page and answer them in one video. The video can be as long as the questions' times added up (up to 5 minutes).",
     "newPrompt": "New video question",
-    "maxSeconds": "Max length (seconds)",
+    "maxSeconds": "Time for this question (seconds)",
     "active": "Active",
     "inactive": "Off",
     "auditTitle": "Audit log",
@@ -524,7 +524,8 @@
     },
     "missingStepsTitle": "Applicants are skipping: {steps}",
     "missingStepsBody": "These steps have no live questions, so people applying don't see them. Add questions and tap Make live.",
-    "missingStepsLink": "Open Content"
+    "missingStepsLink": "Open Content",
+    "videoAnswersTo": "One video answering these questions:"
   },
   "legal": {
     "placeholder": "PLACEHOLDER — client/lawyer to replace.",
@@ -722,7 +723,7 @@
     "timeUp": "Time is up. We saved your answers.",
     "saving": "Saving…",
     "videoTitle": "Short video",
-    "videoIntro": "Answer each question in a short video: record it here, or upload one from your phone. Find a quiet, bright spot.",
+    "videoIntro": "Answer all the questions in one short video: record it here, or upload one from your phone.",
     "videoQuestion": "Video {current} of {total}",
     "maxLength": "Up to {seconds} seconds",
     "cameraOn": "Turn on camera",
@@ -774,7 +775,10 @@
     "videoTooLong": "This video is too long. Keep it under {seconds} seconds.",
     "recordingFailed": "The recording didn't work. Please try again, or upload a video from your phone instead.",
     "cameraLost": "The camera was turned off or is used by another app. Tap Turn on camera again.",
-    "recordedHint": "Recorded {time}. Watch it, then tap \"Use this video\" to save it, or record again."
+    "recordedHint": "Recorded {time}. Watch it, then tap \"Use this video\" to save it, or record again.",
+    "oneVideoTitle": "Answer these questions in one video",
+    "oneVideoBody": "Record one short video and answer each question in order. Up to {time} in total.",
+    "videoSaved": "Your video is saved."
   },
   "applicationStatus": {
     "in_progress": "Unfinished",
@@ -795,9 +799,10 @@
     "call": "Call",
     "whatsapp": "WhatsApp",
     "email": "Email",
-    "videos": "Video answers",
+    "videos": "Video answer",
     "videoNote": "Links work for 5 minutes. Every view is recorded.",
     "answers": "Their answers",
-    "privacy": "This candidate's details are private. Use them only for this job, and don't copy or share them outside Wemuste."
+    "privacy": "This candidate's details are private. Use them only for this job, and don't copy or share them outside Wemuste.",
+    "videoAnswersTo": "One video answering these questions:"
   }
 }

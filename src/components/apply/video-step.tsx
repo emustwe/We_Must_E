@@ -25,7 +25,7 @@ function videoSeconds(url: string) {
     v.src = url;
   });
 }
-type Question = VideoView["questions"][number];
+type Question = { id: string; prompt: string; maxSeconds: number };
 
 // Recording format: MP4 (H.264) first, because it plays everywhere, including
 // iPhones and Safari, and knows its own length. WebM is the fallback.
@@ -68,50 +68,42 @@ function uploadWithProgress(url: string, blob: Blob, onProgress: (percent: numbe
 export function VideoStep({ jobId, view }: { jobId: string; view: VideoView }) {
   const t = useTranslations("apply");
   const { run, pending, error } = useStepAction();
-  const [recorded, setRecorded] = useState(
-    () => new Set(view.questions.filter((q) => q.recorded).map((q) => q.id)),
-  );
-  const firstOpen = view.questions.findIndex((q) => !q.recorded);
-  const [index, setIndex] = useState(firstOpen === -1 ? view.questions.length : firstOpen);
+  const [recorded, setRecorded] = useState(view.recorded);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
   // Stop the camera when leaving the step.
   useEffect(() => () => streamRef.current?.getTracks().forEach((track) => track.stop()), []);
 
-  const allDone = view.questions.every((q) => recorded.has(q.id));
+  function next() {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    void run(() => finishVideos(jobId));
+  }
 
-  if (index >= view.questions.length) {
+  // Already uploaded (e.g. after a reload): continue, or record again.
+  if (recorded) {
     return (
       <div className="flex flex-1 flex-col">
         <h1 className="text-3xl font-extrabold tracking-tight">{t("videoTitle")}</h1>
-        <ul className="mt-5 space-y-2.5">
-          {view.questions.map((q, i) => (
-            <li key={q.id} className="flex items-center gap-3 rounded-2xl bg-muted/60 p-4">
-              {recorded.has(q.id) ? (
-                <CheckCircle2 className="size-5 shrink-0 text-success" aria-hidden="true" />
-              ) : (
-                <Circle className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
-              )}
-              <span className="flex-1 text-sm font-semibold">{q.prompt}</span>
-              <Button variant="ghost" size="sm" onClick={() => setIndex(i)}>
-                {recorded.has(q.id) ? t("retake") : t("record")}
-              </Button>
-            </li>
-          ))}
-        </ul>
+        <p className="mt-3 flex items-center gap-2 rounded-2xl bg-success/10 px-4 py-3 text-sm font-semibold">
+          <CheckCircle2 className="size-5 shrink-0 text-success" aria-hidden="true" />
+          {t("videoSaved")}
+        </p>
+        <PromptList prompts={view.questions.map((q) => q.prompt)} />
         <div className="mt-auto space-y-3 pt-8">
           <FormAlert message={error} />
+          <Button size="touch" className="w-full" disabled={pending} onClick={next}>
+            {t("continue")}
+          </Button>
           <Button
             size="touch"
+            variant="secondary"
             className="w-full"
-            disabled={pending || !allDone}
-            onClick={() => {
-              streamRef.current?.getTracks().forEach((track) => track.stop());
-              void run(() => finishVideos(jobId));
-            }}
+            disabled={pending}
+            onClick={() => setRecorded(false)}
           >
-            {t("continue")}
+            <RotateCcw className="size-4" aria-hidden="true" />
+            {t("retake")}
           </Button>
         </div>
       </div>
@@ -120,24 +112,32 @@ export function VideoStep({ jobId, view }: { jobId: string; view: VideoView }) {
 
   return (
     <Recorder
-      key={view.questions[index].id}
       jobId={jobId}
-      question={view.questions[index]}
-      number={index + 1}
-      total={view.questions.length}
+      question={{ id: view.answerId, prompt: "", maxSeconds: view.maxSeconds }}
+      prompts={view.questions.map((q) => q.prompt)}
       stream={stream}
       onStream={(s) => {
         streamRef.current = s;
         setStream(s);
       }}
-      onDone={() => {
-        const id = view.questions[index].id;
-        const next = new Set(recorded).add(id);
-        setRecorded(next);
-        const open = view.questions.findIndex((q) => !next.has(q.id));
-        setIndex(open === -1 ? view.questions.length : open);
-      }}
+      onDone={next}
     />
+  );
+}
+
+// The questions to answer, all in the same video.
+function PromptList({ prompts }: { prompts: string[] }) {
+  return (
+    <ol className="mt-4 space-y-2">
+      {prompts.map((prompt, i) => (
+        <li key={i} className="flex gap-3 rounded-2xl bg-muted/60 px-4 py-3 text-sm font-semibold">
+          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+            {i + 1}
+          </span>
+          <span>{prompt}</span>
+        </li>
+      ))}
+    </ol>
   );
 }
 
@@ -146,16 +146,14 @@ type Phase = "camera" | "ready" | "countdown" | "recording" | "review" | "upload
 function Recorder({
   jobId,
   question,
-  number,
-  total,
+  prompts,
   stream,
   onStream,
   onDone,
 }: {
   jobId: string;
   question: Question;
-  number: number;
-  total: number;
+  prompts: string[];
   stream: MediaStream | null;
   onStream: (stream: MediaStream) => void;
   onDone: () => void;
@@ -327,11 +325,13 @@ function Recorder({
 
   return (
     <div className="flex flex-1 flex-col">
-      <p className="text-sm font-semibold text-muted-foreground">
-        {t("videoQuestion", { current: number, total })} ·{" "}
-        {t("maxLength", { seconds: question.maxSeconds })}
+      <h1 className="text-2xl font-extrabold tracking-tight">{t("oneVideoTitle")}</h1>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {t("oneVideoBody", {
+          time: `${Math.floor(question.maxSeconds / 60)}:${String(question.maxSeconds % 60).padStart(2, "0")}`,
+        })}
       </p>
-      <h1 className="mt-2 text-2xl font-extrabold tracking-tight">{question.prompt}</h1>
+      <PromptList prompts={prompts} />
 
       <div className="relative mt-4 aspect-[3/4] overflow-hidden rounded-[1.75rem] bg-foreground/90 sm:aspect-video">
         {phase === "review" || phase === "uploading" ? (

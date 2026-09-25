@@ -49,7 +49,11 @@ export type ApplyView =
   | {
       stage: "video";
       steps: Steps;
-      questions: { id: string; prompt: string; maxSeconds: number; recorded: boolean }[];
+      // All questions are answered in one video, stored against the first.
+      questions: { id: string; prompt: string; maxSeconds: number }[];
+      answerId: string;
+      maxSeconds: number;
+      recorded: boolean;
     }
   | { stage: "survey"; steps: Steps; questions: SurveyQuestionView[]; requireOtp: boolean };
 export type Steps = { test: boolean; video: boolean };
@@ -144,19 +148,27 @@ export async function getApplyView(jobId: string): Promise<ApplyView> {
         .select("id, prompt, max_seconds")
         .eq("set_id", app.video_set_id!)
         .eq("is_active", true)
-        .order("position"),
+        // Same order as the database's "first question" (where the video is stored).
+        .order("position")
+        .order("created_at"),
       db().from("application_videos").select("question_id").eq("application_id", app.id),
     ]);
-    const done = new Set((videos ?? []).map((v) => v.question_id));
+    const list = (questions ?? []).map((q) => ({
+      id: q.id,
+      prompt: q.prompt,
+      maxSeconds: q.max_seconds,
+    }));
     return {
       stage: "video",
       steps,
-      questions: (questions ?? []).map((q) => ({
-        id: q.id,
-        prompt: q.prompt,
-        maxSeconds: q.max_seconds,
-        recorded: done.has(q.id),
-      })),
+      questions: list,
+      answerId: list[0]?.id ?? "",
+      // Same rule as the database: the limits added up, 5 minutes at most.
+      maxSeconds: Math.min(
+        list.reduce((sum, q) => sum + q.maxSeconds, 0),
+        300,
+      ),
+      recorded: Boolean(videos?.length),
     };
   }
 

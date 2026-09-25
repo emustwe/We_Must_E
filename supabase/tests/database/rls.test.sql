@@ -241,7 +241,8 @@ insert into test_answer_keys (question_id, correct_options) values
   ('30000000-0000-0000-0000-0000000000a1', '{1}'), ('30000000-0000-0000-0000-0000000000a2', '{0,2}');
 insert into video_question_sets (id, title, is_active) values ('30000000-0000-0000-0000-000000000002', 'Videos', true);
 insert into video_questions (id, set_id, prompt, max_seconds, position)
-  values ('30000000-0000-0000-0000-0000000000b1', '30000000-0000-0000-0000-000000000002', 'Say hi', 30, 0);
+  values ('30000000-0000-0000-0000-0000000000b1', '30000000-0000-0000-0000-000000000002', 'Say hi', 30, 0),
+         ('30000000-0000-0000-0000-0000000000b2', '30000000-0000-0000-0000-000000000002', 'Why this job?', 40, 1);
 insert into surveys (id, title, is_active) values ('30000000-0000-0000-0000-000000000003', 'Survey', true);
 insert into survey_questions (id, survey_id, type, prompt, options, required, position)
   values ('30000000-0000-0000-0000-0000000000c1', '30000000-0000-0000-0000-000000000003', 'single_choice', 'Start?', '["now","later"]', true, 0);
@@ -302,10 +303,19 @@ select is((select current_step::text from applications where id = :AA), 'video',
 
 select throws_ok(format('select app_record_video(%s, %s, %s, ''someone-else/x.webm'', 10, 1000, ''video/webm'')', :'JC', :'TOKA', :'VQ'),
   '22023', 'invalid_video', 'a video path outside the application folder is refused');
-select throws_ok(format('select app_finish_videos(%s, %s)', :'JC', :'TOKA'), '22023', 'incomplete', 'every video question needs an answer');
+select throws_ok(format('select app_finish_videos(%s, %s)', :'JC', :'TOKA'), '22023', 'incomplete', 'the video step needs the video');
 select lives_ok(format('select app_record_video(%s, %s, %s, %L, 12, 2000, ''video/webm'')', :'JC', :'TOKA', :'VQ',
   (select id from applications where draft_token_hash = :TOKA) || '/' || :VQ || '/one.webm'), 'a video answer is recorded');
-select lives_ok(format('select app_finish_videos(%s, %s)', :'JC', :'TOKA'), 'the videos are done');
+-- One video answers all the video questions (stored on the first question).
+select throws_ok(format('select app_record_video(%s, %s, ''30000000-0000-0000-0000-0000000000b2'', %L, 12, 2000, ''video/webm'')', :'JC', :'TOKA',
+  (select id from applications where draft_token_hash = :TOKA) || '/30000000-0000-0000-0000-0000000000b2/x.webm'),
+  'P0002', 'not_found', 'the one video is stored on the first question only');
+select throws_ok(format('select app_record_video(%s, %s, %s, %L, 80, 2000, ''video/webm'')', :'JC', :'TOKA', :'VQ',
+  (select id from applications where draft_token_hash = :TOKA) || '/' || :VQ || '/long.webm'),
+  '22023', 'invalid_video', 'the video may be as long as the questions'' times together (30 + 40 s), not more');
+select lives_ok(format('select app_record_video(%s, %s, %s, %L, 65, 2000, ''video/webm'')', :'JC', :'TOKA', :'VQ',
+  (select id from applications where draft_token_hash = :TOKA) || '/' || :VQ || '/two.webm'), 'a 65-second video for two questions is fine');
+select lives_ok(format('select app_finish_videos(%s, %s)', :'JC', :'TOKA'), 'one video completes the video step');
 
 select throws_ok(format($$select app_submit(%s, %s, 'Sara Ali', '+971501234567', '', '{}', 'v1', 'ip', true)$$, :'JC', :'TOKA'),
   '22023', 'incomplete', 'required survey questions must be answered');

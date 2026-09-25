@@ -25,6 +25,7 @@ type Candidate = {
   test_percent: number | null;
   approved_at: string;
   survey: { prompt: string; type: string; options: string[]; answer: Answer }[];
+  video_questions: string[];
   videos: { question_id: string; prompt: string; seconds: number }[];
 };
 
@@ -107,20 +108,24 @@ export default async function CandidatePage({
       </section>
 
       {c.videos.length ? (
-        <section className="space-y-3">
-          <h2 className="text-xl font-extrabold">{t("videos")}</h2>
+        <section className="shadow-float space-y-4 rounded-3xl bg-card p-5">
+          <div>
+            <h2 className="text-xl font-extrabold">{t("videos")}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{t("videoAnswersTo")}</p>
+            <ol className="mt-2 list-decimal space-y-1 ps-5 text-sm font-semibold">
+              {c.video_questions.map((prompt, i) => (
+                <li key={i}>{prompt}</li>
+              ))}
+            </ol>
+          </div>
           <p className="text-sm text-muted-foreground">{t("videoNote")}</p>
-          {c.videos.map((v, i) => (
-            <div key={v.question_id} className="shadow-float rounded-3xl bg-card p-4">
-              <p className="mb-3 font-semibold">
-                {i + 1}. {v.prompt}
-              </p>
-              <VideoViewer
-                applicationId={c.id}
-                questionId={v.question_id}
-                load={getCandidateVideoUrl}
-              />
-            </div>
+          {c.videos.map((v) => (
+            <VideoViewer
+              key={v.question_id}
+              applicationId={c.id}
+              questionId={v.question_id}
+              load={getCandidateVideoUrl}
+            />
           ))}
         </section>
       ) : null}

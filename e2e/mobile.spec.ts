@@ -82,7 +82,9 @@ test("the application steps fit a small phone", async ({ page }) => {
     await page.getByRole("button", { name: "Next", exact: true }).click();
     await page.getByLabel("Type your answer").fill("I like it.");
     await page.getByRole("button", { name: "Finish test" }).click();
-    await expect(page.getByText("Video 1 of 2")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Answer these questions in one video" }),
+    ).toBeVisible();
     await expectFits(page, "apply-video");
     // Skip to the survey without recording (the flow itself is covered in apply.spec).
     psql(`update public.applications set current_step = 'survey' where job_id = '${job}'

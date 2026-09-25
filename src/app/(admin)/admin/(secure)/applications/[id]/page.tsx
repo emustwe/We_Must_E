@@ -343,32 +343,38 @@ async function VideoTab({ applicationId, setId }: { applicationId: string; setId
   const supabase = await createClient();
   const [{ data: questions }, { data: videos }] = await Promise.all([
     setId
-      ? supabase.from("video_questions").select("id, prompt").eq("set_id", setId).order("position")
+      ? supabase
+          .from("video_questions")
+          .select("id, prompt")
+          .eq("set_id", setId)
+          .eq("is_active", true)
+          .order("position")
       : Promise.resolve({ data: [] as { id: string; prompt: string }[] }),
     supabase
       .from("application_videos")
       .select("question_id, duration_seconds")
       .eq("application_id", applicationId),
   ]);
-  const videoFor = new Map((videos ?? []).map((v) => [v.question_id, v]));
-  const answered = (questions ?? []).filter((q) => videoFor.has(q.id));
-  if (!answered.length) return <Card>{t("noVideos")}</Card>;
+  if (!videos?.length) return <Card>{t("noVideos")}</Card>;
   return (
-    <ol className="space-y-3">
-      {answered.map((q, i) => (
-        <li key={q.id}>
-          <Card>
-            <p className="mb-3 font-semibold">
-              {i + 1}. {q.prompt}{" "}
-              <span className="text-sm font-normal text-muted-foreground">
-                · {t("seconds", { count: videoFor.get(q.id)!.duration_seconds })}
-              </span>
-            </p>
-            <VideoViewer applicationId={applicationId} questionId={q.id} />
-          </Card>
-        </li>
+    <Card className="space-y-4">
+      <div>
+        <h2 className="font-bold">{t("videoAnswersTo")}</h2>
+        <ol className="mt-2 list-decimal space-y-1 ps-5 text-sm">
+          {(questions ?? []).map((q) => (
+            <li key={q.id}>{q.prompt}</li>
+          ))}
+        </ol>
+      </div>
+      {videos.map((v) => (
+        <div key={v.question_id}>
+          <p className="mb-2 text-sm text-muted-foreground">
+            {t("seconds", { count: v.duration_seconds })}
+          </p>
+          <VideoViewer applicationId={applicationId} questionId={v.question_id} />
+        </div>
       ))}
-    </ol>
+    </Card>
   );
 }
 

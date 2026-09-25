@@ -99,31 +99,17 @@ test("full journey: apply with test, video and survey -> admin approves -> spons
     else await page.getByRole("button", { name: "Next", exact: true }).click();
   }
 
-  // Step 2: every video question. The first is recorded, the rest uploaded.
+  // Step 2: all video questions on one page, answered in one video
+  // (picked from the phone here; recording is covered in apply.spec).
   await expect(page.getByText(/Step 2 of 3 · Short video/)).toBeVisible();
-  let recorded = false;
-  for (;;) {
-    const heading = page.getByText(/^Video \d+ of \d+/);
-    const done = page.getByRole("button", { name: "Continue" });
-    await expect(heading.or(done)).toBeVisible({ timeout: 30_000 });
-    if (await done.isVisible()) break;
-    if (!recorded) {
-      await page.getByRole("button", { name: "Turn on camera" }).click();
-      await page.getByRole("button", { name: "Start recording" }).click();
-      await expect(page.getByText(/^Recording \d/)).toBeVisible({ timeout: 10_000 });
-      await page.waitForTimeout(1500);
-      await page.getByRole("button", { name: "Stop" }).click();
-      await expect(page.getByText(/^Recorded \d:\d\d/)).toBeVisible();
-      recorded = true;
-    } else {
-      await page
-        .getByLabel("Upload a video from my phone")
-        .setInputFiles(await makeVideoFile(page));
-    }
-    await page.getByRole("button", { name: "Use this video" }).click();
-    await expect(page.getByText(/Uploading/)).toHaveCount(0, { timeout: 30_000 });
-  }
-  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Answer these questions in one video" }),
+  ).toBeVisible();
+  const prompts = await page.locator("main ol li").count();
+  expect(prompts, "all video questions are listed").toBeGreaterThan(0);
+  await page.getByLabel("Upload a video from my phone").setInputFiles(await makeVideoFile(page));
+  await expect(page.getByText(/^Recorded \d:\d\d/)).toBeVisible();
+  await page.getByRole("button", { name: "Use this video" }).click();
 
   // Step 3: the survey, then consent.
   await expect(page.getByText(/Step 3 of 3 · About you/)).toBeVisible();
