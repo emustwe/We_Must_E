@@ -44,17 +44,23 @@ export async function proxy(request: NextRequest) {
 
   let response: NextResponse;
 
-  if (!userId && matchesPrefix(pathname, PROTECTED_PREFIXES)) {
-    response = NextResponse.redirect(new URL("/login", request.url));
-  } else if (userId && matchesPrefix(pathname, GUEST_ONLY_PATHS)) {
+  // Logged-in users on login/signup pages go to their home. Accounts without
+  // one (job seekers, whose "home" is the login page) stay, or it would loop.
+  let home: string | null = null;
+  if (userId && matchesPrefix(pathname, GUEST_ONLY_PATHS)) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", userId)
       .single();
-    response = NextResponse.redirect(
-      new URL(profile ? HOME_BY_ROLE[profile.role] : "/", request.url),
-    );
+    home = profile ? HOME_BY_ROLE[profile.role] : "/";
+    if (matchesPrefix(home, GUEST_ONLY_PATHS)) home = null;
+  }
+
+  if (!userId && matchesPrefix(pathname, PROTECTED_PREFIXES)) {
+    response = NextResponse.redirect(new URL("/login", request.url));
+  } else if (home) {
+    response = NextResponse.redirect(new URL(home, request.url));
   } else {
     // Built after getClaims() so refreshed cookies are forwarded to this render.
     const requestHeaders = new Headers(request.headers);

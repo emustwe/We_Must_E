@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test";
+import { createUser, psql } from "./db";
+import { login, SEED_PASSWORD, unique } from "./helpers";
 
 test("the public map page sends security headers", async ({ page }) => {
   const response = await page.goto("/");
@@ -55,4 +57,17 @@ test("nobody can sign up through the Supabase API directly", async ({ request })
   });
   expect(res.status()).toBe(422);
   expect((await res.json()).error_code).toBe("signup_disabled");
+});
+
+test("a logged-in account with no home page can still open the login page", async ({ page }) => {
+  // e.g. an admin whose role was removed: the login page must not redirect to itself.
+  const email = `no-home-${unique()}@example.test`;
+  createUser(email, SEED_PASSWORD, {});
+  try {
+    await login(page, email);
+    await page.goto("/login");
+    await expect(page.getByRole("button", { name: "Log in" })).toBeVisible();
+  } finally {
+    psql(`delete from auth.users where email = '${email}'`);
+  }
 });
