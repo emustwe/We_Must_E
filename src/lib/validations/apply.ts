@@ -20,15 +20,29 @@ export const testAnswerSchema = z.strictObject({
   ]),
 });
 
+// All test answers at once (the test is one page).
+export const testAnswersSchema = z.strictObject({
+  jobId: z.guid(),
+  answers: z
+    .array(
+      z.strictObject({
+        questionId: z.guid(),
+        answer: z.union([
+          z.strictObject({ options: z.array(z.int().min(0).max(7)).min(1).max(8) }),
+          z.strictObject({ text: z.string().max(3000) }),
+        ]),
+      }),
+    )
+    .max(100),
+});
+
 export const videoUploadSchema = z.strictObject({
   jobId: z.guid(),
-  questionId: z.guid(),
   mime: z.enum(["video/webm", "video/mp4", "video/quicktime"]),
 });
 
 export const videoConfirmSchema = z.strictObject({
   jobId: z.guid(),
-  questionId: z.guid(),
   path: z.string().max(300),
   durationSeconds: z.number().min(0).max(320),
 });

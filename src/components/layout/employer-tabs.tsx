@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPinned, Settings } from "lucide-react";
+import { MapPinned, Settings, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { PillNav } from "@/components/layout/pill-nav";
 
@@ -17,6 +17,7 @@ export function EmployerTabs() {
           exact: true,
           match: ["/sponsor/jobs"],
         },
+        { href: "/sponsor/candidates", label: t("candidates"), icon: Users },
         { href: "/sponsor/account", label: t("account"), icon: Settings },
       ]}
     />

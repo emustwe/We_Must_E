@@ -16,7 +16,9 @@
     "backHome": "Back to home",
     "loading": "Loading…",
     "neverPublic": "Your profile is never public",
-    "copyright": "© {year} Wemuste"
+    "copyright": "© {year} Wemuste",
+    "cancel": "Cancel",
+    "confirm": "Yes, continue"
   },
   "landing": {
     "eyebrow": "Private & verified",
@@ -205,7 +207,8 @@
     "alreadyActive": "This sponsor has already set a password.",
     "jobUnavailable": "This job is no longer taking applications.",
     "phoneUnverified": "Please confirm your phone number with the code we sent.",
-    "wrongStep": "This step is already done. We've taken you to where you left off."
+    "wrongStep": "This step is already done. We've taken you to where you left off.",
+    "noCoins": "You don't have any E-coins left. Contact the Wemuste team to add more."
   },
   "employee": {
     "welcome": "Hi {name}",
@@ -525,7 +528,8 @@
     "missingStepsTitle": "Applicants are skipping: {steps}",
     "missingStepsBody": "These steps have no live questions, so people applying don't see them. Add questions and tap Make live.",
     "missingStepsLink": "Open Content",
-    "videoAnswersTo": "One video answering these questions:"
+    "videoAnswersTo": "One video answering these questions:",
+    "noRightAnswers": "There are no right or wrong answers: applicants answer freely, and nothing is scored."
   },
   "legal": {
     "placeholder": "PLACEHOLDER — client/lawyer to replace.",
@@ -560,7 +564,8 @@
     "content": "Content",
     "audit": "Audit log",
     "account": "Account",
-    "applications": "Applications"
+    "applications": "Applications",
+    "candidates": "Candidates"
   },
   "jobStatus": {
     "published": "Live",
@@ -700,9 +705,9 @@
     "stepSurvey": "About you",
     "introTitle": "Apply in 3 short steps",
     "introBody": "It takes about 10 minutes. You don't need an account, and you can pause and come back on this device within 24 hours.",
-    "introTest": "A few questions about work situations",
-    "introVideo": "Record short video answers with your phone camera",
-    "introSurvey": "Your contact details and a few questions",
+    "introTest": "A few questions, all on one page",
+    "introVideo": "Explain your answers in one short video",
+    "introSurvey": "Your contact details and a few questions, on one page",
     "start": "Start application",
     "starting": "Starting…",
     "testTitle": "Quick test",
@@ -718,8 +723,7 @@
     "next": "Next",
     "previous": "Back",
     "finishTest": "Finish test",
-    "finishConfirm": "Finish the test? You can't change your answers afterwards.",
-    "unanswered": "{count, plural, one {# question is} other {# questions are}} not answered yet.",
+    "finishConfirm": "You can't change your answers after this.",
     "timeUp": "Time is up. We saved your answers.",
     "saving": "Saving…",
     "videoTitle": "Short video",
@@ -776,9 +780,18 @@
     "recordingFailed": "The recording didn't work. Please try again, or upload a video from your phone instead.",
     "cameraLost": "The camera was turned off or is used by another app. Tap Turn on camera again.",
     "recordedHint": "Recorded {time}. Watch it, then tap \"Use this video\" to save it, or record again.",
-    "oneVideoTitle": "Answer these questions in one video",
-    "oneVideoBody": "Record one short video and answer each question in order. Up to {time} in total.",
-    "videoSaved": "Your video is saved."
+    "oneVideoTitle": "Explain your answers in one video",
+    "oneVideoBody": "These are the questions from the test. Record one short video and talk about each one in order. Up to {time} in total.",
+    "videoSaved": "Your video is saved.",
+    "leaveTitle": "Leave the application?",
+    "leave": "Leave",
+    "testOnePage": "Answer every question below. Your answers are saved as you go.",
+    "answeredOf": "{done} of {total} answered",
+    "saved": "Saved",
+    "answerAll": "{count, plural, one {# question still needs an answer.} other {# questions still need an answer.}}",
+    "finishTitle": "Finish the test?",
+    "surveyOnePage": "Only the Wemuste team sees this. We share it with a sponsor only if we shortlist you.",
+    "checking": "Checking your connection…"
   },
   "applicationStatus": {
     "in_progress": "Unfinished",
@@ -795,7 +808,6 @@
   "candidate": {
     "title": "Candidate",
     "approvedOn": "Shared with you on {date}",
-    "score": "Test score {score}%",
     "call": "Call",
     "whatsapp": "WhatsApp",
     "email": "Email",
@@ -803,6 +815,42 @@
     "videoNote": "Links work for 5 minutes. Every view is recorded.",
     "answers": "Their answers",
     "privacy": "This candidate's details are private. Use them only for this job, and don't copy or share them outside Wemuste.",
-    "videoAnswersTo": "One video answering these questions:"
+    "videoAnswersTo": "One video answering these questions:",
+    "testAnswers": "Test answers"
+  },
+  "ecoins": {
+    "balanceLabel": "{count, plural, one {You have # E-coin} other {You have # E-coins}}",
+    "newCandidates": "{count, plural, =0 {Candidates} one {# new candidate} other {# new candidates}}",
+    "candidatesTitle": "Candidates",
+    "candidatesBody": "People the Wemuste team approved for your jobs.",
+    "lockedCount": "{count, plural, one {# new candidate is waiting. Open it with 1 E-coin.} other {# new candidates are waiting. Open each with 1 E-coin.}}",
+    "noCandidates": "No candidates yet. When the Wemuste team approves someone for one of your jobs, they appear here and we email you.",
+    "sharedOn": "Shared {date}",
+    "open": "Open",
+    "new": "New",
+    "prev": "Previous",
+    "next": "Next",
+    "lockedTitle": "Open this candidate's full application",
+    "lockedBody": "See their contact details, test answers, video and survey answers. Opening costs 1 E-coin, and the candidate stays open for you.",
+    "unlock": "Open for 1 E-coin",
+    "unlockConfirmTitle": "Use 1 E-coin?",
+    "unlockConfirmBody": "You have {count} E-coins. After this: {after}.",
+    "noCoinsBody": "You have no E-coins. Please contact the Wemuste team to add E-coins to your account.",
+    "unlocked": "Candidate opened.",
+    "accountTitle": "E-coins",
+    "accountBody": "Each E-coin opens one candidate's full application. For now the Wemuste team adds E-coins to your account.",
+    "history": "History",
+    "historyEmpty": "No E-coin activity yet.",
+    "reason": {
+      "admin_grant": "Added by Wemuste",
+      "unlock": "Opened a candidate"
+    },
+    "adminTitle": "E-coins",
+    "adminBody": "Each E-coin lets this sponsor open one candidate. Add coins here (use a minus number to take coins back).",
+    "amount": "Amount",
+    "note": "Note (optional)",
+    "notePlaceholder": "e.g. Welcome bonus",
+    "add": "Update balance",
+    "added": "Balance updated."
   }
 }

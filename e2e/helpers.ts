@@ -27,3 +27,27 @@ export async function activate(page: Page, email: string, since: Date) {
   const url = new URL(link);
   await page.goto(`${url.pathname}${url.search}`);
 }
+
+// Confirmations are an in-page popup (<dialog>), not the browser's confirm():
+// press its confirm button whenever one opens, like accepting a native dialog.
+export async function acceptConfirms(page: Page) {
+  await page.addLocatorHandler(page.getByRole("dialog"), async (dialog) => {
+    await dialog.getByRole("button").last().click();
+  });
+}
+
+// Answers every question on a one-page step: first option, or some text/number.
+export async function answerAll(page: Page) {
+  const cards = page.locator("main ol > li");
+  for (let i = 0; i < (await cards.count()); i++) {
+    const card = cards.nth(i);
+    const choice = card.locator(
+      'label:has(input[type="radio"]), label:has(input[type="checkbox"])',
+    );
+    if (await choice.count()) await choice.first().click();
+    else if (await card.locator('input[type="number"]').count())
+      await card.locator('input[type="number"]').fill("3");
+    else if (await card.locator("textarea").count())
+      await card.locator("textarea").fill("Happy to help.");
+  }
+}

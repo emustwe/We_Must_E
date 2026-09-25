@@ -89,7 +89,7 @@ export function VideoStep({ jobId, view }: { jobId: string; view: VideoView }) {
           <CheckCircle2 className="size-5 shrink-0 text-success" aria-hidden="true" />
           {t("videoSaved")}
         </p>
-        <PromptList prompts={view.questions.map((q) => q.prompt)} />
+        <PromptList prompts={view.prompts} />
         <div className="mt-auto space-y-3 pt-8">
           <FormAlert message={error} />
           <Button size="touch" className="w-full" disabled={pending} onClick={next}>
@@ -113,8 +113,8 @@ export function VideoStep({ jobId, view }: { jobId: string; view: VideoView }) {
   return (
     <Recorder
       jobId={jobId}
-      question={{ id: view.answerId, prompt: "", maxSeconds: view.maxSeconds }}
-      prompts={view.questions.map((q) => q.prompt)}
+      question={{ id: "answer", prompt: "", maxSeconds: view.maxSeconds }}
+      prompts={view.prompts}
       stream={stream}
       onStream={(s) => {
         streamRef.current = s;
@@ -299,12 +299,11 @@ function Recorder({
     setPhase("uploading");
     setProgress(0);
     try {
-      const target = await createVideoUpload({ jobId, questionId: question.id, mime: clip.mime });
+      const target = await createVideoUpload({ jobId, mime: clip.mime });
       if (!target.ok) throw new Error(target.error);
       await uploadWithProgress(target.data.signedUrl, clip.blob, setProgress);
       const confirmed = await confirmVideo({
         jobId,
-        questionId: question.id,
         path: target.data.path,
         durationSeconds: Math.min(clip.seconds, question.maxSeconds),
       });

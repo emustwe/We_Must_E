@@ -1,6 +1,7 @@
 import { LogOut } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import type { ReactNode } from "react";
 import { signOut } from "@/actions/auth";
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
@@ -8,9 +9,12 @@ import { Button } from "@/components/ui/button";
 export async function AppHeader({
   homeHref,
   subtitle,
+  actions,
 }: {
   homeHref: string;
   subtitle?: string | null;
+  // Extra controls before "Sign out" (e.g. the sponsor's coins and alerts).
+  actions?: ReactNode;
 }) {
   const tc = await getTranslations("common");
   const tb = await getTranslations("brand");
@@ -29,12 +33,16 @@ export async function AppHeader({
             </span>
           ) : null}
         </Link>
-        <form action={signOut}>
-          <Button type="submit" variant="ghost" size="pill">
-            <LogOut className="size-4 rtl:-scale-x-100" aria-hidden="true" />
-            {tc("signOut")}
-          </Button>
-        </form>
+        <div className="flex items-center gap-1.5">
+          {actions}
+          <form action={signOut}>
+            <Button type="submit" variant="ghost" size="pill">
+              <LogOut className="size-4 rtl:-scale-x-100" aria-hidden="true" />
+              <span className="hidden sm:inline">{tc("signOut")}</span>
+              <span className="sr-only sm:hidden">{tc("signOut")}</span>
+            </Button>
+          </form>
+        </div>
       </div>
     </header>
   );

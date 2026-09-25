@@ -27,7 +27,8 @@ export type ActionError =
   | "phoneUnverified"
   | "wrongStep"
   | "fileTooBig"
-  | "uploadFailed";
+  | "uploadFailed"
+  | "noCoins";
 
 export type ActionResult<T = undefined> =
   { ok: true; data: T } | { ok: false; error: ActionError; fieldErrors?: Record<string, string> };

@@ -1,11 +1,12 @@
-import { ArrowLeft, ChevronRight, Lock, MapPin, Pencil } from "lucide-react";
+import { ArrowLeft, Lock, MapPin, Pencil } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getFormatter, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { JobStatusBadge } from "@/components/employer/job-status-badge";
 import { JobStatusControls } from "@/components/employer/job-status-controls";
 import { FormAlert } from "@/components/forms/form-alert";
+import { CandidateRow } from "@/components/sponsors/candidate-row";
 import { buttonVariants } from "@/components/ui/button";
 import { getOwnJob } from "@/lib/jobs/employer-queries";
 import { createClient } from "@/lib/supabase/server";
@@ -98,7 +99,6 @@ export default async function EmployerJobPage({
 
 async function Candidates({ jobId, page }: { jobId: string; page: number }) {
   const t = await getTranslations("employerJob");
-  const format = await getFormatter();
   const supabase = await createClient();
   // Only admin-approved applications for this sponsor's own job.
   const { data: rows } = await supabase.rpc("sponsor_list_candidates", {
@@ -122,34 +122,13 @@ async function Candidates({ jobId, page }: { jobId: string; page: number }) {
         <ul className="space-y-2.5">
           {rows.map((c) => (
             <li key={c.application_id}>
-              <Link
-                href={`/sponsor/jobs/${jobId}/candidates/${c.application_id}`}
-                className="shadow-float flex items-center gap-3 rounded-3xl bg-card p-4 transition-colors hover:bg-muted/40"
-              >
-                <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10 font-bold text-primary">
-                  {c.full_name.slice(0, 1).toUpperCase()}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-bold">{c.full_name}</span>
-                  <span className="block text-xs text-muted-foreground">
-                    {t("approvedOn", {
-                      date: format.dateTime(new Date(c.reviewed_at), {
-                        day: "numeric",
-                        month: "short",
-                      }),
-                    })}
-                  </span>
-                </span>
-                <span className="shrink-0 rounded-full bg-muted px-3 py-1 text-sm font-semibold">
-                  {c.test_percent === null
-                    ? t("noScore")
-                    : t("score", { score: Number(c.test_percent) })}
-                </span>
-                <ChevronRight
-                  className="size-4 shrink-0 text-muted-foreground rtl:-scale-x-100"
-                  aria-hidden="true"
-                />
-              </Link>
+              <CandidateRow
+                jobId={jobId}
+                applicationId={c.application_id}
+                name={c.full_name}
+                sharedAt={c.reviewed_at}
+                unlocked={c.unlocked}
+              />
             </li>
           ))}
         </ul>

@@ -24,18 +24,11 @@ export async function seedApplication(name: string) {
   );
   q(`select public.app_submit_test($JOB, $TOK)`);
   const appId = q(`select id from public.applications where draft_token_hash = $TOK`);
-  const videoQuestions = q(
-    `select id from public.video_questions where set_id = (select video_set_id from public.applications where id = '${appId}') order by position, created_at limit 1`,
-  ).split("\n"); // one video answers all the questions; it is stored on the first
-  const paths: string[] = [];
-  for (const vq of videoQuestions) {
-    const path = `${appId}/${vq}/answer.webm`;
-    await uploadObject("application-videos", path, WEBM, "video/webm");
-    q(
-      `select public.app_record_video($JOB, $TOK, '${vq}', '${path}', 12, ${WEBM.length}, 'video/webm')`,
-    );
-    paths.push(path);
-  }
+  // One video explains all the test answers.
+  const path = `${appId}/answer/answer.webm`;
+  await uploadObject("application-videos", path, WEBM, "video/webm");
+  q(`select public.app_record_video($JOB, $TOK, '${path}', 12, ${WEBM.length}, 'video/webm')`);
+  const paths = [path];
   q(`select public.app_finish_videos($JOB, $TOK)`);
   q(`select public.app_submit($JOB, $TOK, '${name}', '${PHONE}', '', (
        select jsonb_object_agg(id::text, case type

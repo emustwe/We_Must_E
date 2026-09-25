@@ -4,9 +4,10 @@ import { Check, Loader2, Play, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { getVideoUrl, gradeAnswer, reviewApplication } from "@/actions/admin-applications";
+import { getVideoUrl, reviewApplication } from "@/actions/admin-applications";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import type { ActionResult } from "@/lib/result";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export function ReviewPanel({
   applicationId,
@@ -20,11 +21,18 @@ export function ReviewPanel({
   const t = useTranslations("admin");
   const te = useTranslations("errors");
   const [text, setText] = useState(notes);
+  const ask = useConfirm();
   const [pending, startTransition] = useTransition();
 
-  function decide(decision: "approved" | "rejected") {
-    const message = decision === "approved" ? t("approveConfirm") : t("rejectConfirm");
-    if (!window.confirm(message)) return;
+  async function decide(decision: "approved" | "rejected") {
+    const approve = decision === "approved";
+    const yes = await ask({
+      title: approve ? t("approve") : t("reject"),
+      body: approve ? t("approveConfirm") : t("rejectConfirm"),
+      confirmLabel: approve ? t("approve") : t("reject"),
+      tone: approve ? "default" : "danger",
+    });
+    if (!yes) return;
     startTransition(async () => {
       const result = await reviewApplication({ applicationId, decision, notes: text });
       if (!result.ok) toast.error(te(result.error));
@@ -71,66 +79,14 @@ export function ReviewPanel({
   );
 }
 
-export function GradeForm({
-  applicationId,
-  questionId,
-  max,
-  current,
-}: {
-  applicationId: string;
-  questionId: string;
-  max: number;
-  current: number | null;
-}) {
-  const t = useTranslations("admin");
-  const te = useTranslations("errors");
-  const [points, setPoints] = useState(current === null ? "" : String(current));
-  const [pending, startTransition] = useTransition();
-  return (
-    <form
-      className="mt-3 flex items-end gap-2"
-      onSubmit={(e) => {
-        e.preventDefault();
-        startTransition(async () => {
-          const result = await gradeAnswer({ applicationId, questionId, points });
-          if (!result.ok) toast.error(te(result.error));
-          else toast.success(t("graded"));
-        });
-      }}
-    >
-      <label className="space-y-1 text-sm font-medium">
-        <span>{t("pointsOutOf", { max })}</span>
-        <Input
-          type="number"
-          min={0}
-          max={max}
-          step={0.5}
-          required
-          value={points}
-          onChange={(e) => setPoints(e.target.value)}
-          className="w-28"
-        />
-      </label>
-      <Button size="pill" disabled={pending}>
-        {current === null ? t("grade") : t("regrade")}
-      </Button>
-    </form>
-  );
-}
-
 // Asks the server for a 5-minute link (the view is logged), then plays it.
 // `load` is the admin's or the sponsor's server action.
 export function VideoViewer({
-  applicationId,
-  questionId,
+  videoId,
   load = getVideoUrl,
 }: {
-  applicationId: string;
-  questionId: string;
-  load?: (input: {
-    applicationId: string;
-    questionId: string;
-  }) => Promise<import("@/lib/result").ActionResult<{ url: string }>>;
+  videoId: string;
+  load?: (input: { videoId: string }) => Promise<ActionResult<{ url: string }>>;
 }) {
   const t = useTranslations("admin");
   const te = useTranslations("errors");
@@ -153,7 +109,7 @@ export function VideoViewer({
       disabled={pending}
       onClick={() =>
         startTransition(async () => {
-          const result = await load({ applicationId, questionId });
+          const result = await load({ videoId });
           if (!result.ok) toast.error(te(result.error));
           else setUrl(result.data.url);
         })

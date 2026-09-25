@@ -16,7 +16,20 @@ export function StartStep({ jobId }: { jobId: string }) {
   const te = useTranslations("errors");
   const { run, pending, error, setError } = useStepAction();
   const [captchaToken, setCaptchaToken] = useState<string>();
+  // Tapped Start before the (invisible) bot check finished: start when it does.
+  const [waiting, setWaiting] = useState(false);
+  const waitingRef = useRef(false);
   const captchaRef = useRef<TurnstileInstance>(undefined);
+
+  async function start(token: string | undefined) {
+    waitingRef.current = false;
+    setWaiting(false);
+    const started = await run(() => startApplication({ jobId, captchaToken: token }));
+    if (!started) {
+      captchaRef.current?.reset();
+      setCaptchaToken(undefined);
+    }
+  }
   const items = [
     { icon: ListChecks, text: t("introTest") },
     { icon: Video, text: t("introVideo") },
@@ -26,17 +39,15 @@ export function StartStep({ jobId }: { jobId: string }) {
   return (
     <form
       className="flex flex-1 flex-col"
-      onSubmit={async (e) => {
+      onSubmit={(e) => {
         e.preventDefault();
+        setError(null);
         if (captchaEnabled && !captchaToken) {
-          setError(te("captchaRequired"));
+          waitingRef.current = true;
+          setWaiting(true);
           return;
         }
-        const started = await run(() => startApplication({ jobId, captchaToken }));
-        if (!started) {
-          captchaRef.current?.reset();
-          setCaptchaToken(undefined);
-        }
+        void start(captchaToken);
       }}
     >
       <h1 className="text-3xl font-extrabold tracking-tight">{t("introTitle")}</h1>
@@ -57,8 +68,21 @@ export function StartStep({ jobId }: { jobId: string }) {
       <TrustLines className="mt-6 text-muted-foreground" />
       <div className="mt-auto space-y-3 pt-8">
         <FormAlert message={error} />
-        <Captcha ref={captchaRef} onToken={setCaptchaToken} />
-        <SubmitButton pending={pending}>{pending ? t("starting") : t("start")}</SubmitButton>
+        <Captcha
+          ref={captchaRef}
+          onToken={(token) => {
+            setCaptchaToken(token);
+            if (token && waitingRef.current) void start(token);
+          }}
+          onFailed={() => {
+            waitingRef.current = false;
+            setWaiting(false);
+            setError(te("captchaFailed"));
+          }}
+        />
+        <SubmitButton pending={pending || waiting}>
+          {waiting ? t("checking") : pending ? t("starting") : t("start")}
+        </SubmitButton>
       </div>
     </form>
   );

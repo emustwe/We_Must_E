@@ -7,31 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       applicants: {
@@ -150,8 +125,9 @@ export type Database = {
         Row: {
           application_id: string
           duration_seconds: number
+          id: string
           mime_type: string
-          question_id: string
+          question_id: string | null
           size_bytes: number
           storage_path: string
           uploaded_at: string
@@ -159,8 +135,9 @@ export type Database = {
         Insert: {
           application_id: string
           duration_seconds: number
+          id?: string
           mime_type: string
-          question_id: string
+          question_id?: string | null
           size_bytes: number
           storage_path: string
           uploaded_at?: string
@@ -168,8 +145,9 @@ export type Database = {
         Update: {
           application_id?: string
           duration_seconds?: number
+          id?: string
           mime_type?: string
-          question_id?: string
+          question_id?: string | null
           size_bytes?: number
           storage_path?: string
           uploaded_at?: string
@@ -342,6 +320,39 @@ export type Database = {
         }
         Relationships: []
       }
+      candidate_unlocks: {
+        Row: {
+          application_id: string
+          employer_id: string
+          unlocked_at: string
+        }
+        Insert: {
+          application_id: string
+          employer_id: string
+          unlocked_at?: string
+        }
+        Update: {
+          application_id?: string
+          employer_id?: string
+          unlocked_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_unlocks_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: true
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_unlocks_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employer_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       consents: {
         Row: {
           accepted_at: string
@@ -374,6 +385,61 @@ export type Database = {
           },
         ]
       }
+      ecoin_ledger: {
+        Row: {
+          application_id: string | null
+          created_at: string
+          created_by: string | null
+          delta: number
+          employer_id: string
+          id: string
+          note: string | null
+          reason: string
+        }
+        Insert: {
+          application_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          delta: number
+          employer_id: string
+          id?: string
+          note?: string | null
+          reason: string
+        }
+        Update: {
+          application_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          delta?: number
+          employer_id?: string
+          id?: string
+          note?: string | null
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ecoin_ledger_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ecoin_ledger_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ecoin_ledger_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employer_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       employer_profiles: {
         Row: {
           approved_at: string | null
@@ -384,6 +450,7 @@ export type Database = {
           contact_phone: string | null
           created_at: string
           created_by: string | null
+          ecoin_balance: number
           logo_path: string | null
           must_change_password: boolean
           status: Database["public"]["Enums"]["employer_status"]
@@ -401,6 +468,7 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           created_by?: string | null
+          ecoin_balance?: number
           logo_path?: string | null
           must_change_password?: boolean
           status?: Database["public"]["Enums"]["employer_status"]
@@ -418,6 +486,7 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           created_by?: string | null
+          ecoin_balance?: number
           logo_path?: string | null
           must_change_password?: boolean
           status?: Database["public"]["Enums"]["employer_status"]
@@ -886,6 +955,10 @@ export type Database = {
         Args: { p_set_id: string }
         Returns: undefined
       }
+      admin_add_ecoins: {
+        Args: { p_amount: number; p_employer_id: string; p_note: string }
+        Returns: number
+      }
       admin_get_answer_keys: {
         Args: { p_test_id: string }
         Returns: {
@@ -960,12 +1033,11 @@ export type Database = {
           p_duration_seconds: number
           p_job_id: string
           p_mime_type: string
-          p_question_id: string
           p_size_bytes: number
           p_storage_path: string
           p_token_hash: string
         }
-        Returns: string
+        Returns: string[]
       }
       app_save_test_answer: {
         Args: {
@@ -1033,11 +1105,32 @@ export type Database = {
         Args: { p_change: string; p_employer_id: string }
         Returns: undefined
       }
-      log_video_view: {
-        Args: { p_application_id: string; p_question_id: string }
-        Returns: undefined
-      }
+      log_video_view: { Args: { p_video_id: string }; Returns: undefined }
       record_account_deletion: { Args: never; Returns: undefined }
+      sponsor_all_candidates: {
+        Args: { p_page?: number }
+        Returns: {
+          application_id: string
+          full_name: string
+          job_id: string
+          job_title: string
+          locked_total: number
+          reviewed_at: string
+          total: number
+          unlocked: boolean
+        }[]
+      }
+      sponsor_candidate_summary: {
+        Args: { p_application_id: string }
+        Returns: {
+          application_id: string
+          full_name: string
+          job_id: string
+          job_title: string
+          reviewed_at: string
+          unlocked: boolean
+        }[]
+      }
       sponsor_get_candidate: {
         Args: { p_application_id: string }
         Returns: Json
@@ -1048,9 +1141,13 @@ export type Database = {
           application_id: string
           full_name: string
           reviewed_at: string
-          test_percent: number
           total: number
+          unlocked: boolean
         }[]
+      }
+      sponsor_unlock_candidate: {
+        Args: { p_application_id: string }
+        Returns: number
       }
     }
     Enums: {
@@ -1209,9 +1306,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       application_status: ["in_progress", "submitted", "approved", "rejected"],

@@ -2,7 +2,9 @@
 
 import { X } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { StartStep } from "@/components/apply/start-step";
 import { SurveyStep } from "@/components/apply/survey-step";
 import { TestStep } from "@/components/apply/test-step";
@@ -13,6 +15,8 @@ type Job = { title: string; locationLabel: string };
 
 export function ApplyWizard({ jobId, job, view }: { jobId: string; job: Job; view: ApplyView }) {
   const t = useTranslations("apply");
+  const ask = useConfirm();
+  const router = useRouter();
   const steps =
     view.stage === "start"
       ? []
@@ -33,8 +37,18 @@ export function ApplyWizard({ jobId, job, view }: { jobId: string; job: Job; vie
         </div>
         <Link
           href={`/?job=${jobId}`}
-          onClick={(e) => {
-            if (view.stage !== "start" && !window.confirm(t("leaveConfirm"))) e.preventDefault();
+          onClick={async (e) => {
+            if (view.stage === "start") return;
+            e.preventDefault();
+            if (
+              await ask({
+                title: t("leaveTitle"),
+                body: t("leaveConfirm"),
+                confirmLabel: t("leave"),
+              })
+            ) {
+              router.push(`/?job=${jobId}`);
+            }
           }}
           aria-label={t("close")}
           className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted hover:bg-muted/70"

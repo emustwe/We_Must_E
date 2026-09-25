@@ -83,3 +83,13 @@ export const sponsorPasswordSchema = z.strictObject({
   password: newPasswordSchema,
   notify: z.boolean(),
 });
+
+export const ecoinSchema = z.strictObject({
+  employerId: idSchema,
+  amount: z
+    .int()
+    .min(-1000)
+    .max(1000)
+    .refine((n) => n !== 0),
+  note: z.string().trim().max(200),
+});

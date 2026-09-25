@@ -295,27 +295,26 @@ update applications set test_started_at = now() - interval '2 minutes' where id 
 select throws_ok(format($$select app_save_test_answer(%s, %s, '30000000-0000-0000-0000-0000000000a1', '{"options":[0]}')$$, :'JC', :'TOKA'),
   '22023', 'time_expired', 'answers after the time limit are rejected');
 select lives_ok(format('select app_submit_test(%s, %s)', :'JC', :'TOKA'), 'the test can still be finished after the time limit');
-select is((select (test_score, test_max_score)::text from applications where id = :AA), '(3.00,4.00)',
-  'choice questions are graded on the server (written ones wait for the admin)');
-select is((select is_correct from application_test_answers where application_id = :AA
-            and question_id = '30000000-0000-0000-0000-0000000000a1'), true, 'the late answer did not replace the saved one');
+select is((select (test_score, test_max_score)::text from applications where id = :AA), '(,)',
+  'answers are not scored (there are no right or wrong answers)');
+select is((select answer ->> 'options' from application_test_answers where application_id = :AA
+            and question_id = '30000000-0000-0000-0000-0000000000a1'), '[1]', 'the late answer did not replace the saved one');
 select is((select current_step::text from applications where id = :AA), 'video', 'after the test comes the video');
+select is((select jsonb_array_length(private.video_prompts(:AA))), 3, 'the video page asks about the test''s questions');
 
-select throws_ok(format('select app_record_video(%s, %s, %s, ''someone-else/x.webm'', 10, 1000, ''video/webm'')', :'JC', :'TOKA', :'VQ'),
+-- One video explains all the answers.
+select throws_ok(format('select app_record_video(%s, %s, ''someone-else/x.webm'', 10, 1000, ''video/webm'')', :'JC', :'TOKA'),
   '22023', 'invalid_video', 'a video path outside the application folder is refused');
 select throws_ok(format('select app_finish_videos(%s, %s)', :'JC', :'TOKA'), '22023', 'incomplete', 'the video step needs the video');
-select lives_ok(format('select app_record_video(%s, %s, %s, %L, 12, 2000, ''video/webm'')', :'JC', :'TOKA', :'VQ',
-  (select id from applications where draft_token_hash = :TOKA) || '/' || :VQ || '/one.webm'), 'a video answer is recorded');
--- One video answers all the video questions (stored on the first question).
-select throws_ok(format('select app_record_video(%s, %s, ''30000000-0000-0000-0000-0000000000b2'', %L, 12, 2000, ''video/webm'')', :'JC', :'TOKA',
-  (select id from applications where draft_token_hash = :TOKA) || '/30000000-0000-0000-0000-0000000000b2/x.webm'),
-  'P0002', 'not_found', 'the one video is stored on the first question only');
-select throws_ok(format('select app_record_video(%s, %s, %s, %L, 80, 2000, ''video/webm'')', :'JC', :'TOKA', :'VQ',
-  (select id from applications where draft_token_hash = :TOKA) || '/' || :VQ || '/long.webm'),
-  '22023', 'invalid_video', 'the video may be as long as the questions'' times together (30 + 40 s), not more');
-select lives_ok(format('select app_record_video(%s, %s, %s, %L, 65, 2000, ''video/webm'')', :'JC', :'TOKA', :'VQ',
-  (select id from applications where draft_token_hash = :TOKA) || '/' || :VQ || '/two.webm'), 'a 65-second video for two questions is fine');
-select lives_ok(format('select app_finish_videos(%s, %s)', :'JC', :'TOKA'), 'one video completes the video step');
+select throws_ok(format('select app_record_video(%s, %s, %L, 400, 2000, ''video/webm'')', :'JC', :'TOKA',
+  (select id from applications where draft_token_hash = :TOKA) || '/answer/long.webm'),
+  '22023', 'invalid_video', 'the video can be at most 5 minutes');
+select lives_ok(format('select app_record_video(%s, %s, %L, 12, 2000, ''video/webm'')', :'JC', :'TOKA',
+  (select id from applications where draft_token_hash = :TOKA) || '/answer/one.webm'), 'the video is recorded');
+select is(app_record_video(:JC, :TOKA, (select id from applications where draft_token_hash = :TOKA) || '/answer/two.webm', 65, 2000, 'video/webm'),
+  array[(select id from applications where draft_token_hash = :TOKA) || '/answer/one.webm'], 'recording again replaces the video (the old file is returned for deletion)');
+select is((select count(*)::int from application_videos where application_id = :AA), 1, 'there is only ever one video');
+select lives_ok(format('select app_finish_videos(%s, %s)', :'JC', :'TOKA'), 'the video completes the video step');
 
 select throws_ok(format($$select app_submit(%s, %s, 'Sara Ali', '+971501234567', '', '{}', 'v1', 'ip', true)$$, :'JC', :'TOKA'),
   '22023', 'incomplete', 'required survey questions must be answered');
@@ -392,59 +391,76 @@ select ok(tests.denied_as(:E3, format('select sponsor_get_candidate(%L)', :'aa_i
 select is(tests.rows_as(:E3, 'select 1 from application_videos'), 0, 'the sponsor sees no videos before approval');
 
 -- Admin review (required test 7: admin writes fail without MFA).
-\set Q3 '''30000000-0000-0000-0000-0000000000a3'''
 select ok(tests.denied_as(:AD, format('select admin_review_application(%s, ''approved'', ''ok'')', :'AA')),
   'admin without MFA cannot approve an application');
 select ok(tests.denied_as(:E3, format('select admin_review_application(%s, ''approved'', ''ok'')', :'AA'), 'aal2'),
   'employers cannot approve applications');
-select ok(tests.denied_as(:AD, format('select admin_grade_answer(%s, %s, 1)', :'AA', :'Q3')),
-  'admin without MFA cannot grade');
-select ok(tests.denied_as(:AD, format('select admin_grade_answer(%s, %s, 5)', :'AA', :'Q3'), 'aal2'),
-  'a grade above the question''s points is refused');
-select ok(tests.denied_as(:AD, format('select admin_grade_answer(%s, ''30000000-0000-0000-0000-0000000000a1'', 1)', :'AA'), 'aal2'),
-  'choice questions are graded automatically, not by hand');
-select tests.run_as(:AD, format('select admin_grade_answer(%s, %s, 1)', :'AA', :'Q3'), 'aal2');
-select is((select (test_score, test_percent)::text from applications where id = :AA), '(4.00,100.0)',
-  'grading a written answer updates the score');
 select tests.run_as(:AD, format('select admin_review_application(%s, ''approved'', ''Great fit'')', :'AA'), 'aal2');
 select is((select (status, admin_notes, reviewed_by)::text from applications where id = :AA),
   '(approved,"Great fit",00000000-0000-0000-0000-0000000000ad)', 'approval records the decision, notes and reviewer');
 select is((select metadata::text from audit_logs where action = 'application.reviewed' and target_id = :AA),
   '{"to": "approved", "from": "submitted"}', 'the review is audited without personal data');
-select ok(exists (select 1 from audit_logs where action = 'application.graded' and target_id = :AA), 'grading is audited');
 select ok(tests.denied_as(:AD, format('select admin_review_application(%s, ''in_progress'', '''')', :'AA'), 'aal2'),
   'an application cannot be sent back to in progress');
+select id as video_id from application_videos where application_id = :AA \gset
 
 -- Every video view is logged; only MFA admins may log (and so view).
-select ok(tests.denied_as(:AD, format('select log_video_view(%s, %s)', :'AA', :'VQ')), 'video views need MFA');
-select tests.run_as(:AD, format('select log_video_view(%s, %s)', :'AA', :'VQ'), 'aal2');
+select ok(tests.denied_as(:AD, format('select log_video_view(%L)', :'video_id')), 'video views need MFA');
+select tests.run_as(:AD, format('select log_video_view(%L)', :'video_id'), 'aal2');
 select ok(exists (select 1 from audit_logs where action = 'application.video_viewed' and target_id = :AA
                    and actor_id = :AD::uuid), 'opening a video is logged with the admin as actor');
 
--- Content: video sets and written questions.
+-- Content: video sets; tests go live without answer keys.
 select tests.run_as(:AD, $$insert into video_question_sets (id, title) values ('30000000-0000-0000-0000-000000000004', 'Empty')$$, 'aal2');
 select ok(tests.denied_as(:AD, $$insert into video_question_sets (title) values ('No MFA')$$), 'only MFA admins create video question sets');
 select ok(tests.denied_as(:E3, $$insert into video_question_sets (title) values ('Employer')$$, 'aal2'), 'employers cannot create video question sets');
 select ok(tests.denied_as(:AD, $$select admin_activate_video_set('30000000-0000-0000-0000-000000000004')$$, 'aal2'),
   'a video set without questions cannot go live');
-select ok(tests.denied_as(:AD, format('select admin_set_answer_key(%s, ''{0}'')', :'Q3'), 'aal2'),
-  'written questions cannot have an answer key');
+insert into tests (id, title, pass_score) values ('30000000-0000-0000-0000-000000000009', 'No keys', 0);
+insert into test_questions (test_id, type, prompt, options, position)
+  values ('30000000-0000-0000-0000-000000000009', 'single_choice', 'Pick one', '["a","b"]', 0);
+update tests set is_active = false;
+select lives_ok($$select tests.run_as('00000000-0000-0000-0000-0000000000ad', 'select admin_activate_test(''30000000-0000-0000-0000-000000000009'')', 'aal2')$$,
+  'a test goes live without any "correct" answers');
+update tests set is_active = false;
+update tests set is_active = true where id = '30000000-0000-0000-0000-000000000001';
 
--- After approval: the sponsor who owns the job sees the candidate, nobody else does.
-select is(tests.rows_as(:E3, format('select * from sponsor_list_candidates(%s)', :'JC')), 1, 'the sponsor sees the approved candidate for their job');
-select ok(not tests.denied_as(:E3, format('select sponsor_get_candidate(%L)', :'aa_id')), 'the sponsor can open the approved candidate');
-select is((select sponsor_get_candidate(:'aa_id') ->> 'full_name' from (select tests.act_as(:E3, 'aal1')) x), 'Sara A.',
-  'the candidate shows the applicant''s name');
+-- After approval: the name is visible, the rest is locked until 1 E-coin is spent.
+select is(tests.rows_as(:E3, format('select * from sponsor_list_candidates(%s) where not unlocked', :'JC')), 1, 'the sponsor sees the new candidate, still locked');
+select is((select full_name from (select tests.act_as(:E3, 'aal1')) x, sponsor_candidate_summary(:'aa_id')), 'Sara A.',
+  'the sponsor sees the candidate''s name before unlocking');
+reset role;
+select ok(tests.denied_as(:E3, format('select sponsor_get_candidate(%L)', :'aa_id')), 'a locked candidate cannot be opened');
+select is(tests.rows_as(:E3, 'select 1 from application_videos'), 0, 'a locked candidate''s video is hidden');
+select throws_ok(format('select tests.run_as(%L, %L)', :E3, format('select sponsor_unlock_candidate(%L)', :'aa_id')),
+  '22023', 'no_coins', 'unlocking needs an E-coin');
+select ok(tests.denied_as(:E3, format('select admin_add_ecoins(%L, 5, '''')', :E3), 'aal2'), 'sponsors cannot give themselves E-coins');
+select ok(tests.denied_as(:AD, format('select admin_add_ecoins(%L, 5, '''')', :E3)), 'adding E-coins needs an MFA admin');
+select tests.run_as(:AD, format('select admin_add_ecoins(%L, 2, ''Welcome'')', :E3), 'aal2');
+select ok(tests.denied_as(:AD, format('select admin_add_ecoins(%L, -5, '''')', :E3), 'aal2'), 'a balance cannot go below zero');
+select tests.run_as(:E3, format('select sponsor_unlock_candidate(%L)', :'aa_id'));
+select tests.run_as(:E3, format('select sponsor_unlock_candidate(%L)', :'aa_id'));
+select is((select ecoin_balance from employer_profiles where user_id = :E3), 1, 'unlocking costs 1 E-coin, and only once');
+select is((select string_agg(reason || ':' || delta, ',' order by created_at) from ecoin_ledger where employer_id = :E3),
+  'admin_grant:2,unlock:-1', 'every coin movement is in the ledger');
+select ok(tests.denied_as(:E3, $$update employer_profiles set ecoin_balance = 99 where user_id = auth.uid()$$), 'sponsors cannot edit their balance');
+select ok(tests.denied_as(:E3, $$insert into candidate_unlocks (application_id, employer_id) values (gen_random_uuid(), auth.uid())$$), 'sponsors cannot unlock without paying');
+
+-- Unlocked: the sponsor sees everything (with the test answers), nobody else does.
+select ok(not tests.denied_as(:E3, format('select sponsor_get_candidate(%L)', :'aa_id')), 'the sponsor can open the unlocked candidate');
+select is((select jsonb_array_length(sponsor_get_candidate(:'aa_id') -> 'test') from (select tests.act_as(:E3, 'aal1')) x), 3,
+  'the unlocked candidate includes the test answers');
 reset role;
 select is(tests.rows_as(:E1, format('select * from sponsor_list_candidates(%s)', :'JC')), 0, 'another sponsor sees nothing for that job');
 select ok(tests.denied_as(:E1, format('select sponsor_get_candidate(%L)', :'aa_id')), 'another sponsor cannot open the candidate');
-select is(tests.rows_as(:E3, 'select 1 from application_videos'), 1, 'the sponsor sees the approved candidate''s video');
+select ok(tests.denied_as(:E1, format('select sponsor_unlock_candidate(%L)', :'aa_id')), 'another sponsor cannot unlock the candidate');
+select is(tests.rows_as(:E3, 'select 1 from application_videos'), 1, 'the sponsor sees the unlocked candidate''s video');
 select is(tests.rows_as(:E3, 'select 1 from applications'), 0, 'sponsors still cannot read the applications table (admin notes stay private)');
-select tests.run_as(:E3, format('select log_video_view(%L, %s)', :'aa_id', :'VQ'));
+select tests.run_as(:E3, format('select log_video_view(%L)', :'video_id'));
 select ok(exists (select 1 from audit_logs where action = 'application.video_viewed' and actor_id = :E3::uuid), 'a sponsor''s video view is logged');
-select ok(tests.denied_as(:E1, format('select log_video_view(%L, %s)', :'aa_id', :'VQ')), 'another sponsor cannot watch the video');
-insert into storage.objects (bucket_id, name) values ('application-videos', :'aa_id' || '/' || :VQ || '/one.webm');
-select is(tests.rows_as(:E3, $$select 1 from storage.objects where bucket_id = 'application-videos' and name not like 'demo/%'$$), 1, 'storage: the sponsor can read the approved video file');
+select ok(tests.denied_as(:E1, format('select log_video_view(%L)', :'video_id')), 'another sponsor cannot watch the video');
+insert into storage.objects (bucket_id, name) values ('application-videos', :'aa_id' || '/answer/one.webm');
+select is(tests.rows_as(:E3, $$select 1 from storage.objects where bucket_id = 'application-videos' and name not like 'demo/%'$$), 1, 'storage: the sponsor can read the unlocked video file');
 select is(tests.rows_as(:E1, $$select 1 from storage.objects where bucket_id = 'application-videos'$$), 0, 'storage: other sponsors read no video files');
 
 -- Cleanup: unfinished applications older than 48 h, never submitted ones.

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowUp, Check, Pencil, Plus, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -13,8 +13,8 @@ import {
 } from "@/actions/admin-panel";
 import { Badge } from "@/components/admin/ui";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 
 type QType = "single_choice" | "multi_choice" | "short_text" | "long_text" | "number" | "scale";
 export type EditableQuestion = {
@@ -23,8 +23,6 @@ export type EditableQuestion = {
   options: string[];
   type?: QType;
   required?: boolean;
-  points?: number;
-  correctOptions?: number[];
 };
 
 const TYPES: QType[] = [
@@ -39,7 +37,7 @@ const TEST_TYPES: QType[] = ["single_choice", "multi_choice", "short_text", "lon
 const hasOptions = (type: QType) => type === "single_choice" || type === "multi_choice";
 
 // Shared editor for survey questions (typed) and test questions (options +
-// correct answer, stored through the answer-key RPC).
+// no right or wrong answers).
 export function QuestionEditor({
   kind,
   parentId,
@@ -52,6 +50,7 @@ export function QuestionEditor({
   const t = useTranslations("admin");
   const te = useTranslations("errors");
   const [editing, setEditing] = useState<string | "new" | null>(null);
+  const ask = useConfirm();
   const [pending, startTransition] = useTransition();
 
   const run = (fn: () => Promise<{ ok: boolean; error?: string }>, onOk?: () => void) =>
@@ -85,23 +84,9 @@ export function QuestionEditor({
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {q.type ? <Badge>{t(`types.${q.type}`)}</Badge> : null}
                     {q.required ? <Badge tone="primary">{t("requiredQuestion")}</Badge> : null}
-                    {kind === "test" ? (
-                      <Badge tone="primary">{t("pointsCount", { count: q.points ?? 1 })}</Badge>
-                    ) : null}
-                    {q.options.map((o, oi) => {
-                      const right = kind === "test" && (q.correctOptions ?? []).includes(oi);
-                      return (
-                        <Badge key={oi} tone={right ? "success" : "muted"}>
-                          {right ? "✓ " : ""}
-                          {o}
-                        </Badge>
-                      );
-                    })}
-                    {kind === "test" &&
-                    hasOptions(q.type ?? "single_choice") &&
-                    !q.correctOptions?.length ? (
-                      <Badge tone="danger">{t("markCorrect")}</Badge>
-                    ) : null}
+                    {q.options.map((o, oi) => (
+                      <Badge key={oi}>{o}</Badge>
+                    ))}
                   </div>
                 </div>
                 <div className="flex shrink-0 gap-1">
@@ -141,12 +126,19 @@ export function QuestionEditor({
                     aria-label={t("deleteQuestion")}
                     className="text-destructive"
                     disabled={pending}
-                    onClick={() =>
-                      window.confirm(t("deleteConfirm")) &&
+                    onClick={async () => {
+                      if (
+                        !(await ask({
+                          title: t("deleteConfirm"),
+                          tone: "danger",
+                          confirmLabel: t("deleteQuestion"),
+                        }))
+                      )
+                        return;
                       run(() =>
                         kind === "survey" ? deleteSurveyQuestion(q.id) : deleteTestQuestion(q.id),
-                      )
-                    }
+                      );
+                    }}
                   >
                     <Trash2 className="size-4" />
                   </Button>
@@ -193,22 +185,14 @@ function QuestionForm({
   const [options, setOptions] = useState<string[]>(
     initial?.options.length ? initial.options : ["", ""],
   );
-  const [correct, setCorrect] = useState<number[]>(initial?.correctOptions ?? []);
-  const [points, setPoints] = useState(String(initial?.points ?? 1));
+
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const showOptions = hasOptions(type);
-  const toggleCorrect = (i: number) =>
-    setCorrect((c) =>
-      type === "single_choice" ? [i] : c.includes(i) ? c.filter((x) => x !== i) : [...c, i].sort(),
-    );
 
   function save() {
     setError(null);
-    // Keep the answer key aligned when empty options are dropped.
-    const kept = showOptions ? options.map((o, i) => ({ o: o.trim(), i })).filter((x) => x.o) : [];
-    const cleaned = kept.map((x) => x.o);
-    const keyIndexes = kept.flatMap((x, ni) => (correct.includes(x.i) ? [ni] : []));
+    const cleaned = showOptions ? options.map((o) => o.trim()).filter(Boolean) : [];
     startTransition(async () => {
       const result =
         kind === "survey"
@@ -225,9 +209,7 @@ function QuestionForm({
               testId: parentId,
               type,
               prompt,
-              points,
               options: cleaned,
-              correctOptions: showOptions ? keyIndexes : [],
             });
       if (!result.ok) {
         const key = Object.values(result.fieldErrors ?? {})[0];
@@ -257,7 +239,6 @@ function QuestionForm({
             value={type}
             onChange={(e) => {
               setType(e.target.value as QType);
-              setCorrect([]);
             }}
             className="h-10 rounded-xl border border-input bg-background px-3"
           >
@@ -278,52 +259,16 @@ function QuestionForm({
             />
             {t("requiredQuestion")}
           </label>
-        ) : (
-          <label className="flex items-center gap-2 text-sm">
-            <span className="font-medium">{t("points")}</span>
-            <Input
-              aria-label={t("points")}
-              type="number"
-              min={0}
-              max={100}
-              value={points}
-              onChange={(e) => setPoints(e.target.value)}
-              className="h-10 w-20"
-            />
-          </label>
-        )}
+        ) : null}
       </div>
-      {kind === "test" && !showOptions ? (
-        <p className="text-sm text-muted-foreground">{t("writtenHint")}</p>
+      {kind === "test" ? (
+        <p className="text-sm text-muted-foreground">{t("noRightAnswers")}</p>
       ) : null}
       {showOptions ? (
         <fieldset className="space-y-2">
-          <legend className="text-sm font-medium">
-            {t("options")}
-            {kind === "test" ? (
-              <span className="ms-2 font-normal text-muted-foreground">
-                {type === "multi_choice" ? t("markAllCorrect") : t("markOneCorrect")}
-              </span>
-            ) : null}
-          </legend>
+          <legend className="text-sm font-medium">{t("options")}</legend>
           {options.map((o, i) => (
             <div key={i} className="flex items-center gap-2">
-              {kind === "test" ? (
-                <button
-                  type="button"
-                  onClick={() => toggleCorrect(i)}
-                  aria-pressed={correct.includes(i)}
-                  aria-label={t("markCorrect")}
-                  className={cn(
-                    "flex size-10 shrink-0 items-center justify-center rounded-full border-2",
-                    correct.includes(i)
-                      ? "border-success bg-success text-success-foreground"
-                      : "border-border",
-                  )}
-                >
-                  <Check className="size-4" />
-                </button>
-              ) : null}
               <Input
                 value={o}
                 onChange={(e) =>
@@ -339,7 +284,6 @@ function QuestionForm({
                 disabled={options.length <= 2}
                 onClick={() => {
                   setOptions(options.filter((_, xi) => xi !== i));
-                  setCorrect((c) => c.filter((x) => x !== i).map((x) => (x > i ? x - 1 : x)));
                 }}
               >
                 <X className="size-4" />

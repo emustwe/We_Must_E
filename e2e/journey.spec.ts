@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { loginAsAdmin } from "./admin-session";
 import { psql, removeObjects } from "./db";
-import { login, signOut, unique } from "./helpers";
+import { acceptConfirms, answerAll, login, signOut, unique } from "./helpers";
 
 // The whole journey, with whatever questions are live (so it keeps working
 // when the admin replaces the [SAMPLE] content):
@@ -41,24 +41,6 @@ async function makeVideoFile(page: Page) {
   return { name: "answer.webm", mimeType: "video/webm", buffer: Buffer.from(base64, "base64") };
 }
 
-// Answers the current question screen: first option, or some text/number.
-async function answerCurrent(page: Page) {
-  const choice = page.locator(
-    'main label:has(input[type="radio"]), main label:has(input[type="checkbox"])',
-  );
-  if (await choice.count()) {
-    await choice.first().click();
-    return;
-  }
-  const number = page.locator('main input[type="number"]');
-  if (await number.count()) {
-    await number.fill("3");
-    return;
-  }
-  const text = page.locator("main textarea");
-  if (await text.count()) await text.fill("I am reliable and friendly.");
-}
-
 test.afterEach(async () => {
   const paths = psql(
     `select o.name from storage.objects o join public.applications a on o.name like a.id || '/%'
@@ -77,7 +59,7 @@ test("full journey: apply with test, video and survey -> admin approves -> spons
   page,
 }) => {
   test.setTimeout(240_000);
-  page.on("dialog", (d) => d.accept());
+  await acceptConfirms(page);
   const name = `Journey Applicant ${unique()}`;
   const job = psql(`select id from public.jobs where title = '[SAMPLE] Evening cashier'`);
 
@@ -86,48 +68,31 @@ test("full journey: apply with test, video and survey -> admin approves -> spons
   await page.getByRole("link", { name: "Apply" }).click();
   await page.getByRole("button", { name: "Start application" }).click();
 
-  // Step 1: the test (every step must be there).
+  // Step 1: the test, every question on one page (every step must be there).
   await expect(page.getByText(/Step 1 of 3 · Quick test/)).toBeVisible();
   await page.getByRole("button", { name: "Start the test" }).click();
-  const progress = page.getByText(/^Question \d+ of \d+$/);
-  await expect(progress).toBeVisible();
-  const total = Number((await progress.textContent())!.match(/of (\d+)/)![1]);
-  for (let n = 1; n <= total; n++) {
-    await expect(page.getByText(`Question ${n} of ${total}`, { exact: true })).toBeVisible();
-    await answerCurrent(page);
-    if (n === total) await page.getByRole("button", { name: "Finish test" }).click();
-    else await page.getByRole("button", { name: "Next", exact: true }).click();
-  }
+  await expect(page.getByText(/^0 of \d+ answered$/)).toBeVisible();
+  const testPrompts = await page.locator("main ol > li h2").allTextContents();
+  await answerAll(page);
+  await expect(page.getByText(/^(\d+) of \1 answered/)).toBeVisible();
+  await page.getByRole("button", { name: "Finish test" }).click();
 
-  // Step 2: all video questions on one page, answered in one video
+  // Step 2: one video explaining the same questions
   // (picked from the phone here; recording is covered in apply.spec).
   await expect(page.getByText(/Step 2 of 3 · Short video/)).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Answer these questions in one video" }),
+    page.getByRole("heading", { name: "Explain your answers in one video" }),
   ).toBeVisible();
-  const prompts = await page.locator("main ol li").count();
-  expect(prompts, "all video questions are listed").toBeGreaterThan(0);
+  await expect(page.locator("main ol li")).toHaveCount(testPrompts.length);
   await page.getByLabel("Upload a video from my phone").setInputFiles(await makeVideoFile(page));
   await expect(page.getByText(/^Recorded \d:\d\d/)).toBeVisible();
   await page.getByRole("button", { name: "Use this video" }).click();
 
-  // Step 3: the survey, then consent.
+  // Step 3: contact, the survey questions and consent, on one page.
   await expect(page.getByText(/Step 3 of 3 · About you/)).toBeVisible();
   await page.getByLabel("Full name").fill(name);
   await page.getByLabel("Phone number").fill(PHONE_LOCAL);
-  await page.getByRole("button", { name: "Next", exact: true }).click();
-  const question = page.getByText(/^Question \d+ of \d+/);
-  const send = page.getByRole("button", { name: "Send application" });
-  await expect(question.or(send)).toBeVisible();
-  const surveyTotal = (await question.isVisible())
-    ? Number((await question.textContent())!.match(/of (\d+)/)![1])
-    : 0;
-  for (let n = 1; n <= surveyTotal; n++) {
-    await expect(page.getByText(new RegExp(`^Question ${n} of ${surveyTotal}`))).toBeVisible();
-    await answerCurrent(page);
-    await page.getByRole("button", { name: "Next", exact: true }).click();
-  }
-  await expect(send).toBeVisible();
+  await answerAll(page);
   await page.getByText(/I agree that Wemuste stores my information/).click();
   await page.getByRole("button", { name: "Send application" }).click();
   await expect(page.getByRole("heading", { name: "Application sent" })).toBeVisible();
@@ -141,7 +106,7 @@ test("full journey: apply with test, video and survey -> admin approves -> spons
   );
   const [tests, videos, survey] = counts.split("|").map(Number);
   expect(tests, "test answers saved").toBeGreaterThan(0);
-  expect(videos, "videos saved").toBeGreaterThan(0);
+  expect(videos, "one video saved").toBe(1);
   expect(survey, "survey answers saved").toBeGreaterThan(0);
 
   // ---------------------------------------------------------------- admin
@@ -157,11 +122,20 @@ test("full journey: apply with test, video and survey -> admin approves -> spons
   await signOut(page);
 
   // ---------------------------------------------------------------- sponsor
+  // E-coins are added by hand for now (a wallet comes later).
+  psql(`update public.employer_profiles set ecoin_balance = 1
+         where user_id = (select id from auth.users where email = '${SPONSOR}')`);
   await login(page, SPONSOR);
   await expect(page).toHaveURL(/\/sponsor$/);
   await page.goto(`/sponsor/jobs/${job}`);
   await page.getByRole("link", { name: new RegExp(name) }).click();
   await expect(page.getByRole("heading", { name })).toBeVisible();
+  await page.getByRole("button", { name: "Open for 1 E-coin" }).click();
+  // The test answers are shared too, question by question.
+  const testAnswers = page
+    .locator("section")
+    .filter({ has: page.getByRole("heading", { name: "Test answers" }) });
+  await expect(testAnswers.locator("dt")).toHaveText(testPrompts);
   await expect(page.getByText(PHONE)).toBeVisible();
   await expect(page.getByRole("button", { name: /Play video/ })).toHaveCount(videos);
   await page

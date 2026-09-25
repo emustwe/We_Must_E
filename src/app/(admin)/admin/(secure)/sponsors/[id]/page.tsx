@@ -4,7 +4,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { EmployerStatusButton } from "@/components/admin/employer-status-button";
+import { EcoinForm } from "@/components/admin/ecoin-form";
 import { DeleteSponsor, SponsorPasswordForm } from "@/components/admin/sponsor-manage";
+import { EcoinHistory } from "@/components/sponsors/ecoin-history";
 import { Badge, Card } from "@/components/admin/ui";
 import { LogoUploader } from "@/components/sponsors/logo-uploader";
 import { createClient } from "@/lib/supabase/server";
@@ -21,13 +23,14 @@ export default async function AdminSponsorPage({ params }: PageProps<"/admin/spo
   const { id } = await params;
   if (!idSchema.safeParse(id).success) notFound();
   const t = await getTranslations("admin");
+  const te = await getTranslations("ecoins");
   const format = await getFormatter();
   const supabase = await createClient();
   const [{ data: s }, { count: jobs }] = await Promise.all([
     supabase
       .from("employer_profiles")
       .select(
-        "user_id, company_name, contact_person, contact_email, contact_phone, trade_license_no, website, status, logo_path, created_at",
+        "user_id, company_name, contact_person, contact_email, contact_phone, trade_license_no, website, status, logo_path, ecoin_balance, created_at",
       )
       .eq("user_id", id)
       .maybeSingle(),
@@ -77,6 +80,15 @@ export default async function AdminSponsorPage({ params }: PageProps<"/admin/spo
           <div className="mt-4">
             <EmployerStatusButton employerId={s.user_id} status={s.status} />
           </div>
+        </Card>
+        <Card className="space-y-4 lg:col-span-2">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="font-bold">{te("adminTitle")}</h2>
+            <p className="text-2xl font-extrabold tabular-nums">{s.ecoin_balance}</p>
+          </div>
+          <p className="text-sm text-muted-foreground">{te("adminBody")}</p>
+          <EcoinForm employerId={s.user_id} />
+          <EcoinHistory employerId={s.user_id} />
         </Card>
         <Card>
           <h2 className="mb-3 font-bold">{t("passwordTitle")}</h2>

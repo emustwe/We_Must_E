@@ -1,9 +1,9 @@
-import { ArrowLeft, Check, Mail, Phone, X } from "lucide-react";
+import { ArrowLeft, Check, Mail, Phone } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
-import { GradeForm, ReviewPanel, VideoViewer } from "@/components/admin/application-review";
+import { ReviewPanel, VideoViewer } from "@/components/admin/application-review";
 import { APPLICATION_TONE, Badge, Card } from "@/components/admin/ui";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
@@ -44,7 +44,7 @@ export default async function ApplicationPage({
   const { data: app } = await supabase
     .from("applications")
     .select(
-      "id, status, submitted_at, reviewed_at, reviewed_by, admin_notes, test_id, video_set_id, survey_id, test_score, test_max_score, test_percent, test_started_at, test_submitted_at, applicant_id, applicants(id, full_name, phone_e164, email), jobs(id, title, location_label, employer_profiles(company_name))",
+      "id, status, submitted_at, reviewed_at, reviewed_by, admin_notes, test_id, video_set_id, survey_id, test_started_at, test_submitted_at, applicant_id, applicants(id, full_name, phone_e164, email), jobs(id, title, location_label, employer_profiles(company_name))",
     )
     .eq("id", id)
     .neq("status", "in_progress")
@@ -113,18 +113,7 @@ export default async function ApplicationPage({
                 </a>
               ) : null}
             </div>
-            <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
-              <div className="rounded-2xl bg-muted/60 p-3">
-                <dt className="text-xs text-muted-foreground">{t("score")}</dt>
-                <dd className="text-xl font-extrabold tabular-nums">
-                  {app.test_percent === null ? "—" : `${Number(app.test_percent)}%`}
-                </dd>
-                <dd className="text-xs text-muted-foreground">
-                  {app.test_max_score
-                    ? `${Number(app.test_score)} / ${Number(app.test_max_score)}`
-                    : ""}
-                </dd>
-              </div>
+            <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
               <div className="rounded-2xl bg-muted/60 p-3">
                 <dt className="text-xs text-muted-foreground">{t("submittedAt")}</dt>
                 <dd className="font-semibold">
@@ -170,7 +159,9 @@ export default async function ApplicationPage({
           </nav>
 
           {tab === "test" ? <TestTab applicationId={app.id} testId={app.test_id} /> : null}
-          {tab === "video" ? <VideoTab applicationId={app.id} setId={app.video_set_id} /> : null}
+          {tab === "video" ? (
+            <VideoTab applicationId={app.id} testId={app.test_id} setId={app.video_set_id} />
+          ) : null}
           {tab === "survey" ? <SurveyTab applicationId={app.id} surveyId={app.survey_id} /> : null}
         </div>
 
@@ -231,100 +222,60 @@ async function TestTab({
   const t = await getTranslations("admin");
   if (!testId) return <Card>{t("noTest")}</Card>;
   const supabase = await createClient();
-  const [{ data: questions }, { data: answers }, { data: keys }] = await Promise.all([
+  const [{ data: questions }, { data: answers }] = await Promise.all([
     supabase
       .from("test_questions")
-      .select("id, type, prompt, options, points")
+      .select("id, type, prompt, options")
       .eq("test_id", testId)
       .order("position"),
     supabase
       .from("application_test_answers")
-      .select("question_id, answer, is_correct, points_awarded")
+      .select("question_id, answer")
       .eq("application_id", applicationId),
-    // Answer keys are only readable through this admin-only function.
-    supabase.rpc("admin_get_answer_keys", { p_test_id: testId }),
   ]);
-  const answerFor = new Map((answers ?? []).map((a) => [a.question_id, a]));
-  const keyFor = new Map((keys ?? []).map((k) => [k.question_id, k.correct_options]));
-
+  const answerFor = new Map((answers ?? []).map((a) => [a.question_id, a.answer]));
+  // No right or wrong answers: just what the applicant chose or wrote.
   return (
     <ol className="space-y-3">
       {(questions ?? []).map((q, i) => {
         const a = answerFor.get(q.id);
         const written = q.type === "short_text" || q.type === "long_text";
-        const picked = chosen(a?.answer);
-        const correct = keyFor.get(q.id) ?? [];
+        const picked = chosen(a);
         return (
           <li key={q.id}>
             <Card>
-              <div className="flex items-start justify-between gap-3">
-                <p className="font-semibold">
-                  {i + 1}. {q.prompt}
+              <p className="font-semibold">
+                {i + 1}. {q.prompt}
+              </p>
+              {a === undefined ? (
+                <p className="mt-2 text-sm text-muted-foreground">{t("notAnswered")}</p>
+              ) : written ? (
+                <p className="mt-3 rounded-2xl bg-muted/60 p-3 text-sm whitespace-pre-line">
+                  {String(field(a, "text") ?? "—")}
                 </p>
-                <Badge
-                  tone={
-                    !a
-                      ? "muted"
-                      : written && a.points_awarded === null
-                        ? "warning"
-                        : a.is_correct
-                          ? "success"
-                          : "danger"
-                  }
-                >
-                  {!a
-                    ? t("notAnswered")
-                    : written && a.points_awarded === null
-                      ? t("needsGrading")
-                      : `${Number(a.points_awarded ?? 0)} / ${q.points}`}
-                </Badge>
-              </div>
-              {written ? (
-                <>
-                  <p className="mt-3 rounded-2xl bg-muted/60 p-3 text-sm whitespace-pre-line">
-                    {String(field(a?.answer, "text") ?? "—")}
-                  </p>
-                  {a ? (
-                    <GradeForm
-                      applicationId={applicationId}
-                      questionId={q.id}
-                      max={q.points}
-                      current={a.points_awarded === null ? null : Number(a.points_awarded)}
-                    />
-                  ) : null}
-                </>
               ) : (
                 <ul className="mt-3 space-y-1.5">
                   {asOptions(q.options).map((option, oi) => {
                     const isPicked = picked.includes(oi);
-                    const isRight = correct.includes(oi);
                     return (
                       <li
                         key={oi}
                         className={cn(
                           "flex items-center gap-2 rounded-xl px-3 py-2 text-sm",
-                          isPicked && isRight && "bg-success/15 font-semibold",
-                          isPicked && !isRight && "bg-destructive/10 font-semibold",
-                          !isPicked && "bg-muted/40",
+                          isPicked
+                            ? "bg-primary/10 font-semibold"
+                            : "bg-muted/40 text-muted-foreground",
                         )}
                       >
-                        {isRight ? (
+                        {isPicked ? (
                           <Check
-                            className="size-4 shrink-0 text-success"
-                            aria-label={t("correctAnswer")}
-                          />
-                        ) : isPicked ? (
-                          <X
-                            className="size-4 shrink-0 text-destructive"
-                            aria-label={t("wrongAnswer")}
+                            className="size-4 shrink-0 text-primary"
+                            aria-label={t("theirAnswer")}
                           />
                         ) : (
                           <span className="size-4 shrink-0" aria-hidden="true" />
                         )}
                         <span className="flex-1">{option}</span>
-                        {isPicked ? (
-                          <span className="text-xs text-muted-foreground">{t("theirAnswer")}</span>
-                        ) : null}
                       </li>
                     );
                   })}
@@ -338,40 +289,53 @@ async function TestTab({
   );
 }
 
-async function VideoTab({ applicationId, setId }: { applicationId: string; setId: string | null }) {
+async function VideoTab({
+  applicationId,
+  testId,
+  setId,
+}: {
+  applicationId: string;
+  testId: string | null;
+  setId: string | null;
+}) {
   const t = await getTranslations("admin");
   const supabase = await createClient();
-  const [{ data: questions }, { data: videos }] = await Promise.all([
+  const [{ data: testQs }, { data: videoQs }, { data: videos }] = await Promise.all([
+    testId
+      ? supabase.from("test_questions").select("prompt").eq("test_id", testId).order("position")
+      : Promise.resolve({ data: [] as { prompt: string }[] }),
     setId
       ? supabase
           .from("video_questions")
-          .select("id, prompt")
+          .select("prompt")
           .eq("set_id", setId)
           .eq("is_active", true)
           .order("position")
-      : Promise.resolve({ data: [] as { id: string; prompt: string }[] }),
+      : Promise.resolve({ data: [] as { prompt: string }[] }),
     supabase
       .from("application_videos")
-      .select("question_id, duration_seconds")
-      .eq("application_id", applicationId),
+      .select("id, duration_seconds")
+      .eq("application_id", applicationId)
+      .order("uploaded_at"),
   ]);
   if (!videos?.length) return <Card>{t("noVideos")}</Card>;
+  const prompts = (testQs?.length ? testQs : (videoQs ?? [])).map((q) => q.prompt);
   return (
     <Card className="space-y-4">
       <div>
         <h2 className="font-bold">{t("videoAnswersTo")}</h2>
         <ol className="mt-2 list-decimal space-y-1 ps-5 text-sm">
-          {(questions ?? []).map((q) => (
-            <li key={q.id}>{q.prompt}</li>
+          {prompts.map((prompt, i) => (
+            <li key={i}>{prompt}</li>
           ))}
         </ol>
       </div>
       {videos.map((v) => (
-        <div key={v.question_id}>
+        <div key={v.id}>
           <p className="mb-2 text-sm text-muted-foreground">
             {t("seconds", { count: v.duration_seconds })}
           </p>
-          <VideoViewer applicationId={applicationId} questionId={v.question_id} />
+          <VideoViewer videoId={v.id} />
         </div>
       ))}
     </Card>

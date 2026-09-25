@@ -25,6 +25,8 @@ const KNOWN: Record<string, ActionError> = {
   wrong_step: "wrongStep",
   invalid_video: "invalidFile",
   phone_unverified: "phoneUnverified",
+  no_coins: "noCoins",
+  invalid_input: "invalidInput",
 };
 
 export function dbFail(context: string, error: PostgrestError): ActionResult<never> {

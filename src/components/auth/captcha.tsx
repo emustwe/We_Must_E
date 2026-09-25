@@ -11,9 +11,11 @@ export const captchaEnabled = Boolean(clientEnv.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 export function Captcha({
   ref,
   onToken,
+  onFailed,
 }: {
   ref?: Ref<TurnstileInstance | undefined>;
   onToken: (token: string | undefined) => void;
+  onFailed?: () => void;
 }) {
   const siteKey = clientEnv.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
   if (!siteKey) return null;
@@ -24,7 +26,10 @@ export function Captcha({
       options={{ theme: "auto", size: "flexible", appearance: "interaction-only" }}
       onSuccess={(token) => onToken(token)}
       onExpire={() => onToken(undefined)}
-      onError={() => onToken(undefined)}
+      onError={() => {
+        onToken(undefined);
+        onFailed?.();
+      }}
     />
   );
 }

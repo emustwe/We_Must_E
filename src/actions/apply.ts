@@ -11,6 +11,7 @@ import {
   startSchema,
   submitSchema,
   testAnswerSchema,
+  testAnswersSchema,
   verifyCodeSchema,
   videoConfirmSchema,
   videoUploadSchema,
@@ -49,6 +50,18 @@ export async function saveTestAnswer(input: unknown): Promise<ActionResult> {
   return app.saveTestAnswer(jobId, questionId, answer);
 }
 
+// Saves every answer on the test page (skips unchanged ones on the client).
+export async function saveTestAnswers(input: unknown): Promise<ActionResult> {
+  const parsed = testAnswersSchema.safeParse(input);
+  if (!parsed.success) return fail("invalidInput");
+  if (!(await stepAllowed())) return fail("rateLimited");
+  for (const { questionId, answer } of parsed.data.answers) {
+    const result = await app.saveTestAnswer(parsed.data.jobId, questionId, answer);
+    if (!result.ok) return result;
+  }
+  return { ok: true, data: undefined };
+}
+
 export async function submitTest(jobId: unknown): Promise<ActionResult> {
   const parsed = jobIdSchema.safeParse(jobId);
   if (!parsed.success) return fail("invalidInput");
@@ -62,16 +75,16 @@ export async function createVideoUpload(
   const parsed = videoUploadSchema.safeParse(input);
   if (!parsed.success) return fail("invalidInput");
   if (!(await withinRateLimit("videoUploadPerIp", await getIpHash()))) return fail("rateLimited");
-  const { jobId, questionId, mime } = parsed.data;
-  return app.createVideoUpload(jobId, questionId, mime);
+  const { jobId, mime } = parsed.data;
+  return app.createVideoUpload(jobId, mime);
 }
 
 export async function confirmVideo(input: unknown): Promise<ActionResult> {
   const parsed = videoConfirmSchema.safeParse(input);
   if (!parsed.success) return fail("invalidInput");
   if (!(await stepAllowed())) return fail("rateLimited");
-  const { jobId, questionId, path, durationSeconds } = parsed.data;
-  return app.confirmVideo(jobId, questionId, path, durationSeconds);
+  const { jobId, path, durationSeconds } = parsed.data;
+  return app.confirmVideo(jobId, path, durationSeconds);
 }
 
 export async function finishVideos(jobId: unknown): Promise<ActionResult> {

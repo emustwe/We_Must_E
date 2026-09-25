@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { loginAsAdmin } from "./admin-session";
 import { createUser, psql } from "./db";
-import { login, signOut, unique } from "./helpers";
+import { acceptConfirms, answerAll, login, signOut, unique } from "./helpers";
 import { waitForEmail } from "./mailpit";
 
 // A tiny valid PNG (1x1), for the logo upload.
@@ -14,7 +14,7 @@ test("admin creates a sponsor with a password, emails it, changes it, suspends a
   page,
 }) => {
   test.setTimeout(150_000);
-  page.on("dialog", (dialog) => dialog.accept());
+  await acceptConfirms(page);
   const email = `sponsor${unique()}@example.test`;
   const company = `Harbour Coffee ${unique()}`;
   const password = "Harbour-Coffee-Roast-88";

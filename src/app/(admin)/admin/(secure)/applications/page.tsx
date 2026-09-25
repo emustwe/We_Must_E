@@ -31,7 +31,6 @@ export default async function ApplicationsPage({ searchParams }: PageProps<"/adm
   const employer = idSchema.safeParse(one(params.sponsor)).data;
   const from = isDate(one(params.from));
   const to = isDate(one(params.to));
-  const minScore = /^\d{1,3}$/.test(one(params.score) ?? "") ? Number(params.score) : undefined;
   // Only letters, digits, spaces and dashes reach the query.
   const city = (one(params.city) ?? "")
     .replace(/[^\p{L}\p{N} -]/gu, "")
@@ -43,7 +42,7 @@ export default async function ApplicationsPage({ searchParams }: PageProps<"/adm
   let query = supabase
     .from("applications")
     .select(
-      "id, status, submitted_at, test_percent, applicants(full_name), jobs!inner(title, location_label, employer_id, employer_profiles(company_name))",
+      "id, status, submitted_at, applicants(full_name), jobs!inner(title, location_label, employer_id, employer_profiles(company_name))",
       { count: "exact" },
     )
     .neq("status", "in_progress")
@@ -55,7 +54,6 @@ export default async function ApplicationsPage({ searchParams }: PageProps<"/adm
   if (from) query = query.gte("submitted_at", from);
   if (to)
     query = query.lt("submitted_at", new Date(new Date(to).getTime() + 86_400_000).toISOString());
-  if (minScore !== undefined) query = query.gte("test_percent", minScore);
   if (city) query = query.ilike("jobs.location_label", `%${city}%`);
 
   const [{ data: rows, count }, { data: jobs }, { data: employers }] = await Promise.all([
@@ -70,7 +68,6 @@ export default async function ApplicationsPage({ searchParams }: PageProps<"/adm
     ...(employer ? { sponsor: employer } : {}),
     ...(from ? { from } : {}),
     ...(to ? { to } : {}),
-    ...(minScore !== undefined ? { score: String(minScore) } : {}),
     ...(city ? { city } : {}),
   };
   const pageHref = (p: number) =>
@@ -133,19 +130,6 @@ export default async function ApplicationsPage({ searchParams }: PageProps<"/adm
           <label htmlFor="f-to">{t("filterTo")}</label>
           <input id="f-to" type="date" name="to" defaultValue={to} className={select} />
         </div>
-        <div className="space-y-1 text-sm font-medium">
-          <label htmlFor="f-score">{t("filterScore")}</label>
-          <input
-            id="f-score"
-            type="number"
-            name="score"
-            min={0}
-            max={100}
-            defaultValue={minScore}
-            placeholder="0"
-            className={select}
-          />
-        </div>
         <div className="flex items-end gap-2">
           <button type="submit" className={buttonVariants({ size: "touch", className: "flex-1" })}>
             {t("filter")}
@@ -191,12 +175,6 @@ export default async function ApplicationsPage({ searchParams }: PageProps<"/adm
                         })
                       : ""}
                   </span>
-                </span>
-                <span className="text-end">
-                  <span className="block text-lg font-extrabold tabular-nums">
-                    {a.test_percent === null ? "—" : `${Number(a.test_percent)}%`}
-                  </span>
-                  <span className="text-xs text-muted-foreground">{t("score")}</span>
                 </span>
                 <ChevronRight
                   className="size-4 text-muted-foreground rtl:-scale-x-100"

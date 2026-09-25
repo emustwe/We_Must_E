@@ -19,6 +19,8 @@ import { clearToken, issueToken, readTokenHash } from "./token";
 export const VIDEO_BUCKET = "application-videos";
 export const CONSENT_VERSION = "2026-10-v2";
 const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
+// One video answers all the questions; the database allows up to 5 minutes.
+export const VIDEO_MAX_SECONDS = 300;
 
 const db = () => createAdminClient();
 
@@ -49,9 +51,8 @@ export type ApplyView =
   | {
       stage: "video";
       steps: Steps;
-      // All questions are answered in one video, stored against the first.
-      questions: { id: string; prompt: string; maxSeconds: number }[];
-      answerId: string;
+      // The questions the one video answers (the test's, or the video set's).
+      prompts: string[];
       maxSeconds: number;
       recorded: boolean;
     }
@@ -99,7 +100,9 @@ async function stepsFor(app: AppRow): Promise<Steps> {
           .eq("is_active", true)
       : null,
   ]);
-  return { test: (tests?.count ?? 0) > 0, video: (videos?.count ?? 0) > 0 };
+  const test = (tests?.count ?? 0) > 0;
+  // The video page explains the test questions, so it exists with a test too.
+  return { test, video: test || (videos?.count ?? 0) > 0 };
 }
 
 const asOptions = (value: Json) =>
@@ -142,32 +145,28 @@ export async function getApplyView(jobId: string): Promise<ApplyView> {
   }
 
   if (app.current_step === "video") {
-    const [{ data: questions }, { data: videos }] = await Promise.all([
-      db()
-        .from("video_questions")
-        .select("id, prompt, max_seconds")
-        .eq("set_id", app.video_set_id!)
-        .eq("is_active", true)
-        // Same order as the database's "first question" (where the video is stored).
-        .order("position")
-        .order("created_at"),
-      db().from("application_videos").select("question_id").eq("application_id", app.id),
+    // The same questions as the test, explained in one video; without a test,
+    // the live video questions.
+    const [{ data: testQs }, { data: videoQs }, { data: videos }] = await Promise.all([
+      app.test_id
+        ? db().from("test_questions").select("prompt").eq("test_id", app.test_id).order("position")
+        : Promise.resolve({ data: [] as { prompt: string }[] }),
+      app.video_set_id
+        ? db()
+            .from("video_questions")
+            .select("prompt")
+            .eq("set_id", app.video_set_id)
+            .eq("is_active", true)
+            .order("position")
+        : Promise.resolve({ data: [] as { prompt: string }[] }),
+      db().from("application_videos").select("id").eq("application_id", app.id),
     ]);
-    const list = (questions ?? []).map((q) => ({
-      id: q.id,
-      prompt: q.prompt,
-      maxSeconds: q.max_seconds,
-    }));
+    const prompts = (testQs?.length ? testQs : (videoQs ?? [])).map((q) => q.prompt);
     return {
       stage: "video",
       steps,
-      questions: list,
-      answerId: list[0]?.id ?? "",
-      // Same rule as the database: the limits added up, 5 minutes at most.
-      maxSeconds: Math.min(
-        list.reduce((sum, q) => sum + q.maxSeconds, 0),
-        300,
-      ),
+      prompts,
+      maxSeconds: VIDEO_MAX_SECONDS,
       recorded: Boolean(videos?.length),
     };
   }
@@ -251,23 +250,13 @@ export const submitTest = (jobId: string) =>
 // A one-time upload URL for one answer. The path is chosen here, never by the client.
 export async function createVideoUpload(
   jobId: string,
-  questionId: string,
   mime: "video/webm" | "video/mp4" | "video/quicktime",
 ): Promise<ActionResult<{ path: string; signedUrl: string; token: string }>> {
   const current = await currentApplication(jobId);
   if (!current) return fail("sessionExpired");
   if (current.app.current_step !== "video") return fail("wrongStep");
-  const { data: question } = await db()
-    .from("video_questions")
-    .select("id")
-    .eq("id", questionId)
-    .eq("set_id", current.app.video_set_id!)
-    .eq("is_active", true)
-    .maybeSingle();
-  if (!question) return fail("notFound");
-
   const ext = { "video/webm": "webm", "video/mp4": "mp4", "video/quicktime": "mov" }[mime];
-  const path = `${current.app.id}/${questionId}/${randomUUID()}.${ext}`;
+  const path = `${current.app.id}/answer/${randomUUID()}.${ext}`;
   const { data, error } = await db().storage.from(VIDEO_BUCKET).createSignedUploadUrl(path);
   if (error || !data) {
     logError("app-video-upload-url", error);
@@ -277,16 +266,15 @@ export async function createVideoUpload(
 }
 
 // Checks the uploaded file (size, type from the storage metadata and its first
-// bytes) and records it. Invalid files are deleted.
+// bytes) and records it as the application's one video. Invalid files are deleted.
 export async function confirmVideo(
   jobId: string,
-  questionId: string,
   path: string,
   durationSeconds: number,
 ): Promise<ActionResult> {
   const current = await currentApplication(jobId);
   if (!current) return fail("sessionExpired");
-  if (!path.startsWith(`${current.app.id}/${questionId}/`) || path.includes("..")) {
+  if (!path.startsWith(`${current.app.id}/answer/`) || path.includes("..")) {
     return fail("invalidFile");
   }
   const storage = db().storage.from(VIDEO_BUCKET);
@@ -320,9 +308,8 @@ export async function confirmVideo(
   const { data: replaced, error } = await db().rpc("app_record_video", {
     p_job_id: jobId,
     p_token_hash: current.tokenHash,
-    p_question_id: questionId,
     p_storage_path: path,
-    p_duration_seconds: Math.max(1, Math.round(durationSeconds)),
+    p_duration_seconds: Math.min(VIDEO_MAX_SECONDS, Math.max(1, Math.round(durationSeconds))),
     p_size_bytes: size,
     p_mime_type: mime,
   });
@@ -330,7 +317,9 @@ export async function confirmVideo(
     await storage.remove([path]);
     return dbFail("app-record-video", error);
   }
-  if (replaced && replaced !== path) await storage.remove([replaced]);
+  // A new recording replaces the earlier one: delete the old file(s).
+  const old = (replaced ?? []).filter((p) => p !== path);
+  if (old.length) await storage.remove(old);
   return ok(undefined);
 }
 

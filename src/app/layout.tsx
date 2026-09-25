@@ -3,6 +3,7 @@ import { Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { headers } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
+import { ConfirmProvider } from "@/components/ui/confirm-dialog";
 import { Toaster } from "@/components/ui/sonner";
 import { rtlLocales } from "@/i18n/request";
 import "./globals.css";
@@ -46,8 +47,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-full flex-col">
         <NextIntlClientProvider>
-          {children}
-          <Toaster position="top-center" />
+          <ConfirmProvider>
+            {children}
+            <Toaster position="top-center" />
+          </ConfirmProvider>
         </NextIntlClientProvider>
       </body>
     </html>

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { loginAsAdmin } from "./admin-session";
 import { psql, removeObjects } from "./db";
-import { login, signOut, unique } from "./helpers";
+import { acceptConfirms, answerAll, login, signOut, unique } from "./helpers";
 import { PHONE, seedApplication } from "./seed-application";
 
 // Every page must fit a small phone (360 px wide): nothing may stick out
@@ -68,22 +68,18 @@ test("public pages fit a small phone", async ({ page }) => {
 
 test("the application steps fit a small phone", async ({ page }) => {
   test.setTimeout(120_000);
-  page.on("dialog", (d) => d.accept());
+  await acceptConfirms(page);
   const job = psql(`select id from public.jobs where title = '[SAMPLE] Office cleaner (mornings)'`);
   try {
     await page.goto(`/apply/${job}`);
     await page.getByRole("button", { name: "Start application" }).click();
     await page.getByRole("button", { name: "Start the test" }).click();
-    await expect(page.getByText("Question 1 of 3")).toBeVisible();
+    await expect(page.getByText("0 of 3 answered")).toBeVisible();
     await expectFits(page, "apply-test");
-    await page.getByText("Listen and apologise").click();
-    await page.getByRole("button", { name: "Next", exact: true }).click();
-    await page.getByText("8:50").click();
-    await page.getByRole("button", { name: "Next", exact: true }).click();
-    await page.getByLabel("Type your answer").fill("I like it.");
+    await answerAll(page);
     await page.getByRole("button", { name: "Finish test" }).click();
     await expect(
-      page.getByRole("heading", { name: "Answer these questions in one video" }),
+      page.getByRole("heading", { name: "Explain your answers in one video" }),
     ).toBeVisible();
     await expectFits(page, "apply-video");
     // Skip to the survey without recording (the flow itself is covered in apply.spec).

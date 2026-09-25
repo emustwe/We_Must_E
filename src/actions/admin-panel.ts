@@ -160,7 +160,7 @@ export async function createTest(input: unknown): Promise<ActionResult> {
     .insert({
       title: parsed.data.title,
       time_limit_seconds: parsed.data.timeLimitMinutes ? parsed.data.timeLimitMinutes * 60 : null,
-      pass_score: parsed.data.passScore,
+      pass_score: 0, // nothing is scored any more
     })
     .select("id")
     .single();
@@ -178,7 +178,6 @@ export async function updateTest(testId: unknown, input: unknown): Promise<Actio
     .update({
       title: parsed.data.title,
       time_limit_seconds: parsed.data.timeLimitMinutes ? parsed.data.timeLimitMinutes * 60 : null,
-      pass_score: parsed.data.passScore,
     })
     .eq("id", id.data);
   if (error) return dbFail("update-test", error);
@@ -200,9 +199,8 @@ export async function saveTestQuestion(input: unknown): Promise<ActionResult> {
   const parsed = testQuestionSchema.safeParse(input);
   if (!parsed.success) return fail("invalidInput", toFieldErrors(parsed.error));
   const supabase = await admin();
-  const { id, testId, type, prompt, points, options, correctOptions } = parsed.data;
-  const fields = { type, prompt, points, options };
-  let questionId = id;
+  const { id, testId, type, prompt, options } = parsed.data;
+  const fields = { type, prompt, options };
 
   if (id) {
     const { error } = await supabase.from("test_questions").update(fields).eq("id", id);
@@ -215,20 +213,11 @@ export async function saveTestQuestion(input: unknown): Promise<ActionResult> {
       .order("position", { ascending: false })
       .limit(1)
       .maybeSingle();
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("test_questions")
-      .insert({ test_id: testId, ...fields, position: (last?.position ?? -1) + 1 })
-      .select("id")
-      .single();
+      .insert({ test_id: testId, ...fields, position: (last?.position ?? -1) + 1 });
     if (error) return dbFail("create-test-question", error);
-    questionId = data.id;
   }
-  // Answer keys live in a table no client can read; only this RPC writes them.
-  const { error: keyError } = await supabase.rpc("admin_set_answer_key", {
-    p_question_id: questionId!,
-    p_correct_options: correctOptions,
-  });
-  if (keyError) return dbFail("set-answer-key", keyError);
   revalidatePath(`/admin/content/tests/${testId}`);
   return ok(undefined);
 }

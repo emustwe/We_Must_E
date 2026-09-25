@@ -57,22 +57,17 @@ export function SurveyMetaForm({ survey }: { survey?: { id: string; title: strin
   );
 }
 
-export function TestMetaForm({
-  test,
-}: {
-  test?: { id: string; title: string; minutes: number; passScore: number };
-}) {
+export function TestMetaForm({ test }: { test?: { id: string; title: string; minutes: number } }) {
   const t = useTranslations("admin");
   const [title, setTitle] = useState(test?.title ?? "");
   const [minutes, setMinutes] = useState(String(test?.minutes ?? 10));
-  const [pass, setPass] = useState(String(test?.passScore ?? 60));
   const { pending, run } = useRun();
   return (
     <form
-      className="grid gap-2 sm:grid-cols-[1fr_9rem_9rem_auto] sm:items-end"
+      className="grid gap-2 sm:grid-cols-[1fr_12rem_auto] sm:items-end"
       onSubmit={(e) => {
         e.preventDefault();
-        const values = { title, timeLimitMinutes: minutes, passScore: pass };
+        const values = { title, timeLimitMinutes: minutes };
         run(
           () => (test ? updateTest(test.id, values) : createTest(values)),
           test ? t("saved") : undefined,
@@ -86,10 +81,6 @@ export function TestMetaForm({
       <label className="block space-y-2">
         <span className="text-sm font-medium">{t("timeLimitOptional")}</span>
         <Input value={minutes} onChange={(e) => setMinutes(e.target.value)} inputMode="numeric" />
-      </label>
-      <label className="block space-y-2">
-        <span className="text-sm font-medium">{t("passScore")}</span>
-        <Input value={pass} onChange={(e) => setPass(e.target.value)} inputMode="numeric" />
       </label>
       <Button size="touch" disabled={pending}>
         {test ? t("save") : t("newTest")}

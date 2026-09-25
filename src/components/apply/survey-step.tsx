@@ -3,7 +3,7 @@
 import { Check } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { sendPhoneCode, submitApplication, verifyPhoneCode } from "@/actions/apply";
 import { useStepAction } from "@/components/apply/use-step-action";
 import { FormAlert } from "@/components/forms/form-alert";
@@ -51,13 +51,13 @@ export function SurveyStep({ jobId, view }: { jobId: string; view: SurveyView })
     answers: {},
   });
   const [loaded, setLoaded] = useState(false);
-  const [screen, setScreen] = useState(0);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [missing, setMissing] = useState<Set<string>>(new Set());
   const [codeSentTo, setCodeSentTo] = useState<string | null>(null);
   const [verified, setVerified] = useState(!view.requireOtp);
   const [code, setCode] = useState("");
   const [consent, setConsent] = useState(false);
-  const heading = useRef<HTMLHeadingElement>(null);
+  const [consentMissing, setConsentMissing] = useState(false);
 
   useEffect(() => {
     // Restore this tab's draft after hydration (sessionStorage isn't available on the server).
@@ -73,63 +73,70 @@ export function SurveyStep({ jobId, view }: { jobId: string; view: SurveyView })
       // Storage blocked: the draft just isn't kept across reloads.
     }
   }, [draft, jobId, loaded]);
-  useEffect(() => heading.current?.focus(), [screen]);
 
   const questions = view.questions;
-  // Screens: contact, [phone code], each question, consent.
-  const codeScreen = view.requireOtp ? 1 : null;
-  const firstQuestion = view.requireOtp ? 2 : 1;
-  const consentScreen = firstQuestion + questions.length;
-  const question =
-    screen >= firstQuestion && screen < consentScreen ? questions[screen - firstQuestion] : null;
-
   const tr = (key?: string) =>
     key ? (tAll.has(key as never) ? tAll(key as never) : key) : undefined;
 
-  async function next() {
-    setError(null);
-    if (screen === 0) {
-      const parsed = contactSchema.safeParse(draft.contact);
-      if (!parsed.success) {
-        setFieldErrors(
-          Object.fromEntries(parsed.error.issues.map((i) => [String(i.path[0]), i.message])),
-        );
-        return;
-      }
-      setFieldErrors({});
-      if (view.requireOtp && !verified) {
-        const sent = await run(() => sendPhoneCode({ jobId, phone: draft.contact.phone }), {
-          refresh: false,
-        });
-        if (!sent) return;
-        setCodeSentTo(parsed.data.phone);
-      }
-      setScreen(view.requireOtp && !verified ? 1 : firstQuestion);
+  const setContact = (field: keyof Draft["contact"], value: string) =>
+    setDraft((d) => ({ ...d, contact: { ...d.contact, [field]: value } }));
+  const setAnswer = (id: string, value: Answer | undefined) => {
+    setMissing((m) => {
+      const next = new Set(m);
+      next.delete(id);
+      return next;
+    });
+    setDraft((d) => {
+      const answers = { ...d.answers };
+      if (value) answers[id] = value;
+      else delete answers[id];
+      return { ...d, answers };
+    });
+  };
+
+  const scrollTo = (id: string) =>
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  async function sendCode() {
+    const parsed = contactSchema.shape.phone.safeParse(draft.contact.phone);
+    if (!parsed.success) {
+      setFieldErrors((f) => ({ ...f, phone: "validation.phoneInvalid" }));
       return;
     }
-    if (screen === codeScreen) {
-      const ok = await run(() => verifyPhoneCode({ jobId, code }), { refresh: false });
-      if (!ok) return;
-      setVerified(true);
-      setScreen(firstQuestion);
-      return;
-    }
-    if (question && question.required && !answered(question, draft.answers[question.id])) {
-      setError(t("required"));
-      return;
-    }
-    setScreen((s) => s + 1);
+    const sent = await run(() => sendPhoneCode({ jobId, phone: draft.contact.phone }), {
+      refresh: false,
+    });
+    if (sent) setCodeSentTo(parsed.data);
   }
 
-  function back() {
-    setError(null);
-    setScreen((s) => (s === firstQuestion && verified && codeScreen ? 0 : Math.max(0, s - 1)));
+  async function verify() {
+    const ok = await run(() => verifyPhoneCode({ jobId, code }), { refresh: false });
+    if (ok) setVerified(true);
   }
 
+  // Check everything on the page, then send it all at once.
   async function submit() {
+    setError(null);
+    const contact = contactSchema.safeParse(draft.contact);
+    const errors = contact.success
+      ? {}
+      : Object.fromEntries(contact.error.issues.map((i) => [String(i.path[0]), i.message]));
+    setFieldErrors(errors);
+    const open = questions.filter((q) => q.required && !answered(q, draft.answers[q.id]));
+    setMissing(new Set(open.map((q) => q.id)));
+    setConsentMissing(!consent);
+    if (!contact.success) return scrollTo("contact");
+    if (view.requireOtp && !verified) {
+      setError(tAll("errors.phoneUnverified"));
+      return scrollTo("contact");
+    }
+    if (open.length) {
+      setError(t("answerAll", { count: open.length }));
+      return scrollTo(`s-card-${open[0].id}`);
+    }
     if (!consent) {
       setError(tAll("validation.acceptConsent"));
-      return;
+      return scrollTo("consent");
     }
     const answers = Object.fromEntries(
       Object.entries(draft.answers).filter(([id, a]) => {
@@ -143,174 +150,148 @@ export function SurveyStep({ jobId, view }: { jobId: string; view: SurveyView })
     });
   }
 
-  const setContact = (field: keyof Draft["contact"], value: string) =>
-    setDraft((d) => ({ ...d, contact: { ...d.contact, [field]: value } }));
-  const setAnswer = (id: string, value: Answer | undefined) =>
-    setDraft((d) => {
-      const answers = { ...d.answers };
-      if (value) answers[id] = value;
-      else delete answers[id];
-      return { ...d, answers };
-    });
-
   return (
     <div className="flex flex-1 flex-col">
-      {screen === 0 ? (
-        <>
-          <h1
-            ref={heading}
-            tabIndex={-1}
-            className="text-3xl font-extrabold tracking-tight outline-none"
-          >
-            {t("contactTitle")}
-          </h1>
-          <p className="mt-2 text-muted-foreground">{t("contactBody")}</p>
-          <div className="mt-6 space-y-4">
-            <TextField
-              id="fullName"
-              label={t("fullName")}
-              value={draft.contact.fullName}
-              onChange={(v) => setContact("fullName", v)}
-              autoComplete="name"
-              error={tr(fieldErrors.fullName)}
-            />
-            <TextField
-              id="phone"
-              label={t("phone")}
-              hint={t("phoneHint")}
-              value={draft.contact.phone}
-              onChange={(v) => {
-                setContact("phone", v);
-                if (view.requireOtp) setVerified(false);
-              }}
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-              error={tr(fieldErrors.phone)}
-            />
-            <TextField
-              id="email"
-              label={`${t("email")} (${t("optional")})`}
-              value={draft.contact.email}
-              onChange={(v) => setContact("email", v)}
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              error={tr(fieldErrors.email)}
-            />
-          </div>
-        </>
-      ) : null}
+      <h1 className="text-3xl font-extrabold tracking-tight">{t("surveyTitle")}</h1>
+      <p className="mt-2 text-sm text-muted-foreground">{t("surveyOnePage")}</p>
 
-      {screen === codeScreen ? (
-        <>
-          <h1
-            ref={heading}
-            tabIndex={-1}
-            className="text-3xl font-extrabold tracking-tight outline-none"
-          >
-            {t("codeTitle")}
-          </h1>
-          <p className="mt-2 text-muted-foreground">{t("codeBody", { phone: codeSentTo ?? "" })}</p>
-          <div className="mt-6">
-            <TextField
-              id="code"
-              label={t("code")}
-              value={code}
-              onChange={(v) => setCode(v.replace(/\D/g, "").slice(0, 6))}
-              inputMode="numeric"
-              autoComplete="one-time-code"
-            />
-          </div>
-        </>
-      ) : null}
-
-      {question ? (
-        <QuestionScreen
-          key={question.id}
-          headingRef={heading}
-          question={question}
-          number={screen - firstQuestion + 1}
-          total={questions.length}
-          value={draft.answers[question.id]}
-          onChange={(v) => setAnswer(question.id, v)}
+      <section id="contact" className="mt-5 scroll-mt-20 space-y-4 rounded-3xl bg-muted/30 p-4">
+        <h2 className="font-bold">{t("contactTitle")}</h2>
+        <TextField
+          id="fullName"
+          label={t("fullName")}
+          value={draft.contact.fullName}
+          onChange={(v) => setContact("fullName", v)}
+          autoComplete="name"
+          error={tr(fieldErrors.fullName)}
         />
-      ) : null}
+        <TextField
+          id="phone"
+          label={t("phone")}
+          hint={t("phoneHint")}
+          value={draft.contact.phone}
+          onChange={(v) => {
+            setContact("phone", v);
+            if (view.requireOtp) setVerified(false);
+          }}
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          error={tr(fieldErrors.phone)}
+        />
+        {view.requireOtp && !verified ? (
+          <div className="space-y-2">
+            {codeSentTo ? (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  {t("codeBody", { phone: codeSentTo })}
+                </p>
+                <TextField
+                  id="code"
+                  label={t("code")}
+                  value={code}
+                  onChange={(v) => setCode(v.replace(/\D/g, "").slice(0, 6))}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                />
+                <Button
+                  type="button"
+                  size="pill"
+                  disabled={pending || code.length !== 6}
+                  onClick={verify}
+                >
+                  {t("verify")}
+                </Button>
+              </>
+            ) : (
+              <Button
+                type="button"
+                size="pill"
+                variant="secondary"
+                disabled={pending}
+                onClick={sendCode}
+              >
+                {t("sendCode")}
+              </Button>
+            )}
+          </div>
+        ) : null}
+        <TextField
+          id="email"
+          label={`${t("email")} (${t("optional")})`}
+          value={draft.contact.email}
+          onChange={(v) => setContact("email", v)}
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          error={tr(fieldErrors.email)}
+        />
+      </section>
 
-      {screen === consentScreen ? (
-        <>
-          <h1
-            ref={heading}
-            tabIndex={-1}
-            className="text-3xl font-extrabold tracking-tight outline-none"
-          >
-            {t("consentTitle")}
-          </h1>
-          <p className="mt-2 text-muted-foreground">{t("consentBody")}</p>
-          <dl className="mt-5 space-y-1 rounded-3xl bg-muted/60 p-4 text-sm">
-            <div className="flex gap-2">
-              <dt className="text-muted-foreground">{t("fullName")}:</dt>
-              <dd className="font-semibold">{draft.contact.fullName}</dd>
-            </div>
-            <div className="flex gap-2">
-              <dt className="text-muted-foreground">{t("phone")}:</dt>
-              <dd className="font-semibold" dir="ltr">
-                {draft.contact.phone}
-              </dd>
-            </div>
-            {draft.contact.email ? (
-              <div className="flex gap-2">
-                <dt className="text-muted-foreground">{t("email")}:</dt>
-                <dd className="font-semibold">{draft.contact.email}</dd>
-              </div>
-            ) : null}
-          </dl>
-          <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-3xl border-2 p-4">
-            <input
-              type="checkbox"
-              checked={consent}
-              onChange={(e) => setConsent(e.target.checked)}
-              className="peer sr-only"
-            />
-            <span
+      {questions.length ? (
+        <ol className="mt-4 space-y-4">
+          {questions.map((q, i) => (
+            <li
+              key={q.id}
+              id={`s-card-${q.id}`}
               className={cn(
-                "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-md border-2 peer-focus-visible:ring-3 peer-focus-visible:ring-ring/50",
-                consent ? "border-primary bg-primary text-primary-foreground" : "border-border",
+                "scroll-mt-20 rounded-3xl border-2 p-4",
+                missing.has(q.id) ? "border-destructive/60" : "border-transparent bg-muted/30",
               )}
-              aria-hidden="true"
             >
-              {consent ? <Check className="size-4" /> : null}
-            </span>
-            <span className="text-sm font-semibold">{t("consent")}</span>
-          </label>
-          <Link
-            href="/privacy"
-            target="_blank"
-            className="mt-2 text-sm font-semibold text-primary hover:underline"
-          >
-            {t("privacyLink")}
-          </Link>
-        </>
+              <QuestionCard
+                question={q}
+                number={i + 1}
+                value={draft.answers[q.id]}
+                onChange={(v) => setAnswer(q.id, v)}
+              />
+              {missing.has(q.id) ? (
+                <p className="mt-2 text-sm font-medium text-destructive">{t("required")}</p>
+              ) : null}
+            </li>
+          ))}
+        </ol>
       ) : null}
 
-      <div className="mt-auto space-y-3 pt-8">
+      <section
+        id="consent"
+        className={cn(
+          "mt-4 scroll-mt-20 rounded-3xl border-2 p-4",
+          consentMissing && !consent ? "border-destructive/60" : "border-transparent bg-muted/30",
+        )}
+      >
+        <label className="flex cursor-pointer items-start gap-3">
+          <input
+            type="checkbox"
+            checked={consent}
+            onChange={(e) => setConsent(e.target.checked)}
+            className="peer sr-only"
+          />
+          <span
+            className={cn(
+              "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-md border-2 peer-focus-visible:ring-3 peer-focus-visible:ring-ring/50",
+              consent ? "border-primary bg-primary text-primary-foreground" : "border-border",
+            )}
+            aria-hidden="true"
+          >
+            {consent ? <Check className="size-4" /> : null}
+          </span>
+          <span className="text-sm font-semibold">{t("consent")}</span>
+        </label>
+        <Link
+          href="/privacy"
+          target="_blank"
+          className="mt-2 inline-block text-sm font-semibold text-primary hover:underline"
+        >
+          {t("privacyLink")}
+        </Link>
+      </section>
+
+      <div className="mt-6 space-y-3 pb-2">
         <FormAlert message={error} />
-        <div className="flex gap-3">
-          {screen > 0 ? (
-            <Button variant="secondary" size="touch" disabled={pending} onClick={back}>
-              {t("previous")}
-            </Button>
-          ) : null}
-          {screen === consentScreen ? (
-            <Button size="touch" className="flex-1" disabled={pending} onClick={submit}>
-              {pending ? t("saving") : t("submit")}
-            </Button>
-          ) : (
-            <Button size="touch" className="flex-1" disabled={pending || !loaded} onClick={next}>
-              {screen === codeScreen ? t("verify") : t("next")}
-            </Button>
-          )}
-        </div>
+        <Button size="touch" className="w-full" disabled={pending || !loaded} onClick={submit}>
+          {pending ? t("saving") : t("submit")}
+        </Button>
       </div>
     </div>
   );
@@ -359,38 +340,30 @@ function TextField({
   );
 }
 
-function QuestionScreen({
+function QuestionCard({
   question,
   number,
-  total,
   value,
   onChange,
-  headingRef,
 }: {
   question: SurveyQuestionView;
   number: number;
-  total: number;
   value: Answer | undefined;
   onChange: (value: Answer | undefined) => void;
-  headingRef: React.RefObject<HTMLHeadingElement | null>;
 }) {
   const t = useTranslations("apply");
   const selected = value && "options" in value ? value.options : [];
   return (
     <>
-      <p className="text-sm font-semibold text-muted-foreground">
-        {t("questionOf", { current: number, total })}
-        {question.required ? "" : ` · ${t("optional")}`}
-      </p>
-      <h1
-        ref={headingRef}
-        tabIndex={-1}
-        className="mt-2 text-2xl font-extrabold tracking-tight outline-none"
-      >
+      <h2 className="font-bold">
+        <span className="text-muted-foreground">{number}. </span>
         {question.prompt}
-      </h1>
+        {question.required ? null : (
+          <span className="ms-1 text-sm font-normal text-muted-foreground">({t("optional")})</span>
+        )}
+      </h2>
       {question.type === "single_choice" || question.type === "multi_choice" ? (
-        <fieldset className="mt-5 space-y-2.5">
+        <fieldset className="mt-3 space-y-2">
           <legend className="mb-2 text-sm text-muted-foreground">
             {question.type === "single_choice" ? t("pickOne") : t("pickMany")}
           </legend>

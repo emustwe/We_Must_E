@@ -132,6 +132,7 @@ export default async function AdminJobsPage({ searchParams }: PageProps<"/admin/
                       variant={next === "removed" ? "ghost" : "secondary"}
                       className={next === "removed" ? "text-destructive" : undefined}
                       confirm={next === "removed" ? t("removeConfirm") : undefined}
+                      danger={next === "removed"}
                       action={adminSetJobStatus.bind(null, { jobId: job.id, status: next })}
                     >
                       {actionLabel[next]}

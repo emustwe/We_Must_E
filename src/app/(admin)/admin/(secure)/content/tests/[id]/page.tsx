@@ -13,22 +13,19 @@ export default async function TestEditorPage({ params }: PageProps<"/admin/conte
   if (!idSchema.safeParse(id).success) notFound();
   const t = await getTranslations("admin");
   const supabase = await createClient();
-  const [{ data: test }, { data: questions }, { data: keys }] = await Promise.all([
+  const [{ data: test }, { data: questions }] = await Promise.all([
     supabase
       .from("tests")
-      .select("id, title, is_active, time_limit_seconds, pass_score")
+      .select("id, title, is_active, time_limit_seconds")
       .eq("id", id)
       .maybeSingle(),
     supabase
       .from("test_questions")
-      .select("id, type, points, prompt, options")
+      .select("id, type, prompt, options")
       .eq("test_id", id)
       .order("position"),
-    // Answer keys are only readable through this admin-only RPC.
-    supabase.rpc("admin_get_answer_keys", { p_test_id: id }),
   ]);
   if (!test) notFound();
-  const keyFor = new Map((keys ?? []).map((k) => [k.question_id, k.correct_options]));
   return (
     <div className="space-y-5">
       <Link
@@ -51,7 +48,6 @@ export default async function TestEditorPage({ params }: PageProps<"/admin/conte
             id: test.id,
             title: test.title,
             minutes: Math.round((test.time_limit_seconds ?? 0) / 60),
-            passScore: Number(test.pass_score),
           }}
         />
       </Card>
@@ -63,8 +59,6 @@ export default async function TestEditorPage({ params }: PageProps<"/admin/conte
           prompt: q.prompt,
           options: Array.isArray(q.options) ? q.options.map(String) : [],
           type: q.type,
-          points: q.points,
-          correctOptions: keyFor.get(q.id) ?? [],
         }))}
       />
     </div>

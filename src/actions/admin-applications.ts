@@ -8,7 +8,7 @@ import { logError } from "@/lib/log";
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { createClient } from "@/lib/supabase/server";
 import { toFieldErrors } from "@/lib/validations/auth";
-import { gradeSchema, reviewSchema, videoViewSchema } from "@/lib/validations/admin";
+import { reviewSchema, videoViewSchema } from "@/lib/validations/admin";
 
 const VIDEO_URL_SECONDS = 300;
 
@@ -43,38 +43,19 @@ export async function reviewApplication(input: unknown): Promise<ActionResult> {
   return ok(undefined);
 }
 
-export async function gradeAnswer(input: unknown): Promise<ActionResult> {
-  const parsed = gradeSchema.safeParse(input);
-  if (!parsed.success) return fail("invalidInput");
-  const supabase = await admin();
-  const { applicationId, questionId, points } = parsed.data;
-  const { error } = await supabase.rpc("admin_grade_answer", {
-    p_application_id: applicationId,
-    p_question_id: questionId,
-    p_points: points,
-  });
-  if (error) return dbFail("admin-grade-answer", error);
-  revalidatePath(`/admin/applications/${applicationId}`);
-  return ok(undefined);
-}
-
 // A 5-minute link to one video. The view is logged before the link is made.
 export async function getVideoUrl(input: unknown): Promise<ActionResult<{ url: string }>> {
   const parsed = videoViewSchema.safeParse(input);
   if (!parsed.success) return fail("invalidInput");
   const supabase = await admin();
-  const { applicationId, questionId } = parsed.data;
+  const { videoId } = parsed.data;
   const { data: video } = await supabase
     .from("application_videos")
     .select("storage_path")
-    .eq("application_id", applicationId)
-    .eq("question_id", questionId)
+    .eq("id", videoId)
     .maybeSingle();
   if (!video) return fail("notFound");
-  const { error: logErr } = await supabase.rpc("log_video_view", {
-    p_application_id: applicationId,
-    p_question_id: questionId,
-  });
+  const { error: logErr } = await supabase.rpc("log_video_view", { p_video_id: videoId });
   if (logErr) return dbFail("admin-video-view", logErr);
   const { data, error } = await supabase.storage
     .from("application-videos")

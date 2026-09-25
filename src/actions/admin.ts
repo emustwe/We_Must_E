@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/server";
 import { toFieldErrors } from "@/lib/validations/auth";
 import {
   createEmployerSchema,
+  ecoinSchema,
   employerStatusSchema,
   idSchema,
   sponsorPasswordSchema,
@@ -197,4 +198,20 @@ export async function setEmployerStatus(input: unknown): Promise<ActionResult> {
   revalidatePath("/admin/sponsors", "layout");
   revalidatePath("/");
   return ok(undefined);
+}
+
+// Adds (or with a negative amount, takes back) E-coins. Audited in the database.
+export async function addEcoins(input: unknown): Promise<ActionResult<{ balance: number }>> {
+  const parsed = ecoinSchema.safeParse(input);
+  if (!parsed.success) return fail("invalidInput");
+  await requireAdminMfa();
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("admin_add_ecoins", {
+    p_employer_id: parsed.data.employerId,
+    p_amount: parsed.data.amount,
+    p_note: parsed.data.note,
+  });
+  if (error) return dbFail("admin-add-ecoins", error);
+  revalidatePath(`/admin/sponsors/${parsed.data.employerId}`);
+  return ok({ balance: data });
 }

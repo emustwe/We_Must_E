@@ -1,13 +1,13 @@
 import { expect, test } from "@playwright/test";
 import { loginAsAdmin } from "./admin-session";
 import { psql } from "./db";
-import { unique } from "./helpers";
+import { acceptConfirms, unique } from "./helpers";
 
-test("an admin builds a test with written and multi-answer questions, and a video question set", async ({
+test("an admin builds an unscored test with written and multi-answer questions, and a video question set", async ({
   page,
 }) => {
   test.setTimeout(120_000);
-  page.on("dialog", (dialog) => dialog.accept());
+  await acceptConfirms(page);
   const testTitle = `E2E test ${unique()}`;
   const setTitle = `E2E videos ${unique()}`;
   // Whatever set is live now is put back afterwards.
@@ -26,42 +26,40 @@ test("an admin builds a test with written and multi-answer questions, and a vide
     await tests.getByRole("button", { name: "New test" }).click();
     await expect(page).toHaveURL(/\/admin\/content\/tests\/[0-9a-f-]{36}$/);
 
-    // Multi-choice with two correct answers, worth 2 points.
+    // Multi-choice: no "correct" answers and no points (nothing is scored).
     await page.getByRole("button", { name: "Add question" }).click();
-    await page.getByLabel("Question", { exact: true }).fill("Which of these are safe at work?");
+    await expect(
+      page.getByText("There are no right or wrong answers: applicants answer freely"),
+    ).toBeVisible();
+    await page.getByLabel("Question", { exact: true }).fill("Which of these do you enjoy?");
     await page.getByLabel("Answer type").selectOption("multi_choice");
-    await page.getByLabel("Points").fill("2");
-    await page.getByPlaceholder("Answer 1").fill("Gloves");
-    await page.getByPlaceholder("Answer 2").fill("Running");
+    await expect(page.getByLabel("Points")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Mark as the correct answer" })).toHaveCount(0);
+    await page.getByPlaceholder("Answer 1").fill("Cooking");
+    await page.getByPlaceholder("Answer 2").fill("Driving");
     await page.getByRole("button", { name: "Add answer" }).click();
-    await page.getByPlaceholder("Answer 3").fill("Goggles");
-    const marks = page.getByRole("button", { name: "Mark as the correct answer" });
-    await marks.nth(0).click();
-    await marks.nth(2).click();
+    await page.getByPlaceholder("Answer 3").fill("Cleaning");
     await page.getByRole("button", { name: "Save", exact: true }).last().click();
-    await expect(page.getByText("✓ Gloves")).toBeVisible();
-    await expect(page.getByText("✓ Goggles")).toBeVisible();
-    await expect(page.getByText("2 points")).toBeVisible();
+    await expect(page.getByText("Which of these do you enjoy?")).toBeVisible();
 
-    // A written question: no options, graded by an admin later.
+    // A written question: no options.
     await page.getByRole("button", { name: "Add question" }).click();
     await page.getByLabel("Question", { exact: true }).fill("Describe your last job.");
     await page.getByLabel("Answer type").selectOption("long_text");
-    await expect(page.getByText("Written answers are graded by an admin")).toBeVisible();
     await page.getByRole("button", { name: "Save", exact: true }).last().click();
     await expect(page.getByText("Describe your last job.")).toBeVisible();
 
-    // Wait until the editor has closed and both questions are stored.
+    // Wait until the editor has closed and both questions are stored, without keys.
     await expect(page.getByRole("button", { name: "Add question" })).toBeVisible();
     await expect
       .poll(() =>
         psql(
-          `select string_agg(q.type || ':' || q.points || ':' || coalesce(k.correct_options::text, '-'), ',' order by q.position)
+          `select string_agg(q.type || ':' || jsonb_array_length(q.options) || ':' || coalesce(k.correct_options::text, '-'), ',' order by q.position)
          from public.test_questions q join public.tests t on t.id = q.test_id
          left join public.test_answer_keys k on k.question_id = q.id where t.title = '${testTitle}'`,
         ),
       )
-      .toBe("multi_choice:2:{0,2},long_text:1:-");
+      .toBe("multi_choice:3:-,long_text:0:-");
     expect(
       psql(`select time_limit_seconds is null from public.tests where title = '${testTitle}'`),
     ).toBe("t");
