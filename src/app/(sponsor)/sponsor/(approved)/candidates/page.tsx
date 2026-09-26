@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { btn, PageHeader } from "@/components/admin/wm";
 import { CandidateRow } from "@/components/sponsors/candidate-row";
-import { buttonVariants } from "@/components/ui/button";
+import { Crumbs } from "@/components/sponsors/sponsor-shell";
 import { createClient } from "@/lib/supabase/server";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -24,19 +25,18 @@ export default async function SponsorCandidatesPage({
   const locked = Number(rows?.[0]?.locked_total ?? 0);
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight">{t("candidatesTitle")}</h1>
-        <p className="mt-1 text-muted-foreground">
-          {locked ? t("lockedCount", { count: locked }) : t("candidatesBody")}
-        </p>
-      </div>
+    <>
+      <Crumbs items={[{ label: t("candidatesTitle") }]} />
+      <PageHeader
+        title={t("candidatesTitle")}
+        body={locked ? t("lockedCount", { count: locked }) : t("candidatesBody")}
+      />
       {!rows?.length ? (
-        <p className="rounded-[2rem] border-2 border-dashed p-8 text-center text-sm text-muted-foreground">
+        <p className="m-0 rounded-3xl border-[1.5px] border-dashed border-[#C9D1DD] bg-white p-8 text-center text-sm font-medium text-wm-caption">
           {t("noCandidates")}
         </p>
       ) : (
-        <ul className="space-y-2.5">
+        <ul className="m-0 grid list-none gap-2.5 p-0 lg:grid-cols-2">
           {rows.map((c) => (
             <li key={c.application_id}>
               <CandidateRow
@@ -56,7 +56,7 @@ export default async function SponsorCandidatesPage({
           {page > 0 ? (
             <Link
               href={`/sponsor/candidates?page=${page - 1}`}
-              className={buttonVariants({ size: "pill", variant: "secondary" })}
+              className={btn("secondary", "sm")}
             >
               {t("prev")}
             </Link>
@@ -64,13 +64,13 @@ export default async function SponsorCandidatesPage({
           {(page + 1) * 20 < total ? (
             <Link
               href={`/sponsor/candidates?page=${page + 1}`}
-              className={buttonVariants({ size: "pill", variant: "secondary" })}
+              className={btn("secondary", "sm")}
             >
               {t("next")}
             </Link>
           ) : null}
         </nav>
       ) : null}
-    </div>
+    </>
   );
 }

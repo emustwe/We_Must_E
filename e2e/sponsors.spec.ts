@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { loginAsAdmin } from "./admin-session";
 import { createUser, psql } from "./db";
 import { acceptConfirms, answerAll, login, signOut, unique } from "./helpers";
@@ -86,6 +86,7 @@ test("admin creates a sponsor with a password, emails it, changes it, suspends a
   await expect(page).toHaveURL(/\/sponsor$/);
   await expect(page.getByRole("heading", { name: "Post your first job" })).toBeVisible();
   // The sponsor can change their own logo too.
+  await openSponsorMenu(page);
   await page
     .getByRole("navigation", { name: "Sponsor" })
     .getByRole("link", { name: "Account" })
@@ -158,6 +159,7 @@ test("a sponsor deletes their account", async ({ page }) => {
   );
   await login(page, email, password);
   await expect(page).toHaveURL(/\/sponsor$/);
+  await openSponsorMenu(page);
   await page
     .getByRole("navigation", { name: "Sponsor" })
     .getByRole("link", { name: "Account" })
@@ -175,3 +177,9 @@ test("a sponsor deletes their account", async ({ page }) => {
   await login(page, email, password);
   await expect(page.getByText("Email or password is incorrect.")).toBeVisible();
 });
+
+// The sponsor sidebar is a drawer on phones.
+async function openSponsorMenu(page: Page) {
+  const menu = page.getByRole("button", { name: "Open menu" });
+  if (await menu.isVisible()) await menu.click();
+}

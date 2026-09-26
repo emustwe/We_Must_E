@@ -765,3 +765,13 @@
   width: 14px;
   height: 14px;
 }
+.wm-exact {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #2457f5;
+  border: 3px solid #ffffff;
+  box-sizing: border-box;
+  box-shadow: 0 2px 8px rgba(36, 87, 245, 0.5);
+}

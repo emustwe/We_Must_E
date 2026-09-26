@@ -1,11 +1,11 @@
 "use client";
 
-import { XCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { closeJob } from "@/actions/employer";
-import { Button } from "@/components/ui/button";
+import { btn } from "@/components/admin/wm";
+import { WmIcon } from "@/components/map/wm-icons";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import type { JobStatus } from "@/lib/jobs/meta";
 
@@ -18,11 +18,10 @@ export function JobStatusControls({ jobId, status }: { jobId: string; status: Jo
 
   if (status !== "published") return null;
   return (
-    <Button
-      variant="ghost"
-      size="pill"
+    <button
+      type="button"
       disabled={pending}
-      className="text-destructive"
+      className={btn("danger")}
       onClick={async () => {
         if (
           !(await ask({
@@ -40,8 +39,8 @@ export function JobStatusControls({ jobId, status }: { jobId: string; status: Jo
         });
       }}
     >
-      <XCircle className="size-4" aria-hidden="true" />
+      <WmIcon name="close" size={17} stroke={2.2} />
       {t("close")}
-    </Button>
+    </button>
   );
 }

@@ -1,11 +1,12 @@
-import { ArrowLeft, Lock, Mail, MessageCircle, Phone, ShieldAlert } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
-import { getCandidateCvUrl, getCandidateVideoUrl } from "@/actions/sponsor-candidates";
+import { getCandidateCvUrl } from "@/actions/sponsor-candidates";
 import { CvButton } from "@/components/admin/review-panel";
-import { VideoViewer } from "@/components/admin/application-review";
+import { Avatar, btn } from "@/components/admin/wm";
+import { WmIcon } from "@/components/map/wm-icons";
+import { CandidateVideo, CopyButton } from "@/components/sponsors/candidate-media";
+import { Crumbs } from "@/components/sponsors/sponsor-shell";
 import { UnlockButton } from "@/components/sponsors/unlock-button";
 import { getEmployerAccount } from "@/lib/auth/employer";
 import { createClient } from "@/lib/supabase/server";
@@ -94,6 +95,8 @@ export default async function CandidatePage({
   const t = await getTranslations("candidate");
   const ta = await getTranslations("apply");
   const te = await getTranslations("ecoins");
+  const tj = await getTranslations("employerJob");
+  const tu = await getTranslations("sponsorUi");
   const format = await getFormatter();
   const supabase = await createClient();
 
@@ -103,51 +106,67 @@ export default async function CandidatePage({
   const summary = summaryRows?.[0];
   if (!summary || summary.job_id !== id) notFound();
 
-  const back = (
-    <Link
-      href={`/sponsor/jobs/${id}`}
-      className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground"
-    >
-      <ArrowLeft className="size-4 rtl:-scale-x-100" aria-hidden="true" />
-      {summary.job_title}
-    </Link>
+  const crumbs = (
+    <Crumbs
+      items={[
+        { label: tj("back"), href: "/sponsor" },
+        { label: summary.job_title, href: `/sponsor/jobs/${id}` },
+        { label: summary.full_name },
+      ]}
+    />
   );
   const shared = t("approvedOn", {
     date: format.dateTime(new Date(summary.reviewed_at), { dateStyle: "medium" }),
   });
+  const identity = (
+    <div className="flex items-center gap-4">
+      <Avatar name={summary.full_name} size={64} />
+      <div className="flex min-w-0 flex-col gap-1">
+        <h1 className="m-0 text-[26px] font-extrabold tracking-[-0.7px] break-words">
+          {summary.full_name}
+        </h1>
+        <span className="text-[13px] font-medium text-wm-slate">{shared}</span>
+      </div>
+    </div>
+  );
+  const approvedPill = (
+    <span className="inline-flex h-8 items-center gap-1.5 self-start rounded-full bg-wm-ok-bg px-3 text-[13px] font-bold text-wm-ok">
+      <WmIcon name="shieldCheck" size={15} stroke={2.2} />
+      {tu("approvedByWemuste")}
+    </span>
+  );
 
   // ------------------------------------------------------------ locked
   if (!summary.unlocked) {
     const balance = employer?.ecoin_balance ?? 0;
     return (
-      <div className="animate-in-fast mx-auto max-w-2xl space-y-5 pt-2">
-        {back}
-        <section className="shadow-float rounded-[2rem] bg-card p-5 sm:p-7">
-          <h1 className="text-2xl font-extrabold tracking-tight break-words">
-            {summary.full_name}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">{shared}</p>
-          <div className="relative mt-5 overflow-hidden rounded-3xl">
+      <>
+        {crumbs}
+        <div className="flex flex-col gap-4 xl:flex-row">
+          <div className="box-border flex w-full shrink-0 flex-col gap-5 self-start rounded-3xl bg-white p-6 shadow-wm-1 xl:w-[440px]">
+            {identity}
+            {approvedPill}
+          </div>
+          <div className="relative min-w-0 grow overflow-hidden rounded-3xl bg-white shadow-wm-1">
             {/* A blurred stand-in: no real data is sent until the candidate is opened. */}
-            <div aria-hidden="true" className="space-y-3 p-4 blur-sm select-none">
-              <div className="h-12 rounded-2xl bg-muted" />
-              <div className="h-4 w-3/4 rounded bg-muted" />
-              <div className="h-4 w-1/2 rounded bg-muted" />
-              <div className="aspect-video rounded-2xl bg-muted" />
-              <div className="h-4 w-2/3 rounded bg-muted" />
-              <div className="h-4 w-5/6 rounded bg-muted" />
+            <div aria-hidden="true" className="flex flex-col gap-3 p-6 blur-sm select-none">
+              <div className="h-[300px] rounded-[18px] bg-wm-mist" />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="h-[150px] rounded-[18px] bg-wm-mist" />
+                <div className="h-[150px] rounded-[18px] bg-wm-mist" />
+              </div>
             </div>
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/60 p-6 text-center">
-              <span className="flex size-12 items-center justify-center rounded-full bg-brand-accent/20">
-                <Lock className="size-5" aria-hidden="true" />
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white/70 p-6 text-center">
+              <span className="flex size-14 items-center justify-center rounded-full bg-wm-tint text-wm-blue">
+                <WmIcon name="lock" size={22} stroke={2.2} />
               </span>
-              <h2 className="text-lg font-extrabold">{te("lockedTitle")}</h2>
-              <p className="max-w-sm text-sm text-muted-foreground">{te("lockedBody")}</p>
+              <h2 className="m-0 text-lg font-extrabold">{te("lockedTitle")}</h2>
+              <p className="m-0 max-w-sm text-sm font-medium text-wm-slate">{te("lockedBody")}</p>
               <UnlockButton applicationId={appId} balance={balance} />
             </div>
           </div>
-        </section>
-      </div>
+        </div>
+      </>
     );
   }
 
@@ -158,134 +177,149 @@ export default async function CandidatePage({
   const c = data as Candidate | null;
   if (error || !c) notFound();
   const whatsapp = `https://wa.me/${c.phone.replace(/^\+/, "")}`;
+  const length = (s: number) => `0:${String(Math.min(59, Math.round(s))).padStart(2, "0")}`;
+  const [first, ...rest] = c.videos;
+  const prompt = (v: Candidate["videos"][number], i: number) =>
+    v.prompt ?? (c.videos.length === 1 ? c.video_questions.join("\n") || null : c.video_questions[i] ?? null);
 
   return (
-    <div className="animate-in-fast mx-auto max-w-2xl space-y-5 pt-2">
-      {back}
-      <section className="shadow-float rounded-[2rem] bg-card p-5 sm:p-7">
-        <h1 className="text-2xl font-extrabold tracking-tight break-words">{c.full_name}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{shared}</p>
-        <div className="mt-4 grid gap-2 sm:grid-cols-3">
-          <a
-            href={`tel:${c.phone}`}
-            className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-primary px-4 font-semibold text-primary-foreground"
-          >
-            <Phone className="size-4" aria-hidden="true" />
-            {t("call")}
-          </a>
-          <a
-            href={whatsapp}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-muted px-4 font-semibold"
-          >
-            <MessageCircle className="size-4" aria-hidden="true" />
-            {t("whatsapp")}
-          </a>
-          {c.email ? (
-            <a
-              href={`mailto:${c.email}`}
-              className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-muted px-4 font-semibold"
-            >
-              <Mail className="size-4" aria-hidden="true" />
-              {t("email")}
-            </a>
-          ) : null}
-        </div>
-        <p className="mt-3 text-sm break-all text-muted-foreground" dir="ltr">
-          {c.phone}
-          {c.email ? ` · ${c.email}` : ""}
-        </p>
-      </section>
-
-      {Object.keys(c.profile ?? {}).length || c.has_cv ? (
-        <section className="shadow-float rounded-3xl bg-card p-5">
-          <h2 className="mb-3 text-xl font-extrabold">{t("profile")}</h2>
-          <dl className="divide-y">
-            {PROFILE_ORDER.filter((k) => c.profile?.[k] !== undefined).map((k) => (
-              <div key={k} className="py-3 first:pt-0 last:pb-0">
-                <dt className="text-sm text-muted-foreground">{ta(`profile.${k}` as never)}</dt>
-                <dd className="mt-0.5 font-semibold whitespace-pre-line">
-                  {k === "gender"
-                    ? ta(`genderOption.${c.profile[k]}` as never)
-                    : k === "englishLevel"
-                      ? ta(`englishOption.${c.profile[k]}` as never)
-                      : String(c.profile[k])}
-                </dd>
-              </div>
-            ))}
-          </dl>
-          {c.has_cv ? (
-            <div className="mt-4">
-              <CvButton
-                applicationId={c.id}
-                load={getCandidateCvUrl}
-                className="inline-flex h-11 items-center gap-2 rounded-2xl bg-muted px-4 text-sm font-semibold"
-              />
-            </div>
-          ) : null}
-        </section>
-      ) : null}
-
-      {c.test.length ? (
-        <section className="shadow-float rounded-3xl bg-card p-5">
-          <h2 className="mb-3 text-xl font-extrabold">{t("testAnswers")}</h2>
-          <dl className="divide-y">
-            {c.test.map((q, i) => (
-              <div key={i} className="py-3 first:pt-0 last:pb-0">
-                <dt className="text-sm text-muted-foreground">
-                  {i + 1}. {q.prompt}
-                </dt>
-                <dd className="mt-0.5 font-semibold whitespace-pre-line">{answerText(q)}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-      ) : null}
-
-      {c.videos.length ? (
-        <section className="shadow-float space-y-4 rounded-3xl bg-card p-5">
-          <div>
-            <h2 className="text-xl font-extrabold">{t("videos")}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{t("videoAnswersTo")}</p>
-            <ol className="mt-2 list-decimal space-y-1 ps-5 text-sm font-semibold">
-              {c.video_questions.map((prompt, i) => (
-                <li key={i}>{prompt}</li>
-              ))}
-            </ol>
-          </div>
-          <p className="text-sm text-muted-foreground">{t("videoNote")}</p>
-          {c.videos.map((v, i) => (
-            <div key={v.id} className="space-y-2">
-              {v.prompt ? (
-                <p className="text-sm font-semibold whitespace-pre-line">
-                  {i + 1}. {v.prompt}
-                </p>
+    <>
+      {crumbs}
+      <div className="flex flex-col gap-4 xl:flex-row">
+        <div className="box-border flex w-full shrink-0 flex-col gap-5 self-start rounded-3xl bg-white p-6 shadow-wm-1 xl:w-[440px]">
+          {identity}
+          {approvedPill}
+          <div className="flex flex-col gap-2.5">
+            <span className="text-sm font-extrabold">{tu("contact")}</span>
+            <div className="flex flex-wrap gap-2">
+              <a href={`tel:${c.phone}`} className={btn("primary")}>
+                <WmIcon name="phone" size={17} stroke={2.2} />
+                {t("call")}
+              </a>
+              <a href={whatsapp} target="_blank" rel="noopener noreferrer" className={btn("secondary")}>
+                <WmIcon name="external" size={17} stroke={2.2} />
+                {t("whatsapp")}
+              </a>
+              {c.email ? (
+                <a href={`mailto:${c.email}`} className={btn("secondary")}>
+                  <WmIcon name="mail" size={17} stroke={2.2} />
+                  {t("email")}
+                </a>
               ) : null}
-              <VideoViewer videoId={v.id} load={getCandidateVideoUrl} />
             </div>
-          ))}
-        </section>
-      ) : null}
+          </div>
+          <div className="flex flex-col gap-2">
+            <ContactRow icon="phone" label={tu("phone")} copy={tu("copyPhone")} value={c.phone} />
+            {c.email ? (
+              <ContactRow icon="mail" label={t("email")} copy={tu("copyEmail")} value={c.email} />
+            ) : null}
+          </div>
+          {c.has_cv ? (
+            <CvButton applicationId={c.id} load={getCandidateCvUrl} className={btn("secondary")} />
+          ) : null}
+          <div className="flex items-start gap-2.5 rounded-2xl bg-wm-land p-3.5 text-xs font-semibold text-wm-slate">
+            <span className="shrink-0 text-wm-trust">
+              <WmIcon name="shieldCheck" size={16} stroke={2.2} />
+            </span>
+            {t("privacy")}
+          </div>
+        </div>
 
-      {c.survey.length ? (
-        <section className="shadow-float rounded-3xl bg-card p-5">
-          <h2 className="mb-3 text-xl font-extrabold">{t("answers")}</h2>
-          <dl className="divide-y">
-            {c.survey.map((q, i) => (
-              <div key={i} className="py-3 first:pt-0 last:pb-0">
-                <dt className="text-sm text-muted-foreground">{q.prompt}</dt>
-                <dd className="mt-0.5 font-semibold whitespace-pre-line">{answerText(q)}</dd>
+        <div className="flex min-w-0 grow flex-col gap-4">
+          {first ? (
+            <section className="flex flex-col gap-4 rounded-3xl bg-white p-6 shadow-wm-1">
+              <div className="flex flex-col gap-1">
+                <h2 className="m-0 text-lg font-extrabold tracking-[-0.3px]">{t("videos")}</h2>
+                <span className="text-[13px] font-medium text-wm-slate">{t("videoNote")}</span>
               </div>
-            ))}
-          </dl>
-        </section>
-      ) : null}
+              <CandidateVideo videoId={first.id} number={1} prompt={prompt(first, 0)} length={length(first.seconds)} large />
+              {rest.length ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {rest.map((v, i) => (
+                    <CandidateVideo
+                      key={v.id}
+                      videoId={v.id}
+                      number={i + 2}
+                      prompt={prompt(v, i + 1)}
+                      length={length(v.seconds)}
+                    />
+                  ))}
+                </div>
+              ) : null}
+            </section>
+          ) : null}
 
-      <p className="flex items-start gap-2 rounded-2xl bg-muted/60 p-4 text-sm text-muted-foreground">
-        <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-        {t("privacy")}
-      </p>
+          {Object.keys(c.profile ?? {}).length ? (
+            <section className="flex flex-col gap-3 rounded-3xl bg-white p-6 shadow-wm-1">
+              <h2 className="m-0 text-lg font-extrabold tracking-[-0.3px]">{t("profile")}</h2>
+              <dl className="m-0 grid gap-x-6 sm:grid-cols-2">
+                {PROFILE_ORDER.filter((k) => c.profile?.[k] !== undefined).map((k) => (
+                  <div key={k} className="border-b border-wm-line py-3">
+                    <dt className="text-xs font-semibold text-wm-slate">{ta(`profile.${k}` as never)}</dt>
+                    <dd className="m-0 mt-0.5 text-sm font-bold whitespace-pre-line">
+                      {k === "gender"
+                        ? ta(`genderOption.${c.profile[k]}` as never)
+                        : k === "englishLevel"
+                          ? ta(`englishOption.${c.profile[k]}` as never)
+                          : String(c.profile[k])}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          ) : null}
+
+          <AnswerList title={t("testAnswers")} items={c.test} numbered />
+          <AnswerList title={t("answers")} items={c.survey} />
+        </div>
+      </div>
+    </>
+  );
+}
+
+function ContactRow({
+  icon,
+  label,
+  value,
+  copy,
+}: {
+  icon: "phone" | "mail";
+  label: string;
+  value: string;
+  copy: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-2xl bg-wm-land px-3.5 py-2.5">
+      <span className="shrink-0 text-wm-slate">
+        <WmIcon name={icon} size={17} stroke={2.1} />
+      </span>
+      <span className="flex min-w-0 grow flex-col">
+        <span className="text-[11px] font-semibold text-wm-slate">{label}</span>
+        <span className="text-sm font-bold break-all" dir="ltr">
+          {value}
+        </span>
+      </span>
+      <CopyButton value={value} label={copy} />
     </div>
+  );
+}
+
+function AnswerList({ title, items, numbered }: { title: string; items: Item[]; numbered?: boolean }) {
+  if (!items.length) return null;
+  return (
+    <section className="flex flex-col gap-3 rounded-3xl bg-white p-6 shadow-wm-1">
+      <h2 className="m-0 text-lg font-extrabold tracking-[-0.3px]">{title}</h2>
+      <dl className="m-0 flex flex-col">
+        {items.map((q, i) => (
+          <div key={i} className="border-b border-wm-line py-3 last:border-0">
+            <dt className="text-[13px] font-semibold whitespace-pre-line text-wm-slate">
+              {numbered ? `${i + 1}. ` : ""}
+              {q.prompt}
+            </dt>
+            <dd className="m-0 mt-1 text-sm font-bold whitespace-pre-line">{answerText(q)}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 }

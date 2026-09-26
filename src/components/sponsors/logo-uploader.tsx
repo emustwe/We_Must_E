@@ -1,13 +1,14 @@
 "use client";
 
-import { ImagePlus, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useRef, useTransition } from "react";
 import { toast } from "sonner";
 import { uploadSponsorLogo } from "@/actions/sponsor-logo";
 import { SponsorLogo } from "@/components/sponsors/sponsor-logo";
-import { Button } from "@/components/ui/button";
+import { btn } from "@/components/admin/wm";
+import { WmIcon } from "@/components/map/wm-icons";
 import { LOGO_MAX_BYTES } from "@/lib/sponsors/logo";
 
 export function LogoUploader({
@@ -45,9 +46,8 @@ export function LogoUploader({
 
   return (
     <div className="flex items-center gap-4">
-      <SponsorLogo name={name} path={path} className="size-20 text-2xl" />
-      <div className="min-w-0 space-y-2">
-        <p className="text-sm text-muted-foreground">{t("hint")}</p>
+      <SponsorLogo name={name} path={path} className="size-[72px] rounded-[20px] text-2xl" />
+      <div className="flex min-w-0 flex-col gap-2">
         <input
           ref={input}
           type="file"
@@ -60,20 +60,20 @@ export function LogoUploader({
             e.target.value = "";
           }}
         />
-        <Button
+        <button
           type="button"
-          variant="secondary"
-          size="pill"
+          className={btn("secondary", "sm")}
           disabled={pending}
           onClick={() => input.current?.click()}
         >
           {pending ? (
             <Loader2 className="size-4 animate-spin" aria-hidden="true" />
           ) : (
-            <ImagePlus className="size-4" aria-hidden="true" />
+            <WmIcon name="download" size={15} stroke={2.2} />
           )}
           {path ? t("change") : t("choose")}
-        </Button>
+        </button>
+        <span className="text-xs font-medium text-wm-slate">{t("formats")}</span>
       </div>
     </div>
   );

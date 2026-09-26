@@ -1,7 +1,7 @@
-import { ChevronRight, Lock, LockOpen } from "lucide-react";
 import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
-import { cn } from "@/lib/utils";
+import { Avatar, StatusPill } from "@/components/admin/wm";
+import { WmIcon } from "@/components/map/wm-icons";
 
 // One candidate in a list: the name is always visible; the rest opens with an E-coin.
 export async function CandidateRow({
@@ -24,37 +24,22 @@ export async function CandidateRow({
   return (
     <Link
       href={`/sponsor/jobs/${jobId}/candidates/${applicationId}`}
-      className="shadow-float flex items-center gap-3 rounded-3xl bg-card p-4 transition-colors hover:bg-muted/40"
+      className="flex items-center gap-3.5 rounded-[18px] border border-[#EEF0F4] bg-white p-3.5 text-wm-ink no-underline hover:border-wm-tint-line"
     >
-      <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10 font-bold text-primary">
-        {name.slice(0, 1).toUpperCase()}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate font-bold">{name}</span>
-        <span className="block truncate text-xs text-muted-foreground">
+      <Avatar name={name} size={44} />
+      <span className="flex min-w-0 grow flex-col gap-0.5">
+        <span className="truncate text-[15px] font-extrabold">{name}</span>
+        <span className="truncate text-xs font-semibold text-wm-caption">
           {jobTitle ? `${jobTitle} · ` : ""}
           {t("sharedOn", {
             date: format.dateTime(new Date(sharedAt), { day: "numeric", month: "short" }),
           })}
         </span>
       </span>
-      <span
-        className={cn(
-          "flex shrink-0 items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold",
-          unlocked ? "bg-success/15 text-success" : "bg-brand-accent/20",
-        )}
-      >
-        {unlocked ? (
-          <LockOpen className="size-3.5" aria-hidden="true" />
-        ) : (
-          <Lock className="size-3.5" aria-hidden="true" />
-        )}
-        {unlocked ? t("open") : t("new")}
+      <StatusPill tone={unlocked ? "ok" : "warn"}>{unlocked ? t("open") : t("new")}</StatusPill>
+      <span className="flex text-wm-caption">
+        <WmIcon name="chevronRight" size={16} stroke={2.4} />
       </span>
-      <ChevronRight
-        className="size-4 shrink-0 text-muted-foreground rtl:-scale-x-100"
-        aria-hidden="true"
-      />
     </Link>
   );
 }

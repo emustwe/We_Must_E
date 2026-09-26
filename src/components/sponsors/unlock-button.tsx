@@ -1,12 +1,12 @@
 "use client";
 
-import { Coins } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useTransition } from "react";
 import { toast } from "sonner";
 import { unlockCandidate } from "@/actions/sponsor-candidates";
-import { Button } from "@/components/ui/button";
+import { btn } from "@/components/admin/wm";
+import { WmIcon } from "@/components/map/wm-icons";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
 // Spends 1 E-coin (after asking) to open the candidate for good.
@@ -25,14 +25,15 @@ export function UnlockButton({
 
   if (balance < 1) {
     return (
-      <p className="max-w-sm rounded-2xl bg-muted px-4 py-3 text-sm font-medium">
+      <p className="m-0 max-w-sm rounded-2xl bg-wm-land px-4 py-3 text-sm font-semibold text-wm-body">
         {t("noCoinsBody")}
       </p>
     );
   }
   return (
-    <Button
-      size="touch"
+    <button
+      type="button"
+      className={btn("primary")}
       disabled={pending}
       onClick={async () => {
         const yes = await ask({
@@ -51,8 +52,8 @@ export function UnlockButton({
         });
       }}
     >
-      <Coins className="size-4" aria-hidden="true" />
+      <WmIcon name="coin" size={17} stroke={2.2} />
       {t("unlock")}
-    </Button>
+    </button>
   );
 }
