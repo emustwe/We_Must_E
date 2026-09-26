@@ -530,6 +530,31 @@ select is((select count(distinct application_id)::int from app_cleanup_candidate
 select is(app_cleanup(array(select application_id from app_cleanup_candidates(48))), 1, 'the unfinished application is deleted');
 select is((select count(*)::int from applications), 2, 'submitted applications are kept');
 
+-- Retention: a sent application goes when its job closes, or 30 days after it
+-- was sent; admins can delete one at once. The person's contact record goes
+-- with their last application; coin history stays.
+select is((select count(*)::int from app_expired_applications(30)), 0, 'fresh applications on live jobs are kept');
+update applications set submitted_at = now() - interval '31 days' where id = :AA;
+select is((select count(*)::int from app_expired_applications(30) where application_id = :AA), 1, 'an application sent over 30 days ago expires');
+update jobs set status = 'closed' where id = (select job_id from applications where status <> 'in_progress' and id <> :AA);
+select is((select count(*)::int from app_expired_applications(30)), 2, 'applications to a closed job expire');
+select ok(not has_function_privilege('authenticated', 'public.app_delete_expired(uuid[])', 'execute')
+      and not has_function_privilege('anon', 'public.app_expired_applications(integer)', 'execute')
+      and has_function_privilege('service_role', 'public.app_delete_expired(uuid[])', 'execute'),
+  'only the server runs the nightly deletion');
+select ok(tests.denied_as(:AD, format('select admin_delete_application(%s)', :'AA')), 'deleting an application needs MFA');
+select ok(tests.denied_as(:E3, format('select admin_delete_application(%s)', :'AA'), 'aal2'), 'sponsors cannot delete applications');
+select tests.run_as(:AD, format('select admin_delete_application(%s)', :'AA'), 'aal2');
+select is((select count(*)::int from applications), 1, 'the admin deleted the application');
+select is((select count(*)::int from applicants), 1, 'the person stays while another application of theirs exists');
+select ok(exists (select 1 from audit_logs where action = 'application.deleted' and actor_id = :AD::uuid
+                   and metadata ->> 'reason' = 'admin'), 'the deletion is audited with the admin, without personal data');
+select is(app_delete_expired(array(select application_id from app_expired_applications(30))), 1, 'the nightly job deletes the expired application');
+select is((select count(*)::int from applications) + (select count(*)::int from applicants), 0,
+  'with the last application, the contact record is deleted too');
+select is((select count(*)::int from ecoin_ledger where employer_id = :E3 and application_id is null), 2,
+  'coin history stays, without the link to the deleted application');
+
 -- ---------------------------------------------------------------------------
 -- audit_logs is append-only
 -- ---------------------------------------------------------------------------

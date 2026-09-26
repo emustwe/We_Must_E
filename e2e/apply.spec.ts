@@ -145,5 +145,9 @@ test("the cleanup job needs the cron secret", async ({ request }) => {
     headers: { authorization: `Bearer ${env.CRON_SECRET}` },
   });
   expect(ok.status()).toBe(200);
-  expect(await ok.json()).toMatchObject({ applications: expect.any(Number) });
+  // Both nightly clean-ups ran: unfinished applications and expired ones.
+  expect(await ok.json()).toMatchObject({
+    abandoned: { applications: expect.any(Number) },
+    expired: { applications: expect.any(Number) },
+  });
 });

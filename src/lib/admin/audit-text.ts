@@ -12,6 +12,7 @@ export type AuditRow = {
 };
 
 export type AuditKey =
+  | "applicationDeleted"
   | "videoViewed"
   | "cvViewed"
   | "appApproved"
@@ -97,6 +98,14 @@ export function describeAudit(row: AuditRow): Described {
       };
     case "application.cv_viewed":
       return { ...base, key: "cvViewed", icon: "fileText", tone: "blue" };
+    case "application.deleted":
+      return {
+        ...base,
+        key: "applicationDeleted",
+        icon: "trash",
+        tone: "red",
+        chip: { kind: "text", text: str(m.reason) === "admin" ? "by an admin" : "automatic" },
+      };
     case "application.reviewed": {
       const to = str(m.to);
       return {

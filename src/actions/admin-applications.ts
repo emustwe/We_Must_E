@@ -10,11 +10,13 @@ import { createClient } from "@/lib/supabase/server";
 import { toFieldErrors } from "@/lib/validations/auth";
 import { reviewSchema, videoViewSchema } from "@/lib/validations/admin";
 import { idSchema } from "@/lib/validations/jobs";
+import { removeApplicationFiles } from "@/server/public-application";
 
 const VIDEO_URL_SECONDS = 300;
 
 // All of these run as the admin (MFA session), so RLS and the audited
-// database functions apply; nothing here uses the service role.
+// database functions apply. Only deleteApplication also removes files, which
+// needs the service role (after the MFA check).
 async function admin() {
   await requireAdminMfa();
   return createClient();
@@ -83,4 +85,33 @@ export async function getCvUrl(applicationId: unknown): Promise<ActionResult<{ u
     return fail("generic");
   }
   return ok({ url: data.signedUrl });
+}
+
+// Deletes one application at once (for example when the person asks by
+// email): its CV and videos, every answer, and the person's contact record if
+// nothing else of theirs is left. Can't be undone; logged with the admin.
+export async function deleteApplication(applicationId: unknown): Promise<ActionResult> {
+  const id = idSchema.safeParse(applicationId);
+  if (!id.success) return fail("invalidInput");
+  const supabase = await admin();
+  const { data: app } = await supabase
+    .from("applications")
+    .select("id")
+    .eq("id", id.data)
+    .maybeSingle();
+  if (!app) return fail("notFound");
+  // Files first (service role: only the server can touch storage), then the
+  // rows, so no file is ever left without its application.
+  try {
+    await removeApplicationFiles([id.data]);
+  } catch (error) {
+    logError("admin-delete-files", error);
+    return fail("generic");
+  }
+  const { error } = await supabase.rpc("admin_delete_application", {
+    p_application_id: id.data,
+  });
+  if (error) return dbFail("admin-delete-application", error);
+  revalidatePath("/admin", "layout");
+  return ok(undefined);
 }

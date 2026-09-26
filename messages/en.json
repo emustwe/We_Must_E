@@ -1075,7 +1075,8 @@
       "exportApplications": "Exported applications",
       "exportAudit": "Exported the audit log",
       "other": "Other action",
-      "cvViewed": "Opened a CV"
+      "cvViewed": "Opened a CV",
+      "applicationDeleted": "Deleted an application"
     },
     "activity": {
       "videoViewed": "viewed a video answer on an <t>application</t>",
@@ -1100,7 +1101,8 @@
       "exportApplications": "exported applications",
       "exportAudit": "exported the audit log",
       "other": "did something",
-      "cvViewed": "opened the CV on an <t>application</t>"
+      "cvViewed": "opened the CV on an <t>application</t>",
+      "applicationDeleted": "deleted an <t>application</t> and its files"
     },
     "change": "{from} to {to}",
     "statusWord": {
@@ -1303,7 +1305,12 @@
     "profileTitle": "Profile",
     "cvAttached": "CV attached",
     "typingResult": "{wpm} WPM · {accuracy}% accurate · {backspaces} backspaces · {wrong} wrong words · {missing} words missing · {seconds}s",
-    "typingWrong": "Wrong words (typed → expected)"
+    "typingWrong": "Wrong words (typed → expected)",
+    "deleteApp": "Delete permanently",
+    "deleteAppTitle": "Delete this application permanently?",
+    "deleteAppBody": "The CV, videos, answers and contact details are deleted now, for the Wemuste team and for sponsors. This can’t be undone.",
+    "deleteAppConfirm": "Delete permanently",
+    "deleteAppDone": "Application deleted."
   },
   "sponsorUi": {
     "sponsor": "Sponsor",

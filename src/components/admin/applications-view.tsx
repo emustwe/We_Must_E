@@ -4,6 +4,7 @@ import { FilterSelect } from "@/components/admin/filter-select";
 import {
   CvButton,
   DecisionBar,
+  DeleteApplication,
   MoreToggle,
   ShowAll,
   VideoTile,
@@ -640,6 +641,9 @@ async function ApplicationPanel({ id }: { id: string }) {
       </Section>
 
       <DecisionBar applicationId={app.id} status={app.status} notes={app.admin_notes ?? ""} />
+      <div className="flex justify-end">
+        <DeleteApplication applicationId={app.id} />
+      </div>
     </section>
   );
 }

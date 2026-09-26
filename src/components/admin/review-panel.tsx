@@ -5,7 +5,12 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState, useTransition, type ReactNode } from "react";
 import { toast } from "sonner";
-import { getCvUrl, getVideoUrl, reviewApplication } from "@/actions/admin-applications";
+import {
+  deleteApplication,
+  getCvUrl,
+  getVideoUrl,
+  reviewApplication,
+} from "@/actions/admin-applications";
 import { btn } from "@/components/admin/wm";
 import { WmIcon } from "@/components/map/wm-icons";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -217,6 +222,47 @@ export function CvButton({
         <WmIcon name="fileText" size={16} stroke={2.1} />
       )}
       {t("openCv")}
+    </button>
+  );
+}
+
+// Deletes the application for good (CV, videos, answers, contact details).
+export function DeleteApplication({ applicationId }: { applicationId: string }) {
+  const t = useTranslations("adminUi");
+  const te = useTranslations("errors");
+  const ask = useConfirm();
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  return (
+    <button
+      type="button"
+      disabled={pending}
+      className={btn("dangerText", "xs")}
+      onClick={async () => {
+        const yes = await ask({
+          title: t("deleteAppTitle"),
+          body: t("deleteAppBody"),
+          confirmLabel: t("deleteAppConfirm"),
+          tone: "danger",
+        });
+        if (!yes) return;
+        startTransition(async () => {
+          const result = await deleteApplication(applicationId);
+          if (!result.ok) toast.error(te(result.error));
+          else {
+            toast.success(t("deleteAppDone"));
+            router.push("/admin/applications");
+            router.refresh();
+          }
+        });
+      }}
+    >
+      {pending ? (
+        <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+      ) : (
+        <WmIcon name="trash" size={15} stroke={2.2} />
+      )}
+      {t("deleteApp")}
     </button>
   );
 }

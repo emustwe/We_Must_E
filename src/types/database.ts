@@ -1023,6 +1023,10 @@ export type Database = {
         Args: { p_amount: number; p_employer_id: string; p_note: string }
         Returns: number
       }
+      admin_delete_application: {
+        Args: { p_application_id: string }
+        Returns: undefined
+      }
       admin_get_answer_keys: {
         Args: { p_test_id: string }
         Returns: {
@@ -1087,6 +1091,16 @@ export type Database = {
         Returns: {
           application_id: string
           storage_path: string
+        }[]
+      }
+      app_delete_expired: {
+        Args: { p_application_ids: string[] }
+        Returns: number
+      }
+      app_expired_applications: {
+        Args: { p_days: number }
+        Returns: {
+          application_id: string
         }[]
       }
       app_finish_videos: {

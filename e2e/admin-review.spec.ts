@@ -129,3 +129,37 @@ test("an admin reviews an application (answers, logged video view, approval); th
             (select id from auth.users where email = 'employer@wemuste.local')`);
   }
 });
+
+test("an admin deletes an application permanently: files, answers and contact details", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  await acceptConfirms(page);
+  const name = `Delete Me ${unique()}`;
+  const { appId, paths } = await seedApplication(name);
+  try {
+    await loginAsAdmin(page);
+    await page.goto(`/admin/applications/${appId}`);
+    await expect(page.getByRole("heading", { name })).toBeVisible();
+    await page.getByRole("button", { name: "Delete permanently" }).click();
+    await expect(page.getByText("Application deleted.")).toBeVisible();
+    await expect(page).toHaveURL(/\/admin\/applications$/);
+
+    expect(psql(`select count(*) from public.applications where id = '${appId}'`)).toBe("0");
+    expect(psql(`select count(*) from public.applicants where phone_e164 = '${PHONE}'`)).toBe("0");
+    expect(
+      psql(
+        `select count(*) from storage.objects where bucket_id = 'application-videos' and name like '${appId}/%'`,
+      ),
+    ).toBe("0");
+    expect(
+      psql(
+        `select metadata->>'reason' from public.audit_logs where action = 'application.deleted' and target_id = '${appId}'`,
+      ),
+    ).toBe("admin");
+  } finally {
+    await removeObjects("application-videos", paths);
+    psql(`delete from public.applications where id = '${appId}'`);
+    psql(`delete from public.applicants where phone_e164 = '${PHONE}'`);
+  }
+});

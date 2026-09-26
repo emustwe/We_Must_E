@@ -2,6 +2,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { dbFail } from "@/lib/db-errors";
 import { notifyAdmins } from "@/lib/email/notify";
+import { RETENTION_DAYS } from "@/lib/legal";
 import { serverEnv } from "@/lib/env.server";
 import { logError } from "@/lib/log";
 import { fail, ok, type ActionResult } from "@/lib/result";
@@ -628,38 +629,58 @@ export async function submitApplication(
 
 // ------------------------------------------------------------------ cleanup
 // Deletes unfinished applications older than 48 h and every file under them.
+// Removes every stored file of these applications: videos (including uploads
+// that were never confirmed) and CVs. Called before the rows are deleted, so
+// no file is ever left without its application.
+export async function removeApplicationFiles(ids: string[]) {
+  let files = 0;
+  for (const [bucket, folderOf] of [
+    [VIDEO_BUCKET, null],
+    [CV_BUCKET, "cv"],
+  ] as const) {
+    const storage = db().storage.from(bucket);
+    for (const id of ids) {
+      const folders = folderOf
+        ? [folderOf]
+        : ((await storage.list(id, { limit: 100 })).data ?? []).map((f) => f.name);
+      for (const folder of folders) {
+        const { data: objects } = await storage.list(`${id}/${folder}`, { limit: 100 });
+        const paths = (objects ?? []).map((o) => `${id}/${folder}/${o.name}`);
+        if (paths.length) {
+          const { error } = await storage.remove(paths);
+          if (error) throw error;
+          files += paths.length;
+        }
+      }
+    }
+  }
+  return files;
+}
+
+// Nightly: applications never finished, 48 hours after they were started.
 export async function cleanupAbandoned(hours = 48) {
   const { data, error } = await db().rpc("app_cleanup_candidates", { p_hours: hours });
   if (error) throw error;
   const ids = [...new Set((data ?? []).map((r) => r.application_id))];
-  const storage = db().storage.from(VIDEO_BUCKET);
-  let files = 0;
-  for (const id of ids) {
-    // Includes uploads that were never confirmed.
-    const { data: folders } = await storage.list(id, { limit: 100 });
-    for (const folder of folders ?? []) {
-      const { data: objects } = await storage.list(`${id}/${folder.name}`, { limit: 100 });
-      const paths = (objects ?? []).map((o) => `${id}/${folder.name}/${o.name}`);
-      if (paths.length) {
-        const { error: removeError } = await storage.remove(paths);
-        if (removeError) throw removeError;
-        files += paths.length;
-      }
-    }
-  }
-  // Their CVs too.
-  const cvs = db().storage.from(CV_BUCKET);
-  for (const id of ids) {
-    const { data: objects } = await cvs.list(`${id}/cv`, { limit: 100 });
-    const paths = (objects ?? []).map((o) => `${id}/cv/${o.name}`);
-    if (paths.length) {
-      const { error: removeError } = await cvs.remove(paths);
-      if (removeError) throw removeError;
-      files += paths.length;
-    }
-  }
+  const files = await removeApplicationFiles(ids);
   if (!ids.length) return { applications: 0, files };
   const { data: deleted, error: deleteError } = await db().rpc("app_cleanup", {
+    p_application_ids: ids,
+  });
+  if (deleteError) throw deleteError;
+  return { applications: deleted ?? 0, files };
+}
+
+// Nightly: sent applications whose job closed, or that were sent more than
+// RETENTION_DAYS ago (the privacy policy's promise), with the person's contact
+// record once nothing else of theirs is left.
+export async function cleanupExpired(days = RETENTION_DAYS) {
+  const { data, error } = await db().rpc("app_expired_applications", { p_days: days });
+  if (error) throw error;
+  const ids = [...new Set((data ?? []).map((r) => r.application_id))];
+  if (!ids.length) return { applications: 0, files: 0 };
+  const files = await removeApplicationFiles(ids);
+  const { data: deleted, error: deleteError } = await db().rpc("app_delete_expired", {
     p_application_ids: ids,
   });
   if (deleteError) throw deleteError;
