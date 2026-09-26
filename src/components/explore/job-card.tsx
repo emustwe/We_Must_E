@@ -61,6 +61,13 @@ function Badges({ job }: { job: PublicJob }) {
   const t = useTranslations("explore");
   const fresh = isNewJob(job.publishedAt);
   const sample = isSample(job.title);
+  if (job.isExample) {
+    return (
+      <span className="flex h-6 items-center rounded-full bg-white/85 px-2.5 text-xs font-bold text-wm-sample">
+        {t("exampleBadge")}
+      </span>
+    );
+  }
   if (!fresh && !sample) return null;
   return (
     <>
@@ -158,6 +165,24 @@ function HowApplying() {
   );
 }
 
+// Example jobs: what a job looks like, with no way to apply.
+function ExampleNotice() {
+  const t = useTranslations("explore");
+  return (
+    <div className="flex items-start gap-3 rounded-[18px] border border-wm-line bg-wm-land p-4">
+      <span className="shrink-0 text-wm-caption">
+        <WmIcon name="info" size={18} stroke={2.2} />
+      </span>
+      <span className="flex flex-col gap-1">
+        <span className="text-sm font-extrabold text-wm-ink">{t("exampleTitle")}</span>
+        <span className="text-[13px] leading-[1.5] font-medium text-wm-body">
+          {t("exampleBody")}
+        </span>
+      </span>
+    </div>
+  );
+}
+
 function ApplyFooter({ jobId, mobile }: { jobId: string; mobile?: boolean }) {
   const t = useTranslations("explore");
   return (
@@ -247,10 +272,10 @@ export function JobCard({
         <p className="m-0 text-[15px] leading-[1.6] font-medium whitespace-pre-line text-wm-body">
           {job.description}
         </p>
-        <HowApplying />
+        {job.isExample ? null : <HowApplying />}
       </div>
       <div className="flex flex-col gap-3 border-t border-[#EEF0F4] bg-white px-[22px] pt-4 pb-5">
-        <ApplyFooter jobId={job.id} />
+        {job.isExample ? <ExampleNotice /> : <ApplyFooter jobId={job.id} />}
       </div>
     </article>
   );
@@ -423,7 +448,7 @@ export function JobSheet({
         </p>
       </div>
       <div className="flex shrink-0 flex-col gap-2.5 px-5 pt-4 pb-[max(22px,env(safe-area-inset-bottom))]">
-        <ApplyFooter jobId={job.id} mobile />
+        {job.isExample ? <ExampleNotice /> : <ApplyFooter jobId={job.id} mobile />}
       </div>
     </section>
   );

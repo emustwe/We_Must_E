@@ -15,6 +15,8 @@ export type PublicJob = {
   countryCode: string | null;
   countryName: string | null;
   city: string | null;
+  // Shows what a job looks like; not open for applications.
+  isExample: boolean;
 };
 
 // get_public_jobs() row -> what the map uses (only the public, rounded pin).
@@ -31,6 +33,7 @@ export const toPublicJob = (j: Row): PublicJob => ({
   countryCode: j.country_code,
   countryName: j.country_name,
   city: j.city,
+  isExample: j.is_example,
 });
 
 // "Dubai Marina, Dubai, United Arab Emirates" without repeating a part the

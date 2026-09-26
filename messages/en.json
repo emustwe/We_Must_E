@@ -735,7 +735,10 @@
     "applyForJob": "Apply for this job",
     "trustLine": "Free to apply. We never ask for money.",
     "postedAgo": "{days, plural, =0 {Posted today} one {Posted yesterday} other {Posted # days ago}}",
-    "locationOff": "Location is off. Search for a place instead."
+    "locationOff": "Location is off. Search for a place instead.",
+    "exampleBadge": "Example job",
+    "exampleTitle": "Example job",
+    "exampleBody": "This shows what jobs on Wemuste look like. It is not open for applications."
   },
   "apply": {
     "title": "Apply",

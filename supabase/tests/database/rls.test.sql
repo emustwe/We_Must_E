@@ -286,6 +286,13 @@ select ok(not has_function_privilege('anon', 'public.app_start(uuid, text, text)
 select ok(tests.denied_as(null, format('insert into applications (job_id) values (%s)', :'JC')), 'anon cannot create applications directly');
 select ok(tests.denied_as(:E3, format('insert into applications (job_id) values (%s)', :'JC')), 'employers cannot create applications');
 select throws_ok(format('select app_start(%s, %s, null)', :'JB', :'TOKA'), 'P0002', 'job_unavailable', 'a closed job takes no applications');
+-- Example jobs only show what a job looks like: no applications, and only the
+-- database sets the flag.
+select ok(tests.denied_as(:E3, format('update jobs set is_example = true where id = %s', :'JC')), 'sponsors cannot mark a job as an example');
+update jobs set is_example = true where id = :JC;
+select is((select is_example from get_public_jobs(-90, -180, 90, 180) where id = :JC), true, 'the public list says which jobs are examples');
+select throws_ok(format('select app_start(%s, %s, null)', :'JC', :'TOKA'), 'P0002', 'job_unavailable', 'an example job takes no applications');
+update jobs set is_example = false where id = :JC;
 
 select lives_ok(format('select app_start(%s, %s, ''iphash'')', :'JC', :'TOKA'), 'the server starts an application for a live job');
 \set AA '(select id from applications where draft_token_hash = ' :TOKA ')'

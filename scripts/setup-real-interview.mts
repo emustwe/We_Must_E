@@ -1060,6 +1060,8 @@ if ((existing ?? 0) >= 320) {
         video_set_id: simpleSet,
         survey_id: simpleSurvey,
         full_profile: false,
+        // Shown on the map as an example only; nobody can apply.
+        is_example: true,
       };
     }),
   );

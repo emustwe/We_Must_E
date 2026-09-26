@@ -197,3 +197,25 @@ test("a sponsor's job waits for approval, then appears live on an open map; hidi
 
   psql(`delete from public.jobs where title in ('${title}', '${second}')`);
 });
+
+test("an example job shows what a job looks like, with no way to apply", async ({ page }) => {
+  const title = `Example cashier ${unique()}`;
+  const id =
+    psql(`insert into public.jobs (employer_id, title, description, location_label, lat, lng, country_code, country_name, city, status, is_example)
+        select user_id, '${title}', 'Serve customers at the till.', 'Dubai Marina', 25.0805, 55.1403, 'AE', 'United Arab Emirates', 'Dubai', 'published', true
+          from public.employer_profiles where contact_email = 'employer@wemuste.local' returning id`);
+  try {
+    await page.goto(`/?job=${id}`);
+    const sheet = page.getByRole("region", { name: title });
+    await expect(sheet.getByText("Example job").first()).toBeVisible();
+    await expect(
+      sheet.getByText("It is not open for applications.", { exact: false }),
+    ).toBeVisible();
+    await expect(sheet.getByRole("link", { name: "Apply for this job" })).toHaveCount(0);
+    // A direct link to the application doesn't open it either.
+    await page.goto(`/apply/${id}`);
+    await expect(page.getByRole("button", { name: "Start application" })).toHaveCount(0);
+  } finally {
+    psql(`delete from public.jobs where id = '${id}'`);
+  }
+});

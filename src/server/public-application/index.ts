@@ -673,11 +673,12 @@ export async function getJobSummary(
 ): Promise<{ title: string; locationLabel: string } | null> {
   const { data } = await db()
     .from("jobs")
-    .select("title, location_label, status, employer_profiles!inner(status)")
+    .select("title, location_label, status, is_example, employer_profiles!inner(status)")
     .eq("id", jobId)
     .maybeSingle();
   if (!data) return null;
-  const live = data.status === "published" && data.employer_profiles.status === "approved";
+  const live =
+    data.status === "published" && data.employer_profiles.status === "approved" && !data.is_example;
   if (!live && !hasApplication) return null;
   return { title: data.title, locationLabel: data.location_label };
 }

@@ -577,6 +577,7 @@ export type Database = {
           employer_id: string
           full_profile: boolean
           id: string
+          is_example: boolean
           lat: number
           lng: number
           location_label: string
@@ -604,6 +605,7 @@ export type Database = {
           employer_id: string
           full_profile?: boolean
           id?: string
+          is_example?: boolean
           lat: number
           lng: number
           location_label: string
@@ -631,6 +633,7 @@ export type Database = {
           employer_id?: string
           full_profile?: boolean
           id?: string
+          is_example?: boolean
           lat?: number
           lng?: number
           location_label?: string
@@ -1174,6 +1177,7 @@ export type Database = {
           country_name: string
           description: string
           id: string
+          is_example: boolean
           location_label: string
           public_lat: number
           public_lng: number
