@@ -65,10 +65,9 @@ function answerText(q: Item) {
   return a.text || "—";
 }
 
+// Gender and age are never shared with sponsors.
 const PROFILE_ORDER = [
   "preferredName",
-  "age",
-  "gender",
   "country",
   "city",
   "nationality",

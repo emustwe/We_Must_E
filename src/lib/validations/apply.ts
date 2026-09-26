@@ -113,7 +113,7 @@ export const verifyCodeSchema = z.strictObject({
 // ------------------------------------------------------------------ Task profile
 // The Task step's profile. Practice jobs ask only for name, phone and email;
 // a job with a full profile asks for every field below (all required).
-export const GENDERS = ["male", "female"] as const;
+export const GENDERS = ["male", "female", "prefer_not"] as const;
 export const ENGLISH_LEVELS = ["beginner", "intermediate", "advanced", "fluent", "native"] as const;
 
 const text = (max: number) =>
@@ -123,21 +123,32 @@ const text = (max: number) =>
     .min(1, { error: "validation.required" })
     .max(max, { error: "validation.tooLong" });
 
+// Every applicant confirms they are an adult (UAE: workers under 18 need
+// special permits).
+const adultSchema = z.literal("yes", { error: "validation.adultRequired" });
+
 export const basicProfileSchema = z.strictObject({
   fullName: contactSchema.shape.fullName,
   phone: phoneSchema,
   email: z.union([emailSchema, z.literal("")]),
+  adult: adultSchema,
 });
 
 export const fullProfileSchema = z.strictObject({
   fullName: contactSchema.shape.fullName,
   preferredName: text(60),
-  age: z.coerce
-    .number({ error: "validation.required" })
-    .int({ error: "validation.invalid" })
-    .min(16, { error: "validation.ageRange" })
-    .max(80, { error: "validation.ageRange" }),
-  gender: z.enum(GENDERS, { error: "validation.required" }),
+  // Age and gender are optional: hiring must not depend on them (UAE Labour
+  // Law, Article 4). If given, the age must be 18 or over.
+  age: z.union([
+    z.literal(""),
+    z.coerce
+      .number({ error: "validation.invalid" })
+      .int({ error: "validation.invalid" })
+      .min(18, { error: "validation.ageRange" })
+      .max(80, { error: "validation.ageRange" }),
+  ]),
+  gender: z.union([z.literal(""), z.enum(GENDERS, { error: "validation.invalid" })]),
+  adult: adultSchema,
   country: text(80),
   city: text(80),
   nationality: text(80),

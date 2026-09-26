@@ -73,6 +73,7 @@ test("a visitor applies in 3 steps without an account, and nothing reaches the e
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByText("Please enter a valid phone number")).toBeVisible();
   await page.getByLabel("Phone number").fill("050 111 2233");
+  await page.getByLabel("I confirm I am 18 years or older.").check();
   const cards = page.locator("#videos ol > li");
   await expect(cards).toHaveCount(2);
   await expect(cards.nth(0)).toContainText("[SAMPLE] Introduce yourself in 30 seconds.");

@@ -499,6 +499,10 @@ select ok(not tests.denied_as(:E3, format('select sponsor_get_candidate(%L)', :'
 select is((select jsonb_array_length(sponsor_get_candidate(:'aa_id') -> 'test') from (select tests.act_as(:E3, 'aal1')) x), 4,
   'the unlocked candidate includes the test answers');
 reset role;
+update applications set profile = '{"fullName":"Sara Ali","age":29,"gender":"female","adult":"yes","city":"Dubai"}' where id = :'aa_id';
+select is((select (sponsor_get_candidate(:'aa_id') -> 'profile')::text from (select tests.act_as(:E3, 'aal1')) x), '{"city": "Dubai"}',
+  'sponsors never see gender or age (only the city and other job details)');
+reset role;
 select is(tests.rows_as(:E1, format('select * from sponsor_list_candidates(%s)', :'JC')), 0, 'another sponsor sees nothing for that job');
 select ok(tests.denied_as(:E1, format('select sponsor_get_candidate(%L)', :'aa_id')), 'another sponsor cannot open the candidate');
 select ok(tests.denied_as(:E1, format('select sponsor_unlock_candidate(%L)', :'aa_id')), 'another sponsor cannot unlock the candidate');

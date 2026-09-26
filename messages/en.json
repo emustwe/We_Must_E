@@ -178,7 +178,8 @@
     "locationOutside": "This location is outside the area where jobs can be posted.",
     "required": "Please answer this.",
     "tooLong": "This is too long.",
-    "ageRange": "Please enter an age between 16 and 80."
+    "ageRange": "Please enter an age between 18 and 80.",
+    "adultRequired": "You must be 18 or older to apply. Please confirm."
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",
@@ -866,7 +867,8 @@
       "previousExperience": "Previous work experience",
       "whyInterested": "Why are you interested in this position?",
       "workEnvironment": "What type of work environment do you prefer?",
-      "lookingFor": "What are you looking for in your next job?"
+      "lookingFor": "What are you looking for in your next job?",
+      "adult": "I confirm I am 18 years or older."
     },
     "profileHint": {
       "phone": "Include your country code, e.g. +971 50 123 4567.",
@@ -877,7 +879,8 @@
     "choose": "Choose…",
     "genderOption": {
       "male": "Male",
-      "female": "Female"
+      "female": "Female",
+      "prefer_not": "Prefer not to say"
     },
     "englishOption": {
       "beginner": "Beginner",

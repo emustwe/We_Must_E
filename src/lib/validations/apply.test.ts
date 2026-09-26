@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fullProfileSchema, submitSchema, testAnswerSchema } from "./apply";
+import { basicProfileSchema, fullProfileSchema, submitSchema, testAnswerSchema } from "./apply";
 
 const ids = {
   jobId: "00000000-0000-4000-8000-000000000001",
@@ -62,6 +62,7 @@ describe("Task profile", () => {
     whyInterested: "I like translation",
     workEnvironment: "Calm",
     lookingFor: "Growth",
+    adult: "yes",
   };
   it("normalises the phone and numbers", () => {
     const parsed = fullProfileSchema.parse(full);
@@ -72,6 +73,29 @@ describe("Task profile", () => {
     expect(fullProfileSchema.safeParse({ ...full, nationality: " " }).success).toBe(false);
     expect(fullProfileSchema.safeParse({ ...full, email: "" }).success).toBe(false);
     expect(fullProfileSchema.safeParse({ ...full, age: "12" }).success).toBe(false);
+  });
+  it("keeps gender and age optional, but an age must be 18 or over", () => {
+    expect(fullProfileSchema.safeParse({ ...full, gender: "", age: "" }).success).toBe(true);
+    expect(fullProfileSchema.safeParse({ ...full, gender: "prefer_not" }).success).toBe(true);
+    expect(fullProfileSchema.safeParse({ ...full, age: "17" }).success).toBe(false);
+    expect(fullProfileSchema.safeParse({ ...full, age: "18" }).success).toBe(true);
+  });
+  it("needs the 18+ confirmation", () => {
+    const { adult: _, ...withoutAdult } = full;
+    expect(fullProfileSchema.safeParse(withoutAdult).success).toBe(false);
+    expect(fullProfileSchema.safeParse({ ...full, adult: "" }).success).toBe(false);
+    expect(
+      basicProfileSchema.safeParse({ fullName: "Sara Ahmed", phone: "050 111 2233", email: "" })
+        .success,
+    ).toBe(false);
+    expect(
+      basicProfileSchema.safeParse({
+        fullName: "Sara Ahmed",
+        phone: "050 111 2233",
+        email: "",
+        adult: "yes",
+      }).success,
+    ).toBe(true);
   });
 });
 

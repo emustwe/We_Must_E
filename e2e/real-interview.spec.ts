@@ -80,7 +80,7 @@ test("a candidate completes the real interview: Test, Task (profile, CV, 7 video
   const fill: [string, string][] = [
     ["Full name", "Min-su Kim"],
     ["Preferred name", "Minsu"],
-    ["Age", "29"],
+    ["Age (optional)", "29"],
     ["Country", "United Arab Emirates"],
     ["City / Location", "Abu Dhabi"],
     ["Nationality", "Korean"],
@@ -99,6 +99,7 @@ test("a candidate completes the real interview: Test, Task (profile, CV, 7 video
   for (const [label, value] of fill) await page.getByLabel(label, { exact: true }).fill(value);
   await page.getByLabel("Gender").selectOption("male");
   await page.getByLabel("English level").selectOption("fluent");
+  await page.getByLabel("I confirm I am 18 years or older.").check();
 
   // CV: a PDF (checked on the server from its first bytes).
   await page.getByLabel("Resume / CV").setInputFiles({
@@ -155,7 +156,7 @@ test("a candidate completes the real interview: Test, Task (profile, CV, 7 video
        from public.applications a join public.applicants p on p.id = a.applicant_id
       where p.phone_e164 = '${PHONE}'`,
   );
-  expect(row).toBe("submitted|Min-su Kim|19|true|7|25|25|true");
+  expect(row).toBe("submitted|Min-su Kim|20|true|7|25|25|true");
   expect(
     psql(`select s.answer->>'other' from public.application_survey_answers s
            join public.applications a on a.id = s.application_id join public.applicants p on p.id = a.applicant_id

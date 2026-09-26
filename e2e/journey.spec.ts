@@ -52,6 +52,7 @@ test("full journey: apply with test, video and survey -> admin approves -> spons
   await expect(page.getByText(/Step 2 of 3 · Task/)).toBeVisible();
   await page.getByLabel("Full name").fill(name);
   await page.getByLabel("Phone number").fill(PHONE_LOCAL);
+  await page.getByLabel("I confirm I am 18 years or older.").check();
   const cards = page.locator("#videos ol > li");
   const video = await makeVideoFile(page);
   const total = await cards.count();

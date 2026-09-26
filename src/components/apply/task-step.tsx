@@ -34,8 +34,8 @@ import {
 
 const MAX_CV_BYTES = 5 * 1024 * 1024;
 
-type FieldKind = "text" | "tel" | "email" | "number" | "long" | "gender" | "english";
-type Field = { name: string; kind: FieldKind; autoComplete?: string };
+type FieldKind = "text" | "tel" | "email" | "number" | "long" | "gender" | "english" | "adult";
+type Field = { name: string; kind: FieldKind; autoComplete?: string; optional?: boolean };
 
 // Step 2: the applicant's profile, in the client's order. Practice jobs only
 // ask for name, phone and email.
@@ -45,8 +45,8 @@ const FULL: { group: "personal" | "professional" | "additional"; fields: Field[]
     fields: [
       { name: "fullName", kind: "text", autoComplete: "name" },
       { name: "preferredName", kind: "text", autoComplete: "nickname" },
-      { name: "age", kind: "number" },
-      { name: "gender", kind: "gender" },
+      { name: "age", kind: "number", optional: true },
+      { name: "gender", kind: "gender", optional: true },
       { name: "country", kind: "text", autoComplete: "country-name" },
       { name: "city", kind: "text", autoComplete: "address-level2" },
       { name: "nationality", kind: "text" },
@@ -55,6 +55,7 @@ const FULL: { group: "personal" | "professional" | "additional"; fields: Field[]
       { name: "languages", kind: "text" },
       { name: "englishLevel", kind: "english" },
       { name: "otherLanguages", kind: "text" },
+      { name: "adult", kind: "adult" },
     ],
   },
   {
@@ -79,6 +80,7 @@ const BASIC: Field[] = [
   { name: "fullName", kind: "text", autoComplete: "name" },
   { name: "phone", kind: "tel", autoComplete: "tel" },
   { name: "email", kind: "email", autoComplete: "email" },
+  { name: "adult", kind: "adult" },
 ];
 
 type Values = Record<string, string>;
@@ -203,6 +205,7 @@ export function TaskStep({ jobId, view }: { jobId: string; view: VideoView }) {
               <ProfileField
                 key={f.name}
                 field={f}
+                optional={f.optional}
                 value={values[f.name] ?? ""}
                 error={tr(fieldErrors[f.name])}
                 onChange={(v) => set(f.name, v)}
@@ -400,6 +403,30 @@ function ProfileField({
     "aria-describedby": error || hint ? `${id}-note` : undefined,
   };
   const inputClass = "h-12 text-base";
+  if (field.kind === "adult") {
+    return (
+      <div className="scroll-mt-24 space-y-1.5">
+        <label
+          htmlFor={id}
+          className="flex cursor-pointer items-start gap-3 rounded-2xl border border-input bg-white p-3.5 text-sm font-semibold"
+        >
+          <input
+            {...common}
+            type="checkbox"
+            checked={value === "yes"}
+            onChange={(e) => onChange(e.target.checked ? "yes" : "")}
+            className="mt-0.5 size-5 shrink-0 accent-[#2457F5]"
+          />
+          <span>{t("profile.adult")}</span>
+        </label>
+        {error ? (
+          <p id={`${id}-note`} className="text-sm font-medium text-destructive">
+            {error}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
   return (
     <div className="scroll-mt-24 space-y-1.5">
       <Label htmlFor={id}>{label}</Label>
