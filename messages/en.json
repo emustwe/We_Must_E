@@ -558,7 +558,7 @@
     "step2": "We verify you and create your login",
     "step3": "Post jobs and review requests",
     "contact": "Contact our team",
-    "contactNote": "PLACEHOLDER contact address — client to replace.",
+    "contactNote": "Or email us at {email}. We reply within 7 working days.",
     "haveLogin": "Already have a sponsor login?"
   },
   "tabs": {

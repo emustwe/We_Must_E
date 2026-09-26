@@ -50,7 +50,9 @@ export default async function ForEmployersPage() {
         <Mail className="size-4" aria-hidden="true" />
         {t("contact")}
       </a>
-      <p className="mt-2 text-center text-xs text-muted-foreground">{t("contactNote")}</p>
+      <p className="mt-2 text-center text-xs text-muted-foreground">
+        {t("contactNote", { email: SUPPORT_EMAIL })}
+      </p>
     </AuthShell>
   );
 }
