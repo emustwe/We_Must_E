@@ -8,10 +8,12 @@ export function hmac(value: string) {
   return createHmac("sha256", serverEnv.IP_HASH_SECRET).update(value).digest("base64url");
 }
 
-// Vercel sets x-forwarded-for; its first entry is the client.
+// Vercel sets these (and overwrites whatever a client sends); the first entry
+// is the client.
 export async function getClientIp() {
   const h = await headers();
-  return h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || "unknown";
+  const forwarded = h.get("x-vercel-forwarded-for") ?? h.get("x-forwarded-for");
+  return forwarded?.split(",")[0]?.trim() || h.get("x-real-ip") || "unknown";
 }
 
 export async function getIpHash() {

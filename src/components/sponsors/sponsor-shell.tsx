@@ -42,23 +42,29 @@ export function SponsorShell({
     return () => window.clearTimeout(id);
   }, [pathname]);
 
-  const nav: { href: string; label: string; icon: IconName; count?: number; tone?: "warn"; aria?: string }[] =
-    company?.approved
-      ? [
-          { href: "/sponsor", label: t("yourJobs"), icon: "briefcase", count: company.jobs },
-          {
-            href: "/sponsor/candidates",
-            label: t("candidates"),
-            icon: "inbox",
-            count: company.newCandidates,
-            tone: "warn",
-            aria: company.newCandidates
-              ? tc("newCandidates", { count: company.newCandidates })
-              : undefined,
-          },
-          { href: "/sponsor/account", label: t("account"), icon: "key" },
-        ]
-      : [];
+  const nav: {
+    href: string;
+    label: string;
+    icon: IconName;
+    count?: number;
+    tone?: "warn";
+    aria?: string;
+  }[] = company?.approved
+    ? [
+        { href: "/sponsor", label: t("yourJobs"), icon: "briefcase", count: company.jobs },
+        {
+          href: "/sponsor/candidates",
+          label: t("candidates"),
+          icon: "inbox",
+          count: company.newCandidates,
+          tone: "warn",
+          aria: company.newCandidates
+            ? tc("newCandidates", { count: company.newCandidates })
+            : undefined,
+        },
+        { href: "/sponsor/account", label: t("account"), icon: "key" },
+      ]
+    : [];
   const active = (href: string) =>
     href === "/sponsor"
       ? pathname === "/sponsor" || pathname.startsWith("/sponsor/jobs")
@@ -66,7 +72,10 @@ export function SponsorShell({
 
   const sidebar = (
     <div className="flex h-full flex-col gap-5 px-4 py-5">
-      <Link href="/sponsor" className="flex items-center gap-2.5 px-1.5 py-1 text-wm-ink no-underline">
+      <Link
+        href="/sponsor"
+        className="flex items-center gap-2.5 px-1.5 py-1 text-wm-ink no-underline"
+      >
         <span className="flex size-[34px] items-center justify-center rounded-[11px] bg-wm-blue text-lg font-extrabold text-white">
           W
         </span>
@@ -79,7 +88,11 @@ export function SponsorShell({
         <div className="flex items-center gap-3 rounded-[18px] bg-wm-land p-3">
           {company.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- small public logo
-            <img src={company.logoUrl} alt="" className="size-11 shrink-0 rounded-[14px] object-cover" />
+            <img
+              src={company.logoUrl}
+              alt=""
+              className="size-11 shrink-0 rounded-[14px] object-cover"
+            />
           ) : (
             <Avatar name={company.name} size={44} kind="company" />
           )}
@@ -183,7 +196,12 @@ export function SponsorShell({
         <div className="sticky top-0 h-dvh">{sidebar}</div>
       </aside>
       {open ? (
-        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Sponsor">
+        <div
+          className="fixed inset-0 z-50 lg:hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Sponsor"
+        >
           <button
             type="button"
             aria-label={t("closeMenu")}
@@ -254,7 +272,10 @@ export function Crumbs({ items }: { items: { label: string; href?: string }[] })
             </span>
           ) : null}
           {c.href ? (
-            <Link href={c.href} className="truncate text-[13px] font-semibold text-wm-caption no-underline">
+            <Link
+              href={c.href}
+              className="truncate text-[13px] font-semibold text-wm-caption no-underline"
+            >
               {c.label}
             </Link>
           ) : (

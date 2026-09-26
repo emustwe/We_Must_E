@@ -88,9 +88,15 @@ export async function findCountry(name: string, code: string, signal?: AbortSign
   return place ?? null;
 }
 
-// Place name, country and city for a point, e.g. "Marina Walk, Dubai".
+// Area name, country and city for a point, e.g. "Dubai Marina, Dubai". Only
+// area-level results: the name is public, and a building, street or address
+// would give away the exact point that the map keeps private.
 export async function reverseGeocode(lat: number, lng: number, signal?: AbortSignal) {
-  const [place] = await query(`${lng},${lat}`, { limit: "1" }, signal);
+  const [place] = await query(
+    `${lng},${lat}`,
+    { limit: "1", types: "neighbourhood,locality,municipal_district,municipality,place" },
+    signal,
+  );
   if (!place) return null;
   return { ...place, label: trimCountry(place.label).slice(0, 200) || place.label.slice(0, 200) };
 }

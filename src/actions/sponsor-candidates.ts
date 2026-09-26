@@ -6,33 +6,41 @@ import { dbFail } from "@/lib/db-errors";
 import { logError } from "@/lib/log";
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { withinRateLimit } from "@/lib/security/rate-limit";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { videoViewSchema } from "@/lib/validations/admin";
 import { idSchema } from "@/lib/validations/jobs";
+import { CV_BUCKET, VIDEO_BUCKET } from "@/server/public-application";
 
-// A 5-minute link to one of an approved candidate's videos. Runs as the
-// sponsor: the database only allows approved candidates for their own jobs,
-// and logs the view before the link is made.
+// A 5-minute link to one of an unlocked candidate's videos. The database
+// checks access, rate-limits and logs the view, and only then returns the
+// file's path; sponsors can't read the files any other way.
 export async function getCandidateVideoUrl(input: unknown): Promise<ActionResult<{ url: string }>> {
   const parsed = videoViewSchema.safeParse(input);
   if (!parsed.success) return fail("invalidInput");
   const profile = await requireRole("employer");
   if (!(await withinRateLimit("mediaViewPerEmployer", profile.id))) return fail("rateLimited");
   const supabase = await createClient();
-  const { videoId } = parsed.data;
-  const { data: video } = await supabase
-    .from("application_videos")
-    .select("storage_path")
-    .eq("id", videoId)
-    .maybeSingle();
-  if (!video) return fail("notFound");
-  const { error: logErr } = await supabase.rpc("log_video_view", { p_video_id: videoId });
+  const { data: path, error: logErr } = await supabase.rpc("log_video_view", {
+    p_video_id: parsed.data.videoId,
+  });
   if (logErr) return dbFail("sponsor-video-view", logErr);
-  const { data, error } = await supabase.storage
-    .from("application-videos")
-    .createSignedUrl(video.storage_path, 300);
+  if (!path) return fail("notFound");
+  return signedLink(VIDEO_BUCKET, path, false);
+}
+
+// Service role: sponsors have no storage access of their own. Called only
+// with a path the database returned after checking and logging the view.
+async function signedLink(
+  bucket: string,
+  path: string,
+  download: boolean,
+): Promise<ActionResult<{ url: string }>> {
+  const { data, error } = await createAdminClient()
+    .storage.from(bucket)
+    .createSignedUrl(path, 300, download ? { download: true } : undefined);
   if (error || !data) {
-    logError("sponsor-video-url", error);
+    logError("sponsor-media-url", error);
     return fail("generic");
   }
   return ok({ url: data.signedUrl });
@@ -54,7 +62,7 @@ export async function unlockCandidate(
   return ok({ balance: data });
 }
 
-// A 5-minute link to an unlocked candidate's CV (the view is logged first).
+// A 5-minute link to an unlocked candidate's CV (checked and logged first).
 export async function getCandidateCvUrl(
   applicationId: unknown,
 ): Promise<ActionResult<{ url: string }>> {
@@ -63,20 +71,10 @@ export async function getCandidateCvUrl(
   const profile = await requireRole("employer");
   if (!(await withinRateLimit("mediaViewPerEmployer", profile.id))) return fail("rateLimited");
   const supabase = await createClient();
-  const { data: candidate, error: readErr } = await supabase.rpc("sponsor_get_candidate", {
+  const { data: path, error: logErr } = await supabase.rpc("log_cv_view", {
     p_application_id: parsed.data,
   });
-  if (readErr) return dbFail("sponsor-cv-read", readErr);
-  const path = (candidate as { cv_path?: string | null } | null)?.cv_path;
-  if (!path) return fail("notFound");
-  const { error: logErr } = await supabase.rpc("log_cv_view", { p_application_id: parsed.data });
   if (logErr) return dbFail("sponsor-cv-view", logErr);
-  const { data, error } = await supabase.storage
-    .from("application-cvs")
-    .createSignedUrl(path, 300, { download: true });
-  if (error || !data) {
-    logError("sponsor-cv-url", error);
-    return fail("generic");
-  }
-  return ok({ url: data.signedUrl });
+  if (!path) return fail("notFound");
+  return signedLink(CV_BUCKET, path, true);
 }

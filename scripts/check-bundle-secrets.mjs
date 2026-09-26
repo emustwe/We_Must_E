@@ -13,12 +13,14 @@ const SECRET_ENV = [
   "APP_TOKEN_SECRET",
   "CRON_SECRET",
   "TURNSTILE_SECRET_KEY",
+  "SUPABASE_ACCESS_TOKEN",
 ];
 const PATTERNS = [
   { name: "Supabase secret key", re: /sb_secret_[A-Za-z0-9_-]{16,}/ },
+  { name: "Supabase access token", re: /sbp_[a-f0-9]{40}/ },
   {
     name: "server env variable name",
-    re: /\b(SUPABASE_SERVICE_ROLE_KEY|IP_HASH_SECRET|RESEND_API_KEY|APP_TOKEN_SECRET|CRON_SECRET|TURNSTILE_SECRET_KEY)\b/,
+    re: /\b(SUPABASE_SERVICE_ROLE_KEY|IP_HASH_SECRET|RESEND_API_KEY|APP_TOKEN_SECRET|CRON_SECRET|TURNSTILE_SECRET_KEY|SUPABASE_ACCESS_TOKEN)\b/,
   },
 ];
 

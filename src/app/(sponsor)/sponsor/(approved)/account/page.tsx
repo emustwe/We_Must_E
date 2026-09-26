@@ -49,7 +49,9 @@ export default async function EmployerAccountPage() {
       <Crumbs items={[{ label: t("title") }]} />
       <PageHeader title={t("title")} body={tu("accountBody")} />
       <section className="flex flex-col rounded-3xl bg-white p-6 shadow-wm-1">
-        <h2 className="m-0 mb-5 text-lg font-extrabold tracking-[-0.3px]">{tu("companyProfile")}</h2>
+        <h2 className="m-0 mb-5 text-lg font-extrabold tracking-[-0.3px]">
+          {tu("companyProfile")}
+        </h2>
         {sponsor ? (
           <Row title={t("logoTitle")} body={tl("hint")}>
             <div className="flex flex-wrap items-center gap-6">

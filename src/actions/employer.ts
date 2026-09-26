@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getEmployerAccount } from "@/lib/auth/employer";
+import { completePasswordChange } from "@/lib/auth/password-change";
 import { requireRole } from "@/lib/auth/session";
 import { dbFail } from "@/lib/db-errors";
 import { notifyAdmins } from "@/lib/email/notify";
@@ -114,7 +116,10 @@ export async function closeJob(input: unknown): Promise<ActionResult> {
 export async function setInitialPassword(input: unknown): Promise<ActionResult> {
   const parsed = setInitialPasswordSchema.safeParse(input);
   if (!parsed.success) return fail("invalidInput", toFieldErrors(parsed.error));
-  await requireRole("employer");
+  const profile = await requireRole("employer");
+  // Only while the first-login change is still due.
+  const { employer } = await getEmployerAccount();
+  if (!employer?.must_change_password) return fail("forbidden");
 
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
@@ -126,8 +131,7 @@ export async function setInitialPassword(input: unknown): Promise<ActionResult> 
     logError("employer-initial-password", error);
     return fail("generic");
   }
-  const { error: flagError } = await supabase.rpc("complete_password_change");
-  if (flagError) return dbFail("complete-password-change", flagError);
+  if (!(await completePasswordChange(profile.id))) return fail("generic");
   // End any other session that used the temporary password.
   await supabase.auth.signOut({ scope: "others" });
   redirect("/sponsor");

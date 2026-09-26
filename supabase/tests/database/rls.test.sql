@@ -137,8 +137,10 @@ select is(tests.rows_as(:AD, 'select 1 from test_answer_keys', 'aal2'), -1, 'nob
 select ok(tests.denied_as(:E1, $$update profiles set role = 'admin' where id = auth.uid()$$), 'employer cannot change role');
 select ok(tests.denied_as(:E2, $$update employer_profiles set status = 'approved' where user_id = auth.uid()$$), 'employer cannot approve self');
 select ok(tests.denied_as(:E1, $$update employer_profiles set company_name = 'Other' where user_id = auth.uid()$$), 'employer cannot rename the company');
-select tests.run_as(:E3, 'select complete_password_change()');
-select ok(not (select must_change_password from employer_profiles where user_id = :E3), 'invited employer clears the first-login flag');
+select ok(tests.denied_as(:E3, 'select complete_password_change()'), 'sponsors cannot skip the first-login password change');
+select ok(tests.denied_as(:E3, format('select admin_revoke_sessions(%L)', :E1)), 'sponsors cannot end other people''s sessions');
+select ok(tests.denied_as(:AD, format('select admin_revoke_sessions(%L)', :E3), 'aal2'), 'ending sessions is for the server only');
+update employer_profiles set must_change_password = false where user_id = :E3;
 
 -- Account deletion: employers only, audited without personal data.
 select ok(tests.denied_as(:AD, 'select record_account_deletion()', 'aal2'), 'admins cannot self-delete');
@@ -180,6 +182,22 @@ select tests.run_as(:AD, format('select admin_review_job(%s, true, '''')', :'JA'
 select ok((select abs(public_lat - lat) <= 0.00136 and abs(public_lng - lng) <= 0.0016
              and (public_lat, public_lng) <> (lat, lng) from jobs where id = :JA),
   'the public pin is rounded to about 300 m');
+-- Two points in the same ~300 m cell get the very same pin: the pin can't be
+-- worked back to the exact latitude.
+insert into jobs (id, employer_id, title, description, location_label, lat, lng) values
+  ('40000000-0000-0000-0000-0000000000a1', :E1, 'Pin A', 'Checking the public pin grid.', 'Dubai', 25.0800, 55.1403),
+  ('40000000-0000-0000-0000-0000000000a2', :E1, 'Pin B', 'Checking the public pin grid.', 'Dubai', 25.0812, 55.1403);
+select is((select count(distinct (public_lat, public_lng))::int from jobs where title in ('Pin A', 'Pin B')), 1,
+  'points in the same cell share one public pin');
+delete from jobs where title in ('Pin A', 'Pin B');
+-- Every content change to a live job goes back to review (not only some fields).
+select tests.run_as(:E1, format('update jobs set country_name = ''Call +971500000000'' where id = %s', :'JA'));
+select is((select status::text from jobs where id = :JA), 'pending', 'any change to a live job sends it back for review');
+select tests.run_as(:AD, format('select admin_review_job(%s, true, '''')', :'JA'), 'aal2');
+select throws_ok(format('select tests.run_as(%L, %L)', :E1,
+  $$insert into jobs (employer_id, title, description, location_label, lat, lng)
+    select auth.uid(), 'Flood ' || n, 'Too many jobs in one day.', 'Dubai', 25.2, 55.3 from generate_series(1, 25) n$$),
+  '54000', 'rate_limited', 'a sponsor posts at most 20 jobs a day');
 select ok(tests.denied_as(:E2, $$insert into jobs (employer_id, title, description, location_label, lat, lng)
   values (auth.uid(), 'Nope', 'Pending employers cannot post.', 'Dubai', 25.2, 55.3)$$), 'pending employer cannot post');
 select ok(tests.denied_as(:E1, format($$insert into jobs (employer_id, title, description, location_label, lat, lng)
@@ -357,6 +375,10 @@ update applications set current_step = 'survey' where draft_token_hash = :TOKB;
 select app_submit(:JD, :TOKB, 'Sara A.', '+971501234567', '', jsonb_build_object(:SQ, '{"options":[1]}'::jsonb), 'v1', 'ip', true);
 select is((select count(*)::int from applicants), 1, 'repeat applicants are matched by phone number');
 select is((select count(distinct applicant_id)::int from applications where status = 'submitted'), 1, 'both applications belong to the same applicant');
+select is((select full_name || '|' || email from applicants where phone_e164 = '+971501234567'), 'Sara Ali|sara@example.com',
+  'a later application (the phone is not verified) never changes the stored name or email');
+select is((select string_agg(contact_name || ':' || coalesce(contact_email, '-'), ',' order by contact_name desc) from applications
+            where status = 'submitted'), 'Sara Ali:sara@example.com,Sara A.:-', 'each application keeps the details given with it');
 
 -- Reads: nobody but MFA admins (employers get approved ones in phase 6).
 select is(tests.rows_as(null, 'select 1 from applications'), -1, 'anon cannot read applications');
@@ -445,7 +467,7 @@ update tests set is_active = true where id = '30000000-0000-0000-0000-0000000000
 
 -- After approval: the name is visible, the rest is locked until 1 E-coin is spent.
 select is(tests.rows_as(:E3, format('select * from sponsor_list_candidates(%s) where not unlocked', :'JC')), 1, 'the sponsor sees the new candidate, still locked');
-select is((select full_name from (select tests.act_as(:E3, 'aal1')) x, sponsor_candidate_summary(:'aa_id')), 'Sara A.',
+select is((select full_name from (select tests.act_as(:E3, 'aal1')) x, sponsor_candidate_summary(:'aa_id')), 'Sara Ali',
   'the sponsor sees the candidate''s name before unlocking');
 reset role;
 select ok(tests.denied_as(:E3, format('select sponsor_get_candidate(%L)', :'aa_id')), 'a locked candidate cannot be opened');
@@ -463,6 +485,7 @@ select is((select string_agg(reason || ':' || delta, ',' order by created_at) fr
   'admin_grant:2,unlock:-1', 'every coin movement is in the ledger');
 select ok(tests.denied_as(:E3, $$update employer_profiles set ecoin_balance = 99 where user_id = auth.uid()$$), 'sponsors cannot edit their balance');
 select ok(tests.denied_as(:E3, $$insert into candidate_unlocks (application_id, employer_id) values (gen_random_uuid(), auth.uid())$$), 'sponsors cannot unlock without paying');
+select throws_ok($$update ecoin_ledger set delta = 50$$, '42501', 'append_only', 'ledger entries can never be changed');
 
 -- Unlocked: the sponsor sees everything (with the test answers), nobody else does.
 select ok(not tests.denied_as(:E3, format('select sponsor_get_candidate(%L)', :'aa_id')), 'the sponsor can open the unlocked candidate');
@@ -472,15 +495,17 @@ reset role;
 select is(tests.rows_as(:E1, format('select * from sponsor_list_candidates(%s)', :'JC')), 0, 'another sponsor sees nothing for that job');
 select ok(tests.denied_as(:E1, format('select sponsor_get_candidate(%L)', :'aa_id')), 'another sponsor cannot open the candidate');
 select ok(tests.denied_as(:E1, format('select sponsor_unlock_candidate(%L)', :'aa_id')), 'another sponsor cannot unlock the candidate');
-select is(tests.rows_as(:E3, 'select 1 from application_videos'), 2, 'the sponsor sees the unlocked candidate''s videos');
+select is(tests.rows_as(:E3, 'select 1 from application_videos'), 0, 'sponsors don''t read video rows directly (only through logged views)');
 select is(tests.rows_as(:E3, 'select 1 from applications'), 0, 'sponsors still cannot read the applications table (admin notes stay private)');
-select tests.run_as(:E3, format('select log_video_view(%L)', :'video_id'));
+select is((select log_video_view(:'video_id') like :'aa_id' || '/%' from (select tests.act_as(:E3, 'aal1')) x), true,
+  'a logged view gives the sponsor the video''s path');
+reset role;
 select ok(exists (select 1 from audit_logs where action = 'application.video_viewed' and actor_id = :E3::uuid), 'a sponsor''s video view is logged');
 select ok(tests.denied_as(:E1, format('select log_video_view(%L)', :'video_id')), 'another sponsor cannot watch the video');
 insert into storage.objects (bucket_id, name) values ('application-videos', :'aa_id' || '/answer/one.webm');
-select is(tests.rows_as(:E3, $$select 1 from storage.objects where bucket_id = 'application-videos' and name not like 'demo/%'$$), 1, 'storage: the sponsor can read the unlocked video file');
+select is(tests.rows_as(:E3, $$select 1 from storage.objects where bucket_id = 'application-videos' and name not like 'demo/%'$$), 0, 'storage: sponsors never read video files directly');
 insert into storage.objects (bucket_id, name) values ('application-cvs', :'aa_id' || '/cv/cv.pdf');
-select is(tests.rows_as(:E3, $$select 1 from storage.objects where bucket_id = 'application-cvs'$$), 1, 'storage: the sponsor can read the unlocked CV');
+select is(tests.rows_as(:E3, $$select 1 from storage.objects where bucket_id = 'application-cvs'$$), 0, 'storage: sponsors never read CV files directly');
 select is(tests.rows_as(:E1, $$select 1 from storage.objects where bucket_id = 'application-cvs'$$), 0, 'storage: other sponsors read no CVs');
 select ok((select (sponsor_get_candidate(:'aa_id') ->> 'has_cv')::boolean from (select tests.act_as(:E3, 'aal1')) x), 'the sponsor sees there is a CV');
 reset role;

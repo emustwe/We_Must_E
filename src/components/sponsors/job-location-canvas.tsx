@@ -27,7 +27,13 @@ export default function JobLocationCanvas({ lat, lng }: { lat: number; lng: numb
       <Circle
         center={[lat, lng]}
         radius={300}
-        pathOptions={{ color: "#2457F5", weight: 1.5, dashArray: "5 5", fillColor: "#2457F5", fillOpacity: 0.1 }}
+        pathOptions={{
+          color: "#2457F5",
+          weight: 1.5,
+          dashArray: "5 5",
+          fillColor: "#2457F5",
+          fillOpacity: 0.1,
+        }}
       />
       <Marker position={[lat, lng]} icon={point} interactive={false} keyboard={false} />
     </MapContainer>

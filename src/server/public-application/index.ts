@@ -480,16 +480,33 @@ export async function confirmCv(jobId: string, path: string): Promise<ActionResu
   });
   const object = listing?.find((o) => o.name === parts[2]);
   const size = Number(object?.metadata?.size ?? 0);
+  const expected = parts[2].endsWith(".pdf") ? "pdf" : "zip"; // DOCX is a ZIP container
+  const mime =
+    expected === "pdf"
+      ? "application/pdf"
+      : "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
   let kind: string | null = null;
-  if (object) {
+  if (object && size >= 1 && size <= MAX_CV_BYTES) {
     const { data: signed } = await storage.createSignedUrl(path, 60);
     if (signed) {
-      const res = await fetch(signed.signedUrl, { headers: { range: "bytes=0-15" } });
-      kind = res.ok ? detectFileKind(new Uint8Array(await res.arrayBuffer())) : null;
+      // A PDF is known from its first bytes. A DOCX must also be a real Word
+      // file, not just any ZIP: it names its main document inside.
+      const res = await fetch(
+        signed.signedUrl,
+        expected === "pdf" ? { headers: { range: "bytes=0-15" } } : undefined,
+      );
+      const bytes = res.ok ? new Uint8Array(await res.arrayBuffer()) : null;
+      kind = bytes ? detectFileKind(bytes.subarray(0, 16)) : null;
+      if (kind === "zip" && !(bytes && isWordDocument(bytes))) kind = null;
     }
   }
-  const expected = parts[2].endsWith(".pdf") ? "pdf" : "zip"; // DOCX is a ZIP container
-  if (!object || size < 1 || size > MAX_CV_BYTES || kind !== expected) {
+  if (
+    !object ||
+    size < 1 ||
+    size > MAX_CV_BYTES ||
+    kind !== expected ||
+    (object.metadata?.mimetype && object.metadata.mimetype !== mime)
+  ) {
     if (object) await storage.remove([path]);
     return fail("invalidFile");
   }
@@ -529,6 +546,12 @@ export async function sendPhoneCode(jobId: string, phoneE164: string): Promise<A
   return ok(undefined);
 }
 
+// A DOCX (a ZIP) lists "word/document.xml" and "[Content_Types].xml" by name.
+function isWordDocument(bytes: Uint8Array) {
+  const text = new TextDecoder("latin1").decode(bytes);
+  return text.includes("word/document.xml") && text.includes("[Content_Types].xml");
+}
+
 export async function verifyPhoneCode(jobId: string, code: string): Promise<ActionResult> {
   const current = await currentApplication(jobId);
   if (!current) return fail("sessionExpired");
@@ -543,13 +566,16 @@ export async function verifyPhoneCode(jobId: string, code: string): Promise<Acti
   if (!row || row.attempts >= OTP_MAX_ATTEMPTS || new Date(row.expires_at) < new Date()) {
     return fail("invalidCode");
   }
-  if (row.code_hash !== hashCode(current.app.id, code)) {
-    await db()
-      .from("phone_verifications")
-      .update({ attempts: row.attempts + 1 })
-      .eq("id", row.id);
-    return fail("invalidCode");
-  }
+  // Count the try first, and only if nobody else counted one meanwhile: tries
+  // sent at the same time can't get past the limit.
+  const { data: counted } = await db()
+    .from("phone_verifications")
+    .update({ attempts: row.attempts + 1 })
+    .eq("id", row.id)
+    .eq("attempts", row.attempts)
+    .select("id");
+  if (!counted?.length) return fail("invalidCode");
+  if (row.code_hash !== hashCode(current.app.id, code)) return fail("invalidCode");
   await db()
     .from("phone_verifications")
     .update({ verified_at: new Date().toISOString() })

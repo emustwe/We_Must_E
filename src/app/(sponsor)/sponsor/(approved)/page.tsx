@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
-import { btn, JOB_PILL, PageHeader, Segmented, StatusPill, tileColors } from "@/components/admin/wm";
+import {
+  btn,
+  JOB_PILL,
+  PageHeader,
+  Segmented,
+  StatusPill,
+  tileColors,
+} from "@/components/admin/wm";
 import { WmIcon } from "@/components/map/wm-icons";
 import { Crumbs } from "@/components/sponsors/sponsor-shell";
 import { JobSearch } from "@/components/sponsors/job-search";
@@ -77,9 +84,9 @@ export default async function EmployerJobsPage({ searchParams }: PageProps<"/spo
             label={t("jobsTitle")}
             items={[
               { href: href(), label: tu("tabAll"), active: !tab, count: count() },
-              ...TABS.filter((s) => s === "published" || s === "pending" || s === "closed" || count(s)).map(
-                (s) => ({ href: href(s), label: ts(s), active: tab === s, count: count(s) }),
-              ),
+              ...TABS.filter(
+                (s) => s === "published" || s === "pending" || s === "closed" || count(s),
+              ).map((s) => ({ href: href(s), label: ts(s), active: tab === s, count: count(s) })),
             ]}
           />
           <span className="grow" />
@@ -143,7 +150,9 @@ export default async function EmployerJobsPage({ searchParams }: PageProps<"/spo
                     <StatusPill tone={JOB_PILL[job.status]}>{ts(job.status)}</StatusPill>
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <span className="text-lg font-extrabold tracking-[-0.3px] break-words">{job.title}</span>
+                    <span className="text-lg font-extrabold tracking-[-0.3px] break-words">
+                      {job.title}
+                    </span>
                     <span className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-[13px] font-medium text-wm-slate">
                       <span className="flex items-center gap-[5px]">
                         <WmIcon name="pin" size={14} stroke={2} />
@@ -168,7 +177,9 @@ export default async function EmployerJobsPage({ searchParams }: PageProps<"/spo
                       )}
                     >
                       <WmIcon name="inbox" size={16} stroke={2.1} />
-                      {job.status === "pending" ? tu("notOnMap") : tu("candidatesCount", { count: n })}
+                      {job.status === "pending"
+                        ? tu("notOnMap")
+                        : tu("candidatesCount", { count: n })}
                     </span>
                     <span className="flex text-wm-caption">
                       <WmIcon name="chevronRight" size={16} stroke={2.4} />

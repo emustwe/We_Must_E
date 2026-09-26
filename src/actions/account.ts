@@ -6,6 +6,7 @@ import { getCurrentProfile } from "@/lib/auth/session";
 import { dbFail } from "@/lib/db-errors";
 import { logError } from "@/lib/log";
 import { fail, type ActionResult } from "@/lib/result";
+import { removeSponsorFiles } from "@/lib/sponsors/cleanup";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -25,6 +26,9 @@ export async function deleteAccount(input: unknown): Promise<ActionResult> {
 
   // Service role: deleting the auth user can't be done with the user's own
   // session. The id comes from the session, never from input.
+  // Files first (candidates' videos and CVs, the logo): the database cascade
+  // can't remove them.
+  if (profile.role === "employer") await removeSponsorFiles(profile.id);
   const admin = createAdminClient();
   const { error } = await admin.auth.admin.deleteUser(profile.id);
   if (error) {

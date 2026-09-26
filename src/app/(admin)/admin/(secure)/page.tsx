@@ -58,7 +58,7 @@ export default async function AdminHome() {
       supabase
         .from("applications")
         .select(
-          "id, submitted_at, applicants(full_name), jobs(title, location_label, employer_profiles(company_name))",
+          "id, submitted_at, contact_name, jobs(title, location_label, employer_profiles(company_name))",
         )
         .eq("status", "submitted")
         .order("submitted_at", { ascending: false })
@@ -86,7 +86,7 @@ export default async function AdminHome() {
       kind: "app" as const,
       id: a.id,
       at: a.submitted_at ?? "",
-      name: a.applicants?.full_name ?? "—",
+      name: a.contact_name ?? "—",
       line: t("appliedTo", {
         job: displayTitle(a.jobs?.title ?? "—"),
         sponsor: a.jobs?.employer_profiles?.company_name ?? "—",

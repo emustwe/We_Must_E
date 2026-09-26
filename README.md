@@ -86,11 +86,10 @@ on, otherwise nobody can log in).
 - **Leftovers from v1:** `npx tsx scripts/cleanup-v1-job-seekers.mts` (dry run) / `--apply` removes old
   job-seeker logins and the `cv-documents` / `video-resumes` buckets.
 
-### Creating the first admin (manual alternative)
+### Creating the first admin
 
-Admins are never created through signup. Create the user in the Supabase dashboard (Auth > Users > Add
-user, auto-confirm), then edit the email in `supabase/scripts/create-admin.sql` and run it in the SQL
-editor (it has no JWT, which is the only context where roles can change).
+Admins are never created through signup. Run `npm run create-admin -- you@example.com "Your Name"` (add
+`--prod` for the live project); it prints a one-time password.
 
 On first login the admin is sent to `/admin/mfa` to enroll an authenticator app; admin pages and admin RLS
 policies require MFA (`aal2`).

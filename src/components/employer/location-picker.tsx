@@ -42,14 +42,15 @@ export function LocationPicker({
     const point = { lat: round6(p.lat), lng: round6(p.lng) };
     onChange(point);
     lookup.current?.abort();
-    // A search result already knows its country; the name still comes from the pin.
+    // A search result already knows its country. The public name is always the
+    // area around the pin, never the searched building or address.
     const controller = new AbortController();
     lookup.current = controller;
     reverseGeocode(point.lat, point.lng, controller.signal)
       .then((r) => {
         if (!r && !found) return;
         onDetails({
-          label: (found ? found.label.replace(/,\s*[^,]+$/, "") : (r?.label ?? "")).slice(0, 200),
+          label: (r?.label ?? found?.city ?? "").slice(0, 200),
           countryCode: r?.countryCode ?? found?.countryCode ?? null,
           city: r?.city ?? found?.city ?? null,
         });

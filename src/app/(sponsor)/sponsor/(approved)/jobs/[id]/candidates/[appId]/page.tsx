@@ -180,7 +180,8 @@ export default async function CandidatePage({
   const length = (s: number) => `0:${String(Math.min(59, Math.round(s))).padStart(2, "0")}`;
   const [first, ...rest] = c.videos;
   const prompt = (v: Candidate["videos"][number], i: number) =>
-    v.prompt ?? (c.videos.length === 1 ? c.video_questions.join("\n") || null : c.video_questions[i] ?? null);
+    v.prompt ??
+    (c.videos.length === 1 ? c.video_questions.join("\n") || null : (c.video_questions[i] ?? null));
 
   return (
     <>
@@ -196,7 +197,12 @@ export default async function CandidatePage({
                 <WmIcon name="phone" size={17} stroke={2.2} />
                 {t("call")}
               </a>
-              <a href={whatsapp} target="_blank" rel="noopener noreferrer" className={btn("secondary")}>
+              <a
+                href={whatsapp}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={btn("secondary")}
+              >
                 <WmIcon name="external" size={17} stroke={2.2} />
                 {t("whatsapp")}
               </a>
@@ -232,7 +238,13 @@ export default async function CandidatePage({
                 <h2 className="m-0 text-lg font-extrabold tracking-[-0.3px]">{t("videos")}</h2>
                 <span className="text-[13px] font-medium text-wm-slate">{t("videoNote")}</span>
               </div>
-              <CandidateVideo videoId={first.id} number={1} prompt={prompt(first, 0)} length={length(first.seconds)} large />
+              <CandidateVideo
+                videoId={first.id}
+                number={1}
+                prompt={prompt(first, 0)}
+                length={length(first.seconds)}
+                large
+              />
               {rest.length ? (
                 <div className="grid gap-4 sm:grid-cols-2">
                   {rest.map((v, i) => (
@@ -255,7 +267,9 @@ export default async function CandidatePage({
               <dl className="m-0 grid gap-x-6 sm:grid-cols-2">
                 {PROFILE_ORDER.filter((k) => c.profile?.[k] !== undefined).map((k) => (
                   <div key={k} className="border-b border-wm-line py-3">
-                    <dt className="text-xs font-semibold text-wm-slate">{ta(`profile.${k}` as never)}</dt>
+                    <dt className="text-xs font-semibold text-wm-slate">
+                      {ta(`profile.${k}` as never)}
+                    </dt>
                     <dd className="m-0 mt-0.5 text-sm font-bold whitespace-pre-line">
                       {k === "gender"
                         ? ta(`genderOption.${c.profile[k]}` as never)
@@ -304,7 +318,15 @@ function ContactRow({
   );
 }
 
-function AnswerList({ title, items, numbered }: { title: string; items: Item[]; numbered?: boolean }) {
+function AnswerList({
+  title,
+  items,
+  numbered,
+}: {
+  title: string;
+  items: Item[];
+  numbered?: boolean;
+}) {
   if (!items.length) return null;
   return (
     <section className="flex flex-col gap-3 rounded-3xl bg-white p-6 shadow-wm-1">

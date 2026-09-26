@@ -7,7 +7,19 @@ description = "Supabase secret (service role) key"
 regex = '''sb_secret_[A-Za-z0-9_-]{16,}'''
 
 [allowlist]
-description = "CI placeholders and made-up passwords in tests"
-regexes = ['''ci-[a-z-]+-placeholder[-0-9a-f]*''', '''re_ci_placeholder_[0-9]+''']
-# Test files only hold fake credentials for local test accounts.
-paths = ['''^e2e/''', '''\.test\.ts$''']
+description = "CI placeholders and the made-up passwords of local test accounts"
+# Only these exact fake values: a real key pasted into a test file is still caught.
+regexes = [
+  '''ci-[a-z-]+-placeholder[-0-9a-f]*''',
+  '''re_ci_placeholder_[0-9]+''',
+  '''Wemuste-Local-2026!''',
+  '''Harbour-Coffee-Roast-88''',
+  '''Delete-Me-Please-2026''',
+  '''Some-Strong-Pass-99''',
+  '''e2e-review-token-0123456789-0123456789''',
+  '''Long-enough-pass-1''',
+  '''Orchid-Lantern-Meadow-47''',
+  '''Tulip-Harbor-Vessel-92''',
+  '''tulip-harbor-9''',
+  '''Quiet-River-Stone-4821''',
+]

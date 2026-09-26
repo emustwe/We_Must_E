@@ -28,9 +28,9 @@ export async function adminSearch(input: unknown): Promise<ActionResult<SearchHi
   const [apps, jobs, sponsors] = await Promise.all([
     supabase
       .from("applications")
-      .select("id, status, applicants!inner(full_name), jobs(title)")
+      .select("id, status, contact_name, jobs(title)")
       .neq("status", "in_progress")
-      .ilike("applicants.full_name", like)
+      .ilike("contact_name", like)
       .order("submitted_at", { ascending: false })
       .limit(5),
     supabase
@@ -52,7 +52,7 @@ export async function adminSearch(input: unknown): Promise<ActionResult<SearchHi
     ...(apps.data ?? []).map((a) => ({
       kind: "applicant" as const,
       href: `/admin/applications/${a.id}`,
-      title: a.applicants.full_name,
+      title: a.contact_name ?? "—",
       sub: a.jobs?.title ?? "",
     })),
     ...(jobs.data ?? []).map((j) => ({

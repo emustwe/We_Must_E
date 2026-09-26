@@ -98,7 +98,9 @@ const surveyAnswer = z.union([
 
 export const submitSchema = z.strictObject({
   jobId: z.guid(),
-  answers: z.record(z.guid(), surveyAnswer),
+  answers: z
+    .record(z.guid(), surveyAnswer)
+    .refine((r) => Object.keys(r).length <= 200, { message: "validation.invalid" }),
   consent: z.literal(true, { error: "validation.acceptConsent" }),
 });
 
@@ -159,7 +161,9 @@ export type FullProfileInput = z.input<typeof fullProfileSchema>;
 
 export const profileSaveSchema = z.strictObject({
   jobId: z.guid(),
-  profile: z.record(z.string().max(40), z.union([z.string().max(2000), z.number()])),
+  profile: z
+    .record(z.string().max(40), z.union([z.string().max(2000), z.number()]))
+    .refine((r) => Object.keys(r).length <= 40, { message: "validation.invalid" }),
 });
 
 export const cvUploadSchema = z.strictObject({

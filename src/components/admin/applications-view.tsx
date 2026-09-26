@@ -43,7 +43,7 @@ export async function ApplicationsView({
   let query = supabase
     .from("applications")
     .select(
-      "id, status, submitted_at, applicants(full_name), jobs!inner(title, location_label, city, employer_id, employer_profiles(company_name))",
+      "id, status, submitted_at, contact_name, jobs!inner(title, location_label, city, employer_id, employer_profiles(company_name))",
       { count: "exact" },
     )
     .neq("status", "in_progress")
@@ -168,7 +168,7 @@ export async function ApplicationsView({
             <ul className="flex flex-col gap-2">
               {rows.map((a) => {
                 const on = a.id === selected;
-                const name = a.applicants?.full_name ?? "—";
+                const name = a.contact_name ?? "—";
                 return (
                   <li key={a.id}>
                     <Link
@@ -360,12 +360,12 @@ async function ApplicationPanel({ id }: { id: string }) {
   const { data: app } = await supabase
     .from("applications")
     .select(
-      "id, status, submitted_at, admin_notes, test_id, survey_id, applicant_id, profile, cv_path, applicants(full_name, phone_e164, email), jobs(title, location_label, employer_profiles(company_name))",
+      "id, status, submitted_at, admin_notes, test_id, survey_id, applicant_id, profile, cv_path, contact_name, contact_phone, contact_email, jobs(title, location_label, employer_profiles(company_name))",
     )
     .eq("id", id)
     .neq("status", "in_progress")
     .maybeSingle();
-  if (!app || !app.applicants || app.status === "in_progress") {
+  if (!app || !app.contact_name || !app.contact_phone || app.status === "in_progress") {
     return <WCard className="p-6 text-sm font-semibold text-wm-caption">{t("selectApp")}</WCard>;
   }
 
@@ -439,7 +439,12 @@ async function ApplicationPanel({ id }: { id: string }) {
     q,
     text: answerText(q, surveyAnswer.get(q.id)),
   }));
-  const applicant = app.applicants;
+  // What this applicant gave with this application (never another one's).
+  const applicant = {
+    full_name: app.contact_name,
+    phone_e164: app.contact_phone,
+    email: app.contact_email,
+  };
   const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
   return (

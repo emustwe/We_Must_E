@@ -49,18 +49,15 @@ export async function getVideoUrl(input: unknown): Promise<ActionResult<{ url: s
   const parsed = videoViewSchema.safeParse(input);
   if (!parsed.success) return fail("invalidInput");
   const supabase = await admin();
-  const { videoId } = parsed.data;
-  const { data: video } = await supabase
-    .from("application_videos")
-    .select("storage_path")
-    .eq("id", videoId)
-    .maybeSingle();
-  if (!video) return fail("notFound");
-  const { error: logErr } = await supabase.rpc("log_video_view", { p_video_id: videoId });
+  // The database logs the view and returns the file's path.
+  const { data: path, error: logErr } = await supabase.rpc("log_video_view", {
+    p_video_id: parsed.data.videoId,
+  });
   if (logErr) return dbFail("admin-video-view", logErr);
+  if (!path) return fail("notFound");
   const { data, error } = await supabase.storage
     .from("application-videos")
-    .createSignedUrl(video.storage_path, VIDEO_URL_SECONDS);
+    .createSignedUrl(path, VIDEO_URL_SECONDS);
   if (error || !data) {
     logError("admin-video-url", error);
     return fail("generic");
@@ -73,17 +70,14 @@ export async function getCvUrl(applicationId: unknown): Promise<ActionResult<{ u
   const id = idSchema.safeParse(applicationId);
   if (!id.success) return fail("invalidInput");
   const supabase = await admin();
-  const { data: app } = await supabase
-    .from("applications")
-    .select("cv_path")
-    .eq("id", id.data)
-    .maybeSingle();
-  if (!app?.cv_path) return fail("notFound");
-  const { error: logErr } = await supabase.rpc("log_cv_view", { p_application_id: id.data });
+  const { data: path, error: logErr } = await supabase.rpc("log_cv_view", {
+    p_application_id: id.data,
+  });
   if (logErr) return dbFail("admin-cv-view", logErr);
+  if (!path) return fail("notFound");
   const { data, error } = await supabase.storage
     .from("application-cvs")
-    .createSignedUrl(app.cv_path, VIDEO_URL_SECONDS, { download: true });
+    .createSignedUrl(path, VIDEO_URL_SECONDS, { download: true });
   if (error || !data) {
     logError("admin-cv-url", error);
     return fail("generic");

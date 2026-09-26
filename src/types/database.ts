@@ -7,6 +7,31 @@ export type Json =
   | Json[]
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       applicants: {
@@ -173,6 +198,9 @@ export type Database = {
         Row: {
           admin_notes: string | null
           applicant_id: string | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
           created_at: string
           current_step: Database["public"]["Enums"]["application_step"]
           cv_path: string | null
@@ -201,6 +229,9 @@ export type Database = {
         Insert: {
           admin_notes?: string | null
           applicant_id?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string
           current_step?: Database["public"]["Enums"]["application_step"]
           cv_path?: string | null
@@ -229,6 +260,9 @@ export type Database = {
         Update: {
           admin_notes?: string | null
           applicant_id?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string
           current_step?: Database["public"]["Enums"]["application_step"]
           cv_path?: string | null
@@ -1013,6 +1047,7 @@ export type Database = {
         Args: { p_approve: boolean; p_job_id: string; p_note: string }
         Returns: undefined
       }
+      admin_revoke_sessions: { Args: { p_user_id: string }; Returns: undefined }
       admin_set_answer_key: {
         Args: { p_correct_options: number[]; p_question_id: string }
         Returns: undefined
@@ -1152,12 +1187,12 @@ export type Database = {
         Args: { p_kind: string; p_rows: number }
         Returns: undefined
       }
-      log_cv_view: { Args: { p_application_id: string }; Returns: undefined }
+      log_cv_view: { Args: { p_application_id: string }; Returns: string }
       log_sponsor_change: {
         Args: { p_change: string; p_employer_id: string }
         Returns: undefined
       }
-      log_video_view: { Args: { p_video_id: string }; Returns: undefined }
+      log_video_view: { Args: { p_video_id: string }; Returns: string }
       record_account_deletion: { Args: never; Returns: undefined }
       sponsor_all_candidates: {
         Args: { p_page?: number }
@@ -1359,6 +1394,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       application_status: ["in_progress", "submitted", "approved", "rejected"],

@@ -29,6 +29,8 @@ export async function activate(page: Page, email: string, since: Date) {
   // Emails use Supabase's site_url; open the same path on the app under test.
   const url = new URL(link);
   await page.goto(`${url.pathname}${url.search}`);
+  // The link is used only when Continue is pressed.
+  await page.getByRole("button", { name: "Continue" }).click();
 }
 
 // Confirmations are an in-page popup (<dialog>), not the browser's confirm():

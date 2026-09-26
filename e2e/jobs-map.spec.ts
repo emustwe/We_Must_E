@@ -10,6 +10,9 @@ async function stubMapTiler(page: Page) {
     const url = new URL(route.request().url());
     if (!url.pathname.startsWith("/geocoding/")) return route.fulfill({ status: 204 });
     const reverse = /^\/geocoding\/-?[\d.]+,-?[\d.]+\.json$/.test(url.pathname);
+    // Like MapTiler: the street at the pin, unless only areas are asked for
+    // (the app asks for areas, so a public name never gives the exact point).
+    const street = reverse && !url.searchParams.get("types")?.includes("neighbourhood");
     const context = [
       { id: "place.1", text: "Dubai Marina" },
       { id: "region.2", text: "Dubai Emirate" },
@@ -19,7 +22,7 @@ async function stubMapTiler(page: Page) {
       json: {
         features: [
           {
-            place_name: reverse
+            place_name: street
               ? "Marina Walk, Dubai, United Arab Emirates"
               : "Dubai Marina, Dubai, United Arab Emirates",
             center: [55.1403, 25.0805],

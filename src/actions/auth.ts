@@ -8,6 +8,7 @@ import { fail, ok, type ActionResult } from "@/lib/result";
 import { HOME_BY_ROLE } from "@/lib/routes";
 import { getClientIp } from "@/lib/security/ip";
 import { withinRateLimit } from "@/lib/security/rate-limit";
+import { completePasswordChange } from "@/lib/auth/password-change";
 import { createClient } from "@/lib/supabase/server";
 import {
   forgotPasswordSchema,
@@ -17,6 +18,16 @@ import {
 } from "@/lib/validations/auth";
 
 // Only admins and employers have accounts. Job seekers apply without one.
+
+const ALLOWED_LINK_TYPES: EmailOtpType[] = [
+  "email",
+  "signup",
+  "recovery",
+  "email_change",
+  "invite",
+];
+// A recovery session may change the password only for a short while.
+const RECOVERY_WINDOW_SECONDS = 15 * 60;
 
 const confirmUrl = (type: EmailOtpType) =>
   `${clientEnv.NEXT_PUBLIC_SITE_URL}/auth/confirm?type=${type}`;
@@ -43,6 +54,58 @@ function mapAuthError(error: AuthError, context: string): ActionResult<never> {
   }
 }
 
+// Uses the one-time token from an emailed link (posted by /auth/confirm).
+// Supports the token_hash templates (work across devices) and the PKCE ?code=
+// fallback. Destinations are fixed here, never taken from the request.
+export async function confirmEmailLink(form: FormData) {
+  const read = (key: string) => {
+    const v = form.get(key);
+    return typeof v === "string" && v.length <= 512 ? v : "";
+  };
+  const tokenHash = read("token_hash");
+  const code = read("code");
+  const type = ALLOWED_LINK_TYPES.find((allowed) => allowed === read("type"));
+
+  const supabase = await createClient();
+  let verified = false;
+  if (tokenHash && type) {
+    const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
+    if (error) logError("auth-confirm-otp", error);
+    verified = !error;
+  } else if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) logError("auth-confirm-code", error);
+    verified = !error;
+  }
+  if (!verified) redirect("/login?link=invalid");
+  if (type === "recovery") redirect("/reset-password");
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  redirect(profile ? HOME_BY_ROLE[profile.role] : "/login");
+}
+
+// True when this session was opened from an emailed link in the last few
+// minutes (not just any signed-in session, e.g. a borrowed laptop).
+async function recentLinkSession(supabase: Awaited<ReturnType<typeof createClient>>) {
+  const { data } = await supabase.auth.getClaims();
+  const amr = (data?.claims?.amr ?? []) as { method?: string; timestamp?: number }[];
+  const now = Math.floor(Date.now() / 1000);
+  return amr.some(
+    (m) =>
+      ["recovery", "otp", "magiclink", "invite"].includes(m.method ?? "") &&
+      typeof m.timestamp === "number" &&
+      now - m.timestamp < RECOVERY_WINDOW_SECONDS,
+  );
+}
+
 export async function signIn(input: unknown): Promise<ActionResult> {
   const parsed = loginSchema.safeParse(input);
   if (!parsed.success) return fail("invalidInput", toFieldErrors(parsed.error));
@@ -51,7 +114,8 @@ export async function signIn(input: unknown): Promise<ActionResult> {
   const ip = await getClientIp();
   const [ipOk, emailOk] = await Promise.all([
     withinRateLimit("loginPerIp", ip),
-    withinRateLimit("loginPerEmail", email),
+    // Per email *and* IP: someone else can't lock the owner out by failing on purpose.
+    withinRateLimit("loginPerEmail", `${email}|${ip}`),
   ]);
   if (!ipOk || !emailOk) return fail("rateLimited");
 
@@ -98,7 +162,7 @@ export async function requestPasswordReset(input: unknown): Promise<ActionResult
   const ip = await getClientIp();
   const [ipOk, emailOk] = await Promise.all([
     withinRateLimit("resetPerIp", ip),
-    withinRateLimit("resetPerEmail", email),
+    withinRateLimit("resetPerEmail", `${email}|${ip}`),
   ]);
   if (!ipOk) return fail("rateLimited");
   if (!emailOk) return ok(undefined);
@@ -122,12 +186,12 @@ export async function updatePassword(input: unknown): Promise<ActionResult> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return fail("sessionExpired");
+  if (!user || !(await recentLinkSession(supabase))) return fail("sessionExpired");
 
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
   if (error) return mapAuthError(error, "update-password");
   // An invited employer who used "forgot password" has now set their own password.
-  await supabase.rpc("complete_password_change");
+  await completePasswordChange(user.id);
 
   // A password change signs the account out everywhere, including here.
   await supabase.auth.signOut({ scope: "global" });

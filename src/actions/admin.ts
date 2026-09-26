@@ -8,6 +8,8 @@ import { sendEmail } from "@/lib/email/send";
 import { generatePassword } from "@/lib/generate-password";
 import { logError } from "@/lib/log";
 import { fail, ok, type ActionResult } from "@/lib/result";
+import { revokeSessions } from "@/lib/auth/password-change";
+import { removeSponsorFiles } from "@/lib/sponsors/cleanup";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { toFieldErrors } from "@/lib/validations/auth";
@@ -18,7 +20,6 @@ import {
   idSchema,
   sponsorPasswordSchema,
 } from "@/lib/validations/jobs";
-import { VIDEO_BUCKET } from "@/server/public-application";
 
 export type CreatedSponsor = { email: string; companyName: string; emailed: boolean };
 
@@ -129,6 +130,8 @@ export async function setSponsorPassword(
     .from("employer_profiles")
     .update({ must_change_password: false })
     .eq("user_id", employerId);
+  // Sessions opened with the old password end now.
+  await revokeSessions(employerId);
   const emailed = notify
     ? await sendEmail("sponsorPassword", sponsor.contact_email, {
         email: sponsor.contact_email,
@@ -151,30 +154,10 @@ export async function deleteSponsor(employerId: unknown): Promise<ActionResult> 
   });
   if (logErr) return dbFail("admin-delete-sponsor-log", logErr);
 
-  // Service role: files and the login can only be removed with it.
+  // Files first (videos, CVs, logo), then the login, which cascades through
+  // the jobs and applications. Service role: only it can do either.
+  await removeSponsorFiles(parsed.data);
   const service = createAdminClient();
-  const { data: apps } = await service
-    .from("applications")
-    .select("id, jobs!inner(employer_id)")
-    .eq("jobs.employer_id", parsed.data);
-  const { data: videos } = apps?.length
-    ? await service
-        .from("application_videos")
-        .select("storage_path")
-        .in(
-          "application_id",
-          apps.map((a) => a.id),
-        )
-    : { data: [] };
-  if (videos?.length) {
-    await service.storage.from(VIDEO_BUCKET).remove(videos.map((v) => v.storage_path));
-  }
-  const { data: logos } = await service.storage.from("sponsor-logos").list(parsed.data);
-  if (logos?.length) {
-    await service.storage
-      .from("sponsor-logos")
-      .remove(logos.map((l) => `${parsed.data}/${l.name}`));
-  }
   const { error } = await service.auth.admin.deleteUser(parsed.data);
   if (error) {
     logError("admin-delete-sponsor", error);
@@ -251,6 +234,7 @@ export async function resendSponsorInvite(
     .from("employer_profiles")
     .update({ must_change_password: false })
     .eq("user_id", id.data);
+  await revokeSessions(id.data);
   const emailed = await sendEmail("sponsorAccount", sponsor.contact_email, {
     email: sponsor.contact_email,
     password,

@@ -12,7 +12,7 @@ export function filterQueryRows(
   let query = supabase
     .from("applications")
     .select(
-      "id, status, submitted_at, applicants(full_name, phone_e164, email), jobs!inner(title, location_label, city, employer_id, employer_profiles(company_name))",
+      "id, status, submitted_at, contact_name, contact_phone, contact_email, jobs!inner(title, location_label, city, employer_id, employer_profiles(company_name))",
     )
     .neq("status", "in_progress")
     .order("submitted_at", { ascending: false })

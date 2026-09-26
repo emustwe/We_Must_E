@@ -1343,5 +1343,10 @@
     "companyName": "Company name",
     "companyNameBody": "Shown on your jobs. To change it, contact the Wemuste team.",
     "dangerZone": "Danger zone"
+  },
+  "confirmLink": {
+    "title": "Continue to Wemuste",
+    "body": "Press Continue to use the link from your email. It works once.",
+    "continue": "Continue"
   }
 }

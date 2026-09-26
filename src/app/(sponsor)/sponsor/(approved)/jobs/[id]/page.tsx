@@ -52,10 +52,15 @@ export default async function EmployerJobPage({
         </p>
       ) : null}
       {job.status === "rejected" ? (
-        <div className="rounded-2xl border border-wm-danger-line bg-[#FFF5F5] px-4 py-3 text-sm" role="status">
+        <div
+          className="rounded-2xl border border-wm-danger-line bg-[#FFF5F5] px-4 py-3 text-sm"
+          role="status"
+        >
           <p className="m-0 font-bold text-wm-danger">{t("rejectedNotice")}</p>
           {job.review_note ? (
-            <p className="m-0 mt-1 font-medium">{t("rejectedReason", { reason: job.review_note })}</p>
+            <p className="m-0 mt-1 font-medium">
+              {t("rejectedReason", { reason: job.review_note })}
+            </p>
           ) : null}
           <p className="m-0 mt-1 font-medium text-wm-slate">{t("rejectedHint")}</p>
         </div>
@@ -72,7 +77,9 @@ export default async function EmployerJobPage({
             </span>
             <div className="flex min-w-0 grow basis-60 flex-col gap-1.5">
               <span className="flex flex-wrap items-center gap-2.5">
-                <h1 className="m-0 text-[28px] font-extrabold tracking-[-0.8px] break-words">{job.title}</h1>
+                <h1 className="m-0 text-[28px] font-extrabold tracking-[-0.8px] break-words">
+                  {job.title}
+                </h1>
                 <StatusPill tone={JOB_PILL[job.status]}>{ts(job.status)}</StatusPill>
               </span>
               <span className="flex flex-wrap items-center gap-x-3.5 gap-y-1 text-[13px] font-medium text-wm-slate">
@@ -156,7 +163,9 @@ async function Candidates({ jobId, page }: { jobId: string; page: number }) {
           {t("candidatesCount", { count: total })}
         </span>
       </div>
-      <span className="text-[13px] leading-[1.5] font-medium text-wm-slate">{tu("candidatesBody")}</span>
+      <span className="text-[13px] leading-[1.5] font-medium text-wm-slate">
+        {tu("candidatesBody")}
+      </span>
       {!rows?.length ? (
         <p className="m-0 rounded-[18px] border-[1.5px] border-dashed border-[#C9D1DD] p-5 text-center text-sm font-medium text-wm-caption">
           {t("noApplicants")}
@@ -179,12 +188,18 @@ async function Candidates({ jobId, page }: { jobId: string; page: number }) {
       {total > 20 ? (
         <nav className="flex justify-center gap-2" aria-label={t("applicantsTitle")}>
           {page > 0 ? (
-            <Link href={`/sponsor/jobs/${jobId}?page=${page - 1}`} className={btn("secondary", "sm")}>
+            <Link
+              href={`/sponsor/jobs/${jobId}?page=${page - 1}`}
+              className={btn("secondary", "sm")}
+            >
               {t("prev")}
             </Link>
           ) : null}
           {(page + 1) * 20 < total ? (
-            <Link href={`/sponsor/jobs/${jobId}?page=${page + 1}`} className={btn("secondary", "sm")}>
+            <Link
+              href={`/sponsor/jobs/${jobId}?page=${page + 1}`}
+              className={btn("secondary", "sm")}
+            >
               {t("next")}
             </Link>
           ) : null}

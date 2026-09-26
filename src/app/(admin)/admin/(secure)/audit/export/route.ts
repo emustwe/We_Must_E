@@ -1,6 +1,6 @@
 import { loadActors } from "@/lib/admin/actors";
 import { auditQuery, parseAuditFilters } from "@/lib/admin/audit-query";
-import { csvResponse, toCsv } from "@/lib/admin/csv";
+import { csvResponse, fromOtherSite, toCsv } from "@/lib/admin/csv";
 import { requireAdminMfa } from "@/lib/auth/session";
 import { dbFail } from "@/lib/db-errors";
 import { createClient } from "@/lib/supabase/server";
@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 // The audit log as CSV, with the page's filters. MFA admins only; the export
 // is itself logged.
 export async function GET(request: Request) {
+  if (fromOtherSite(request)) return new Response("Forbidden", { status: 403 });
   await requireAdminMfa();
   const supabase = await createClient();
   const f = parseAuditFilters(Object.fromEntries(new URL(request.url).searchParams));

@@ -41,7 +41,8 @@ export async function uploadSponsorLogo(formData: FormData): Promise<ActionResul
   // Service role: the logo is written only after the checks above (no client
   // can write to the bucket or change a sponsor profile directly).
   const service = createAdminClient();
-  const path = `${employerId.data}/${randomUUID()}.${kind === "jpeg" ? "jpg" : kind}`;
+  // A random folder: the public logo URL must not reveal the sponsor's account id.
+  const path = `${randomUUID()}/${randomUUID()}.${kind === "jpeg" ? "jpg" : kind}`;
   const { error: uploadError } = await service.storage
     .from(LOGO_BUCKET)
     .upload(path, bytes, { contentType: TYPES[kind], cacheControl: "31536000", upsert: false });

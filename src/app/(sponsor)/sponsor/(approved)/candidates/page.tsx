@@ -54,18 +54,12 @@ export default async function SponsorCandidatesPage({
       {total > 20 ? (
         <nav className="flex justify-center gap-2" aria-label={t("candidatesTitle")}>
           {page > 0 ? (
-            <Link
-              href={`/sponsor/candidates?page=${page - 1}`}
-              className={btn("secondary", "sm")}
-            >
+            <Link href={`/sponsor/candidates?page=${page - 1}`} className={btn("secondary", "sm")}>
               {t("prev")}
             </Link>
           ) : null}
           {(page + 1) * 20 < total ? (
-            <Link
-              href={`/sponsor/candidates?page=${page + 1}`}
-              className={btn("secondary", "sm")}
-            >
+            <Link href={`/sponsor/candidates?page=${page + 1}`} className={btn("secondary", "sm")}>
               {t("next")}
             </Link>
           ) : null}
