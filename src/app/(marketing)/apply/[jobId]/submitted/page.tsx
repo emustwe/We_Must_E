@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { ClearDraft } from "@/components/apply/clear-draft";
+import { RetentionNote } from "@/components/apply/retention-note";
 import { TrustLines } from "@/components/explore/trust-lines";
 import { buttonVariants } from "@/components/ui/button";
 import { idSchema } from "@/lib/validations/jobs";
@@ -27,6 +28,7 @@ export default async function SubmittedPage({ params }: PageProps<"/apply/[jobId
       <p className="mt-3 text-lg text-muted-foreground">{t("submittedBody")}</p>
       <p className="mt-6 rounded-3xl bg-muted/60 p-4 text-sm">{t("submittedNote")}</p>
       <TrustLines className="mt-6 self-start text-start text-muted-foreground" />
+      <RetentionNote className="mt-4 text-start" />
       <Link href="/" className={buttonVariants({ size: "touch", className: "mt-8 w-full" })}>
         {t("moreJobs")}
       </Link>

@@ -68,7 +68,7 @@ test("full journey: apply with test, video and survey -> admin approves -> spons
   // Step 3: the survey questions and consent, on one page.
   await expect(page.getByText(/Step 3 of 3 · Survey/)).toBeVisible();
   await answerAll(page);
-  await page.getByText(/I agree that Wemuste stores my information/).click();
+  await page.getByText(/I agree to the Privacy Policy/).click();
   await page.getByRole("button", { name: "Send application" }).click();
   await expect(page.getByRole("heading", { name: "Application sent" })).toBeVisible();
 

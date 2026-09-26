@@ -107,3 +107,21 @@ test("an emailed reset link does nothing until Continue is pressed, and works on
     psql(`delete from auth.users where email = '${email}'`);
   }
 });
+
+test("the privacy policy is complete and says how to have data deleted", async ({ page }) => {
+  await page.goto("/privacy");
+  await expect(page.getByRole("heading", { name: "Privacy Policy" })).toBeVisible();
+  await expect(page.getByText("[PLACEHOLDER]")).toHaveCount(0);
+  await expect(page.getByText("Mumbai, India", { exact: false })).toBeVisible();
+  await expect(page.getByText("within 7 working days", { exact: false })).toBeVisible();
+  await expect(page.getByText("emustwe@gmail.com", { exact: false }).first()).toBeVisible();
+  // The application's first page says when data is deleted and how to ask sooner.
+  const job = psql(
+    `select id from public.jobs where status = 'published' and not is_example limit 1`,
+  );
+  await page.goto(`/apply/${job}`);
+  await expect(
+    page.getByText("Your data is deleted automatically when the job closes"),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: "emustwe@gmail.com" })).toBeVisible();
+});

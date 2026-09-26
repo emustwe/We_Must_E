@@ -811,7 +811,7 @@
     "required": "Please answer this question.",
     "consentTitle": "Almost done",
     "consentBody": "Please check your details and agree before sending.",
-    "consent": "I agree that Wemuste stores my information and may share it with sponsors it selects.",
+    "consent": "I agree to the Privacy Policy. My information is shared only with sponsors Wemuste approves, and is deleted when the job closes or 1 month after I apply.",
     "privacyLink": "Read the privacy policy",
     "submit": "Send application",
     "submittedTitle": "Application sent",
@@ -913,7 +913,8 @@
     "typingStats": "{wpm} words per minute · {accuracy}% accurate · {backspaces} backspaces · {wrong} wrong words",
     "typingTimeUp": "Time is up for the typing test.",
     "typingFinish": "Finish typing",
-    "typingLeft": "Typing time left"
+    "typingLeft": "Typing time left",
+    "retentionNote": "Your data is deleted automatically when the job closes, or 1 month after you apply. Want it deleted now? Email <mail>{email}</mail> and we will reply within {days} working days."
   },
   "applicationStatus": {
     "in_progress": "Unfinished",
@@ -1348,7 +1349,9 @@
     "onTheMap": "On the map",
     "companyName": "Company name",
     "companyNameBody": "Shown on your jobs. To change it, contact the Wemuste team.",
-    "dangerZone": "Danger zone"
+    "dangerZone": "Danger zone",
+    "retentionNote": "Candidates are visible for 1 month after they apply, or until the job closes. Contact them in time.",
+    "visibleUntil": "Visible until {date}. Contact this candidate before then: after that their details are deleted."
   },
   "confirmLink": {
     "title": "Continue to Wemuste",

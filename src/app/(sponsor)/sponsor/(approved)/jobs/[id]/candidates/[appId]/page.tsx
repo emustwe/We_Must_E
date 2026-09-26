@@ -10,6 +10,7 @@ import { Crumbs } from "@/components/sponsors/sponsor-shell";
 import { UnlockButton } from "@/components/sponsors/unlock-button";
 import { getEmployerAccount } from "@/lib/auth/employer";
 import { createClient } from "@/lib/supabase/server";
+import { RETENTION_DAYS } from "@/lib/legal";
 import { idSchema } from "@/lib/validations/jobs";
 import { typingResult } from "@/lib/typing";
 
@@ -34,6 +35,7 @@ type Candidate = {
   phone: string;
   email: string | null;
   approved_at: string;
+  submitted_at: string;
   test: Item[];
   survey: Item[];
   video_questions: string[];
@@ -145,6 +147,7 @@ export default async function CandidatePage({
           <div className="box-border flex w-full shrink-0 flex-col gap-5 self-start rounded-3xl bg-white p-6 shadow-wm-1 xl:w-[440px]">
             {identity}
             {approvedPill}
+            <p className="m-0 text-[13px] font-medium text-wm-slate">{tu("retentionNote")}</p>
           </div>
           <div className="relative min-w-0 grow overflow-hidden rounded-3xl bg-white shadow-wm-1">
             {/* A blurred stand-in: no real data is sent until the candidate is opened. */}
@@ -178,6 +181,10 @@ export default async function CandidatePage({
   const whatsapp = `https://wa.me/${c.phone.replace(/^\+/, "")}`;
   const length = (s: number) => `0:${String(Math.min(59, Math.round(s))).padStart(2, "0")}`;
   const [first, ...rest] = c.videos;
+  const visibleUntil = format.dateTime(
+    new Date(new Date(c.submitted_at).getTime() + RETENTION_DAYS * 86_400_000),
+    { dateStyle: "medium" },
+  );
   const prompt = (v: Candidate["videos"][number], i: number) =>
     v.prompt ??
     (c.videos.length === 1 ? c.video_questions.join("\n") || null : (c.video_questions[i] ?? null));
@@ -189,6 +196,12 @@ export default async function CandidatePage({
         <div className="box-border flex w-full shrink-0 flex-col gap-5 self-start rounded-3xl bg-white p-6 shadow-wm-1 xl:w-[440px]">
           {identity}
           {approvedPill}
+          <p className="m-0 flex items-start gap-2 rounded-2xl bg-[#FEF6E4] px-3.5 py-3 text-[13px] font-semibold text-[#7A4B06]">
+            <span className="shrink-0">
+              <WmIcon name="shieldClock" size={16} stroke={2.2} />
+            </span>
+            {tu("visibleUntil", { date: visibleUntil })}
+          </p>
           <div className="flex flex-col gap-2.5">
             <span className="text-sm font-extrabold">{tu("contact")}</span>
             <div className="flex flex-wrap gap-2">

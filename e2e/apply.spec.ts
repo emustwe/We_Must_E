@@ -92,7 +92,7 @@ test("a visitor applies in 3 steps without an account, and nothing reaches the e
   // --- Survey: every question on one page, then consent.
   await expect(page.getByText("Step 3 of 3 · Survey")).toBeVisible();
   const consent = page.getByRole("checkbox", {
-    name: /I agree that Wemuste stores my information/,
+    name: /I agree to the Privacy Policy/,
   });
   await expect(consent).not.toBeChecked(); // never pre-ticked
   await page.getByText("This week").click();
@@ -102,7 +102,7 @@ test("a visitor applies in 3 steps without an account, and nothing reaches the e
   await page.getByText("Delivery").click();
   await page.getByRole("button", { name: "Send application" }).click();
   await expect(page.getByText("Please tick the box to agree before sending.")).toBeVisible();
-  await page.getByText(/I agree that Wemuste stores my information/).click();
+  await page.getByText(/I agree to the Privacy Policy/).click();
   await page.getByRole("button", { name: "Send application" }).click();
 
   await expect(page).toHaveURL(new RegExp(`/apply/${id}/submitted$`));

@@ -209,7 +209,7 @@ async function Candidates({ jobId, page }: { jobId: string; page: number }) {
         <span className="shrink-0 text-wm-trust">
           <WmIcon name="shieldCheck" size={16} stroke={2.2} />
         </span>
-        {tu("viewsRecorded")}
+        {tu("viewsRecorded")} {tu("retentionNote")}
       </div>
     </section>
   );

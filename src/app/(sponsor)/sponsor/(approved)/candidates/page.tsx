@@ -19,6 +19,7 @@ export default async function SponsorCandidatesPage({
   const page =
     typeof query.page === "string" && /^\d{1,4}$/.test(query.page) ? Number(query.page) : 0;
   const t = await getTranslations("ecoins");
+  const tu = await getTranslations("sponsorUi");
   const supabase = await createClient();
   const { data: rows } = await supabase.rpc("sponsor_all_candidates", { p_page: page });
   const total = Number(rows?.[0]?.total ?? 0);
@@ -29,7 +30,7 @@ export default async function SponsorCandidatesPage({
       <Crumbs items={[{ label: t("candidatesTitle") }]} />
       <PageHeader
         title={t("candidatesTitle")}
-        body={locked ? t("lockedCount", { count: locked }) : t("candidatesBody")}
+        body={`${locked ? t("lockedCount", { count: locked }) : t("candidatesBody")} ${tu("retentionNote")}`}
       />
       {!rows?.length ? (
         <p className="m-0 rounded-3xl border-[1.5px] border-dashed border-[#C9D1DD] bg-white p-8 text-center text-sm font-medium text-wm-caption">

@@ -141,7 +141,7 @@ test("a candidate completes the real interview: Test, Task (profile, CV, 7 video
     if (await choice.count()) await choice.first().click();
     else await q.locator("textarea").fill(`Survey answer ${i + 1}`);
   }
-  await page.getByText(/I agree that Wemuste stores my information/).click();
+  await page.getByText(/I agree to the Privacy Policy/).click();
   await page.getByRole("button", { name: "Send application" }).click();
   await expect(page.getByRole("heading", { name: "Application sent" })).toBeVisible();
 

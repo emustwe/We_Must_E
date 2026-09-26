@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import { startApplication } from "@/actions/apply";
 import { Captcha, captchaEnabled } from "@/components/auth/captcha";
+import { RetentionNote } from "@/components/apply/retention-note";
 import { TrustLines } from "@/components/explore/trust-lines";
 import { FormAlert } from "@/components/forms/form-alert";
 import { SubmitButton } from "@/components/forms/submit-button";
@@ -66,6 +67,7 @@ export function StartStep({ jobId }: { jobId: string }) {
         ))}
       </ol>
       <TrustLines className="mt-6 text-muted-foreground" />
+      <RetentionNote className="mt-4" />
       <div className="mt-auto space-y-3 pt-8">
         <FormAlert message={error} />
         <Captcha
