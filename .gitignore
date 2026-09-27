@@ -45,3 +45,6 @@ next-env.d.ts
 /test-results/
 /playwright-report/
 
+
+# Partner job interviews (scripts/partner-interviews/pdf.mts builds it)
+/partner-interviews.pdf
