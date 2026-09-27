@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 import { loginAsAdmin } from "./admin-session";
 import { psql, removeObjects } from "./db";
 import { acceptConfirms, makeVideoFile } from "./helpers";
+import { waitForEmail } from "./mailpit";
 
 // The real interview (scripts/setup-real-interview.mts): Test with a timed
 // typing question and 24 written answers, Task with the full profile, CV and
@@ -39,6 +40,7 @@ test("a candidate completes the real interview: Test, Task (profile, CV, 7 video
   page,
 }) => {
   test.setTimeout(360_000);
+  const started = new Date();
   await acceptConfirms(page);
   const jobId = psql(`select id from public.jobs where title = '${TITLE}'`);
 
@@ -144,6 +146,10 @@ test("a candidate completes the real interview: Test, Task (profile, CV, 7 video
   await page.getByText(/I agree to the Privacy Policy/).click();
   await page.getByRole("button", { name: "Send application" }).click();
   await expect(page.getByRole("heading", { name: "Application sent" })).toBeVisible();
+  // The applicant gets a thank-you email right away, naming the job.
+  const mail = await waitForEmail("minsu@example.test", /We received your application/, started);
+  expect(mail.text).toContain("Online Office & Translation Administrator");
+  expect(mail.text).toContain("What happens next");
 
   // ------------------------------------------------------------ stored
   const row = psql(

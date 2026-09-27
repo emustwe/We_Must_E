@@ -1,8 +1,11 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { dbFail } from "@/lib/db-errors";
+import { after } from "next/server";
 import { notifyAdmins } from "@/lib/email/notify";
-import { RETENTION_DAYS } from "@/lib/legal";
+import { sendEmail } from "@/lib/email/send";
+import { displayTitle } from "@/lib/jobs/display";
+import { RETENTION_DAYS, SUPPORT_EMAIL } from "@/lib/legal";
 import { serverEnv } from "@/lib/env.server";
 import { logError } from "@/lib/log";
 import { fail, ok, type ActionResult } from "@/lib/result";
@@ -624,6 +627,13 @@ export async function submitApplication(
 
   // Tell the team, without any personal data in the email.
   notifyAdmins("newApplication");
+  // Thank the applicant (when they gave an email), after the response is sent.
+  const to = String(profile.email ?? "").trim();
+  if (to) {
+    const { data: job } = await db().from("jobs").select("title").eq("id", jobId).maybeSingle();
+    const jobTitle = displayTitle(job?.title ?? "the job");
+    after(() => sendEmail("applicationReceived", to, { jobTitle, supportEmail: SUPPORT_EMAIL }));
+  }
   return ok(undefined);
 }
 

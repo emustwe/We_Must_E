@@ -5,6 +5,7 @@ import { EmailLayout } from "./layout";
 // (their own login email and password, as the Wemuste team chose); none
 // contain applicants' personal data.
 export type LoginDetails = { email: string; password: string };
+export type ApplicationDetails = { jobTitle: string; supportEmail: string };
 
 const loginFooter =
   'Keep this email private and don\'t forward it. You can change your password any time with "Forgot password" on the login page. Wemuste will never ask for your password by phone.';
@@ -67,6 +68,28 @@ export const TEMPLATES = {
         body="The Wemuste team approved an application for one of your jobs. Log in to see the candidate."
         cta="See candidates"
         href={`${site}/sponsor`}
+      />
+    ),
+  },
+  // To the applicant, right after they send their application.
+  applicationReceived: {
+    subject: "We received your application",
+    render: (site: string, app: ApplicationDetails) => (
+      <EmailLayout
+        preview={`Thank you for applying for ${app.jobTitle}`}
+        heading="Thank you for applying"
+        body={`We received your application for ${app.jobTitle}. Thank you for taking the time to complete it.`}
+        steps={{
+          title: "What happens next",
+          items: [
+            "Our team reviews every application carefully.",
+            "If you are shortlisted, we share your application with the employer.",
+            "The employer contacts you directly by phone or email.",
+          ],
+        }}
+        cta="See more jobs"
+        href={site}
+        footer={`You don't need to do anything else. Your data is deleted automatically when the job closes, or 1 month after you applied. Want it deleted sooner? Email ${app.supportEmail}. Wemuste never asks for money: if someone asks you to pay for a job, it isn't us.`}
       />
     ),
   },

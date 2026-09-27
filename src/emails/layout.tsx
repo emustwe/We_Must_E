@@ -10,8 +10,9 @@ import {
   Text,
 } from "@react-email/components";
 
-// Shared layout. Emails never contain personal data: no names, no profile
-// details, no job titles. They only say "log in to see it".
+// Shared layout. Emails never contain personal data: no names and no profile
+// details. Emails to applicants name the job they applied for (their own
+// application); the others only say "log in to see it".
 export function EmailLayout({
   preview,
   heading,
@@ -19,6 +20,7 @@ export function EmailLayout({
   cta,
   href,
   details,
+  steps,
   footer,
 }: {
   preview: string;
@@ -28,6 +30,8 @@ export function EmailLayout({
   href: string;
   // Label/value lines shown in a box, e.g. the sponsor's login details.
   details?: { label: string; value: string }[];
+  // A short numbered "What happens next" list.
+  steps?: { title: string; items: string[] };
   footer?: string;
 }) {
   return (
@@ -77,6 +81,28 @@ export function EmailLayout({
                   <span style={{ fontFamily: "Menlo, Consolas, monospace", fontWeight: 600 }}>
                     {d.value}
                   </span>
+                </Text>
+              ))}
+            </Section>
+          ) : null}
+          {steps ? (
+            <Section
+              style={{
+                margin: "0 0 24px",
+                padding: "16px",
+                backgroundColor: "#f1f5f9",
+                borderRadius: 12,
+              }}
+            >
+              <Text style={{ margin: "0 0 8px", fontSize: 15, fontWeight: 600 }}>
+                {steps.title}
+              </Text>
+              {steps.items.map((item, i) => (
+                <Text
+                  key={item}
+                  style={{ margin: "0 0 6px", fontSize: 15, lineHeight: 1.5, color: "#334155" }}
+                >
+                  {i + 1}. {item}
                 </Text>
               ))}
             </Section>

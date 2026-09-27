@@ -1,7 +1,12 @@
 import "server-only";
 import { render } from "@react-email/render";
 import type { ReactElement } from "react";
-import { TEMPLATES, type EmailKind, type LoginDetails } from "@/emails/templates";
+import {
+  TEMPLATES,
+  type ApplicationDetails,
+  type EmailKind,
+  type LoginDetails,
+} from "@/emails/templates";
 import { clientEnv } from "@/lib/env";
 import { serverEnv } from "@/lib/env.server";
 import { logError } from "@/lib/log";
@@ -17,10 +22,22 @@ export async function sendEmail(
   to: string,
   login: LoginDetails,
 ): Promise<boolean>;
-export async function sendEmail(kind: EmailKind, to: string, login?: LoginDetails) {
+export async function sendEmail(
+  kind: "applicationReceived",
+  to: string,
+  app: ApplicationDetails,
+): Promise<boolean>;
+export async function sendEmail(
+  kind: EmailKind,
+  to: string,
+  data?: LoginDetails | ApplicationDetails,
+) {
   const template = TEMPLATES[kind];
-  const renderTemplate = template.render as (site: string, login?: LoginDetails) => ReactElement;
-  const element = renderTemplate(clientEnv.NEXT_PUBLIC_SITE_URL, login);
+  const renderTemplate = template.render as (
+    site: string,
+    data?: LoginDetails | ApplicationDetails,
+  ) => ReactElement;
+  const element = renderTemplate(clientEnv.NEXT_PUBLIC_SITE_URL, data);
   const [html, text] = await Promise.all([render(element), render(element, { plainText: true })]);
   const message = { from: serverEnv.EMAIL_FROM, to, subject: template.subject, html, text };
 
