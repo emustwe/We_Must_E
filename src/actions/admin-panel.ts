@@ -1,5 +1,6 @@
 "use server";
 
+import { notifyApplicantsJobClosed } from "@/lib/email/job-closed";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdminMfa } from "@/lib/auth/session";
@@ -38,6 +39,10 @@ export async function adminSetJobStatus(input: unknown): Promise<ActionResult> {
     p_status: parsed.data.status,
   });
   if (error) return dbFail("admin-job-status", error);
+  // Closing or removing a job ends it: everyone who applied hears so.
+  if (parsed.data.status === "closed" || parsed.data.status === "removed") {
+    notifyApplicantsJobClosed(parsed.data.jobId);
+  }
   revalidatePath("/admin/jobs");
   revalidatePath("/");
   return ok(undefined);

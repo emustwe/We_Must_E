@@ -93,6 +93,20 @@ export const TEMPLATES = {
       />
     ),
   },
+  // To everyone who applied, when the job is closed (by the sponsor or the team).
+  jobClosed: {
+    subject: "An update on your application",
+    render: (site: string, app: ApplicationDetails) => (
+      <EmailLayout
+        preview={`${app.jobTitle} is now closed`}
+        heading="This job is now closed"
+        body={`Thank you again for applying for ${app.jobTitle}. The employer has now closed this position. If you were selected, they have already contacted you or will do so very soon. If not, please don't be discouraged: we truly appreciate the time you put into your application, and new jobs are added to Wemuste every day.`}
+        cta="Explore more jobs"
+        href={site}
+        footer={`As promised in our privacy policy, your application for this job is now being deleted. Questions? Email ${app.supportEmail}. Wemuste never asks for money: if someone asks you to pay for a job, it isn't us.`}
+      />
+    ),
+  },
   sponsorAccount: {
     subject: "Your Wemuste sponsor account",
     render: (site: string, login: LoginDetails) => (

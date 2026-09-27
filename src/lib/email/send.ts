@@ -23,7 +23,7 @@ export async function sendEmail(
   login: LoginDetails,
 ): Promise<boolean>;
 export async function sendEmail(
-  kind: "applicationReceived",
+  kind: "applicationReceived" | "jobClosed",
   to: string,
   app: ApplicationDetails,
 ): Promise<boolean>;
@@ -72,4 +72,48 @@ export async function sendEmail(
     logError(`email-${kind}`, error);
   }
   return false;
+}
+
+// The same email to many people (one message each, nobody sees the others'
+// addresses). Resend's batch API takes up to 100 at a time.
+export async function sendEmailToMany(
+  kind: "jobClosed",
+  recipients: string[],
+  app: ApplicationDetails,
+): Promise<number> {
+  if (!recipients.length) return 0;
+  if (!serverEnv.RESEND_API_KEY) {
+    let sent = 0;
+    for (const to of recipients) if (await sendEmail(kind, to, app)) sent++;
+    return sent;
+  }
+  const template = TEMPLATES[kind];
+  const element = template.render(clientEnv.NEXT_PUBLIC_SITE_URL, app);
+  const [html, text] = await Promise.all([render(element), render(element, { plainText: true })]);
+  let sent = 0;
+  for (let i = 0; i < recipients.length; i += 100) {
+    const batch = recipients.slice(i, i + 100).map((to) => ({
+      from: serverEnv.EMAIL_FROM,
+      to,
+      subject: template.subject,
+      html,
+      text,
+    }));
+    try {
+      const res = await fetch("https://api.resend.com/emails/batch", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${serverEnv.RESEND_API_KEY}`,
+          "content-type": "application/json",
+          "user-agent": "wemuste-app/1.0",
+        },
+        body: JSON.stringify(batch),
+      });
+      if (res.ok) sent += batch.length;
+      else logError(`email-${kind}-batch`, { name: "ResendError", status: res.status });
+    } catch (error) {
+      logError(`email-${kind}-batch`, error);
+    }
+  }
+  return sent;
 }

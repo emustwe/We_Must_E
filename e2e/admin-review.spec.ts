@@ -163,3 +163,30 @@ test("an admin deletes an application permanently: files, answers and contact de
     psql(`delete from public.applicants where phone_e164 = '${PHONE}'`);
   }
 });
+
+test("when a sponsor closes a job, everyone who applied gets a kind 'job closed' email", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  await acceptConfirms(page);
+  const started = new Date();
+  const { appId, paths } = await seedApplication(`Closed Job ${unique()}`);
+  const email = `applicant-${unique()}@example.test`;
+  psql(`update public.applications set contact_email = '${email}' where id = '${appId}'`);
+  const jobId = psql(`select job_id from public.applications where id = '${appId}'`);
+  try {
+    await login(page, "employer@wemuste.local");
+    await expect(page).toHaveURL(/\/sponsor$/);
+    await page.goto(`/sponsor/jobs/${jobId}`);
+    await page.getByRole("button", { name: "Close job" }).click();
+    await expect(page.getByText("Closed").first()).toBeVisible();
+    const mail = await waitForEmail(email, /An update on your application/, started);
+    expect(mail.text).toMatch(/this job is now closed/i);
+    expect(mail.text).toContain("Evening cashier");
+  } finally {
+    psql(`update public.jobs set status = 'published', closed_at = null where id = '${jobId}'`);
+    await removeObjects("application-videos", paths);
+    psql(`delete from public.applications where id = '${appId}'`);
+    psql(`delete from public.applicants where phone_e164 = '${PHONE}'`);
+  }
+});

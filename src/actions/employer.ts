@@ -6,6 +6,7 @@ import { getEmployerAccount } from "@/lib/auth/employer";
 import { completePasswordChange } from "@/lib/auth/password-change";
 import { requireRole } from "@/lib/auth/session";
 import { dbFail } from "@/lib/db-errors";
+import { notifyApplicantsJobClosed } from "@/lib/email/job-closed";
 import { notifyAdmins } from "@/lib/email/notify";
 import { jobAreaBounds } from "@/lib/jobs/area";
 import { countryName } from "@/lib/geo/countries";
@@ -107,6 +108,8 @@ export async function closeJob(input: unknown): Promise<ActionResult> {
     .select("id");
   if (error) return dbFail("job-status", error);
   if (!data?.length) return fail("notFound");
+  // Everyone who applied hears that the job is closed.
+  notifyApplicantsJobClosed(parsed.data.jobId);
   revalidatePath(`/sponsor/jobs/${parsed.data.jobId}`);
   revalidatePath("/sponsor");
   revalidatePath("/");
