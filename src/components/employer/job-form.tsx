@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { COUNTRIES } from "@/lib/geo/countries";
 import type { Bounds } from "@/lib/jobs/meta";
 import { cn } from "@/lib/utils";
-import { jobSchema, type JobInput } from "@/lib/validations/jobs";
+import { JOB_TYPES, jobSchema, type JobInput } from "@/lib/validations/jobs";
 
 // The whole job post: title, description and a place on the map.
 export function JobForm({
@@ -30,6 +30,7 @@ export function JobForm({
   const t = useTranslations("jobForm");
   const te = useTranslations("errors");
   const tAll = useTranslations();
+  const tx = useTranslations("explore");
   const tr = (key?: string) =>
     key ? (tAll.has(key as never) ? tAll(key as never) : te("invalidInput")) : null;
   const [pending, startTransition] = useTransition();
@@ -38,7 +39,14 @@ export function JobForm({
   const form = useForm<JobInput>({
     resolver: zodResolver(jobSchema),
     mode: "onBlur",
-    defaultValues: defaults ?? { title: "", description: "", locationLabel: "", city: "" },
+    defaultValues: defaults ?? {
+      title: "",
+      description: "",
+      // Nothing chosen yet: the sponsor must pick one.
+      jobType: "" as unknown as JobInput["jobType"],
+      locationLabel: "",
+      city: "",
+    },
   });
   const { errors } = form.formState;
   const lat = useWatch({ control: form.control, name: "lat" });
@@ -88,6 +96,25 @@ export function JobForm({
             placeholder={t("descriptionPlaceholder")}
             className="w-full resize-y rounded-xl border border-input bg-background px-4 py-3 text-base outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive"
           />
+        )}
+      </Field>
+
+      <Field label={t("jobType")} error={errors.jobType?.message}>
+        {(props) => (
+          <select
+            {...props}
+            {...form.register("jobType")}
+            className="h-12 w-full rounded-xl border border-input bg-background px-3 text-base aria-invalid:border-destructive"
+          >
+            <option value="" disabled>
+              {t("jobTypeChoose")}
+            </option>
+            {JOB_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {tx(`jobType.${type}`)}
+              </option>
+            ))}
+          </select>
         )}
       </Field>
 

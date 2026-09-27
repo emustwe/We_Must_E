@@ -41,6 +41,7 @@ export default async function EditJobPage({ params }: PageProps<"/sponsor/jobs/[
           defaults={{
             title: job.title,
             description: job.description,
+            jobType: job.job_type,
             locationLabel: job.location_label,
             lat: job.lat,
             lng: job.lng,

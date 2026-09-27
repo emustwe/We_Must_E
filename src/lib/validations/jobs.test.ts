@@ -4,6 +4,7 @@ import { createEmployerSchema, jobSchema, jobStatusSchema } from "./jobs";
 const job = {
   title: "Weekend barista",
   description: "Make coffee and serve customers.",
+  jobType: "part_time",
   locationLabel: "Dubai Marina, Dubai",
   lat: 25.08,
   lng: 55.14,
@@ -12,8 +13,15 @@ const job = {
 };
 
 describe("jobSchema", () => {
-  it("accepts exactly the three fields", () => {
+  it("accepts exactly the sponsor's fields", () => {
     expect(jobSchema.parse({ ...job, title: "  Weekend barista " }).title).toBe("Weekend barista");
+  });
+  it("needs one of the three job types", () => {
+    expect(jobSchema.safeParse({ ...job, jobType: undefined }).success).toBe(false);
+    expect(jobSchema.safeParse({ ...job, jobType: "weekly" }).success).toBe(false);
+    for (const jobType of ["full_time", "part_time", "short_term"]) {
+      expect(jobSchema.safeParse({ ...job, jobType }).success).toBe(true);
+    }
   });
   it("requires a picked point", () => {
     expect(jobSchema.safeParse({ ...job, lat: undefined }).success).toBe(false);

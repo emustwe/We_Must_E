@@ -413,8 +413,10 @@ select tests.run_as(:E3, format('update jobs set country_code = ''AE'', country_
 select is((select city from jobs where id = :JC), 'Dubai', 'sponsors set the country and city of their job');
 select tests.run_as(:AD, format('select admin_review_job(%s, true, '''')', :'JC'), 'aal2');
 select ok(tests.denied_as(:E3, format('update jobs set country_code = ''uae'' where id = %s', :'JC')), 'country codes must be two capital letters');
-select is((select sponsor_name || '|' || city || '|' || country_code from get_public_jobs(-90, -180, 90, 180) where id = :JC),
-  'Invited Co|Dubai|AE', 'the public map shows the sponsor name, city and country');
+select is((select job_type || '|' || city || '|' || country_code || '|' || applicant_count from get_public_jobs(-90, -180, 90, 180) where id = :JC),
+  'full_time|Dubai|AE|1', 'the public map shows the job type, city, country and the real number of applicants');
+select is((select array_agg(a order by a) from unnest((select proargnames from pg_proc where proname = 'get_public_jobs')) a
+            where a in ('sponsor_name', 'sponsor_logo')), null, 'the public map never names the company');
 select is((select array_agg(a order by a) from unnest((select proargnames from pg_proc where proname = 'get_public_jobs')) a
             where a in ('lat', 'lng', 'employer_id', 'user_id', 'contact_email', 'contact_phone')), null,
   'the public map still never returns exact points, ids or contact details');

@@ -1,6 +1,8 @@
 import type { Database } from "@/types/database";
 
 type Row = Database["public"]["Functions"]["get_public_jobs"]["Returns"][number];
+export type JobType = Database["public"]["Enums"]["job_type"];
+export const JOB_TYPES = ["full_time", "part_time", "short_term"] as const satisfies JobType[];
 
 export type PublicJob = {
   id: string;
@@ -10,8 +12,9 @@ export type PublicJob = {
   lat: number;
   lng: number;
   publishedAt: string;
-  sponsorName: string;
-  sponsorLogo: string | null;
+  jobType: JobType;
+  // Sent applications so far (the real number; 0 for a new job).
+  applicants: number;
   countryCode: string | null;
   countryName: string | null;
   city: string | null;
@@ -28,8 +31,8 @@ export const toPublicJob = (j: Row): PublicJob => ({
   lat: j.public_lat,
   lng: j.public_lng,
   publishedAt: j.published_at,
-  sponsorName: j.sponsor_name,
-  sponsorLogo: j.sponsor_logo,
+  jobType: j.job_type,
+  applicants: j.applicant_count,
   countryCode: j.country_code,
   countryName: j.country_name,
   city: j.city,

@@ -29,6 +29,7 @@ function toRow(job: JobData) {
   return {
     title: job.title,
     description: job.description,
+    job_type: job.jobType,
     location_label: job.locationLabel,
     lat: job.lat,
     lng: job.lng,

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { WmIcon, type IconName } from "@/components/map/wm-icons";
-import { SponsorLogo } from "@/components/sponsors/sponsor-logo";
 import { daysSince, displayTitle, isNewJob, isSample } from "@/lib/jobs/display";
 import type { PublicJob } from "@/lib/jobs/public-job";
 import { cn } from "@/lib/utils";
@@ -55,6 +54,11 @@ function BandButton({
       />
     </button>
   );
+}
+
+// The real number of applicants; a new job invites the first ones.
+function applicantsText(t: ReturnType<typeof useTranslations<"explore">>, n: number) {
+  return n > 0 ? t("applicantsCount", { count: n }) : t("applicantsNone");
 }
 
 function Badges({ job }: { job: PublicJob }) {
@@ -243,15 +247,10 @@ export function JobCard({
         </span>
       </div>
       <div className="relative -mt-[30px] flex items-end gap-3 px-[22px]">
-        <SponsorLogo
-          name={job.sponsorName}
-          path={job.sponsorLogo}
-          className="size-[60px] rounded-[18px] border border-wm-line bg-white text-lg font-extrabold text-wm-blue shadow-wm-1"
-        />
-        <span className="flex min-w-0 flex-col gap-px pb-1">
-          <span className="truncate text-sm font-bold text-wm-ink">{job.sponsorName}</span>
-          <span className="text-xs font-medium text-wm-caption">{posted}</span>
+        <span className="flex size-[60px] items-center justify-center rounded-[18px] border border-wm-line bg-white text-wm-blue shadow-wm-1">
+          <WmIcon name="briefcase" size={26} stroke={2} />
         </span>
+        <span className="pb-1 text-xs font-medium text-wm-caption">{posted}</span>
       </div>
       <div className="flex min-h-0 grow flex-col gap-[18px] overflow-y-auto px-[22px] pt-4 pb-1">
         {pager ? <PagerRow pager={pager} /> : null}
@@ -265,6 +264,8 @@ export function JobCard({
         </h2>
         <div className="grid grid-cols-2 gap-x-3 gap-y-3.5">
           <Fact icon="pin" label={t("area")} value={areaOf(job)} />
+          <Fact icon="calendar" label={t("jobTypeFact")} value={t(`jobType.${job.jobType}`)} />
+          <Fact icon="list" label={t("applicantsFact")} value={applicantsText(t, job.applicants)} />
           {km !== null ? (
             <Fact icon="route" label={t("distanceFact")} value={t("fromYou", { km: kmText(km) })} />
           ) : null}
@@ -413,15 +414,10 @@ export function JobSheet({
         </span>
       </div>
       <div className="relative -mt-[26px] flex shrink-0 items-end gap-3 px-5">
-        <SponsorLogo
-          name={job.sponsorName}
-          path={job.sponsorLogo}
-          className="size-[54px] rounded-2xl border border-wm-line bg-white text-base font-extrabold text-wm-blue shadow-wm-1"
-        />
-        <span className="flex min-w-0 flex-col gap-px pb-[3px]">
-          <span className="truncate text-sm font-bold">{job.sponsorName}</span>
-          <span className="text-xs font-medium text-wm-caption">{posted}</span>
+        <span className="flex size-[54px] items-center justify-center rounded-2xl border border-wm-line bg-white text-wm-blue shadow-wm-1">
+          <WmIcon name="briefcase" size={24} stroke={2} />
         </span>
+        <span className="pb-[3px] text-xs font-medium text-wm-caption">{posted}</span>
       </div>
       <div className="flex min-h-0 grow flex-col gap-3.5 overflow-y-auto px-5 pt-3">
         {pager ? <PagerRow pager={pager} /> : null}
@@ -433,8 +429,14 @@ export function JobSheet({
         >
           {displayTitle(job.title)}
         </h2>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <FactTile icon="pin" label={t("area")} value={areaOf(job)} />
+          <FactTile icon="calendar" label={t("jobTypeFact")} value={t(`jobType.${job.jobType}`)} />
+          <FactTile
+            icon="list"
+            label={t("applicantsFact")}
+            value={applicantsText(t, job.applicants)}
+          />
           {km !== null ? (
             <FactTile
               icon="route"

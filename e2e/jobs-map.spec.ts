@@ -77,7 +77,12 @@ test("anyone can browse live jobs on the map and open one, without an account", 
   await pin(page, "Weekend barista").click();
   const sheet = page.getByRole("region", { name: "Weekend barista" });
   await expect(sheet.getByText("Sample listing")).toBeVisible(); // a badge, not "[SAMPLE]"
-  await expect(sheet.getByText(sponsorName, { exact: true })).toBeVisible();
+  // No company on the card: the job type and the real number of applicants instead.
+  await expect(sheet.getByText(sponsorName, { exact: true })).toHaveCount(0);
+  await expect(sheet.getByText("Full-time")).toBeVisible();
+  await expect(
+    sheet.getByText(/people applied|person applied|Be the first to apply/),
+  ).toBeVisible();
   await expect(sheet.getByText("Dubai Marina", { exact: true })).toBeVisible();
   await expect(sheet.getByText("Free to apply. We never ask for money.")).toBeVisible();
   // The open job is in the URL, so it can be shared.
@@ -137,6 +142,7 @@ test("a sponsor's job waits for approval, then appears live on an open map; hidi
   await page
     .getByLabel("Description")
     .fill("Help run our weekend stall: set up, serve and pack down.");
+  await page.getByLabel("Job type").selectOption("short_term");
   await page.getByRole("combobox", { name: "Search a place or area" }).fill("Marina");
   await page.getByRole("option", { name: /Dubai Marina/ }).click();
   await expect(page.getByLabel("Place name")).toHaveValue("Dubai Marina, Dubai");

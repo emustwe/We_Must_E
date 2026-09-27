@@ -578,6 +578,7 @@ export type Database = {
           full_profile: boolean
           id: string
           is_example: boolean
+          job_type: Database["public"]["Enums"]["job_type"]
           lat: number
           lng: number
           location_label: string
@@ -606,6 +607,7 @@ export type Database = {
           full_profile?: boolean
           id?: string
           is_example?: boolean
+          job_type?: Database["public"]["Enums"]["job_type"]
           lat: number
           lng: number
           location_label: string
@@ -634,6 +636,7 @@ export type Database = {
           full_profile?: boolean
           id?: string
           is_example?: boolean
+          job_type?: Database["public"]["Enums"]["job_type"]
           lat?: number
           lng?: number
           location_label?: string
@@ -1186,18 +1189,18 @@ export type Database = {
           min_lng: number
         }
         Returns: {
+          applicant_count: number
           city: string
           country_code: string
           country_name: string
           description: string
           id: string
           is_example: boolean
+          job_type: Database["public"]["Enums"]["job_type"]
           location_label: string
           public_lat: number
           public_lng: number
           published_at: string
-          sponsor_logo: string
-          sponsor_name: string
           title: string
         }[]
       }
@@ -1272,6 +1275,7 @@ export type Database = {
         | "closed"
         | "removed"
         | "rejected"
+      job_type: "full_time" | "part_time" | "short_term"
       question_type:
         | "single_choice"
         | "multi_choice"
@@ -1435,6 +1439,7 @@ export const Constants = {
         "removed",
         "rejected",
       ],
+      job_type: ["full_time", "part_time", "short_term"],
       question_type: [
         "single_choice",
         "multi_choice",

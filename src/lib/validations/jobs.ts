@@ -4,7 +4,9 @@ import { emailSchema, newPasswordSchema } from "@/lib/validations/auth";
 
 export const idSchema = z.guid({ error: "validation.invalid" });
 
-// Employers fill exactly three things: title, description and a map location.
+export const JOB_TYPES = ["full_time", "part_time", "short_term"] as const;
+
+// Employers fill the title, description, job type and a map location.
 // The service-area check (JOB_AREA_BOUNDS) happens in the server action.
 export const jobSchema = z.strictObject({
   title: z
@@ -17,6 +19,7 @@ export const jobSchema = z.strictObject({
     .trim()
     .min(10, { error: "validation.descriptionRequired" })
     .max(3000, { error: "validation.descriptionTooLong" }),
+  jobType: z.enum(JOB_TYPES, { error: "validation.jobTypeRequired" }),
   locationLabel: z
     .string()
     .trim()

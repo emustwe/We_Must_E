@@ -179,7 +179,7 @@ test("maps stay under menus and pop-ups on a phone", async ({ page }) => {
   // Public map: search results and the job sheet.
   await page.goto("/");
   await page.getByRole("combobox", { name: "City or area" }).fill("Marina");
-  await expect(page.getByRole("option").first()).toBeVisible();
+  await expect(page.getByRole("listbox").getByRole("option").first()).toBeVisible();
   await expectOnTop(page, '[role="listbox"]', "public search results");
   await page.screenshot({ path: test.info().outputPath("map-search.png") });
   await page.keyboard.press("Escape");
@@ -193,7 +193,7 @@ test("maps stay under menus and pop-ups on a phone", async ({ page }) => {
   await expect(page).toHaveURL(/\/sponsor$/);
   await page.goto("/sponsor/jobs/new");
   await page.getByRole("combobox", { name: "Search a place or area" }).fill("Marina");
-  await expect(page.getByRole("option").first()).toBeVisible();
+  await expect(page.getByRole("listbox").getByRole("option").first()).toBeVisible();
   await expectOnTop(page, '[role="listbox"]', "place search results over the picker map");
   await page.keyboard.press("Escape");
   await page.locator(".leaflet-container").scrollIntoViewIfNeeded();
