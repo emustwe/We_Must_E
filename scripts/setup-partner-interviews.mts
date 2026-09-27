@@ -8,7 +8,7 @@
 //
 // The questions are in scripts/partner-interviews/ (one Role per job title).
 // New role? Add it there and run this again: what already exists is reused,
-// never duplicated. Removed jobs are left as they are.
+// never duplicated. Only live (published) jobs are changed.
 import { createClient } from "@supabase/supabase-js";
 import { loadEnv } from "./_env.mjs";
 import { ROLES, buildTest, buildVideos, type TestQ } from "./partner-interviews/build.mjs";
@@ -160,7 +160,7 @@ for (const role of ROLES) {
       })
       .eq("employer_id", partner)
       .eq("title", role.title)
-      .neq("status", "removed")
+      .eq("status", "published")
       .select("id"),
   );
   if (!jobs?.length) noJobs.push(role.title);
@@ -178,7 +178,7 @@ const left = check(
     .select("title")
     .eq("employer_id", partner)
     .eq("is_example", true)
-    .neq("status", "removed"),
+    .eq("status", "published"),
 );
 if (left?.length) {
   const titles = [...new Set(left.map((j) => j.title))].join(", ");
