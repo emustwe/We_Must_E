@@ -8,13 +8,18 @@ export default async function SecureAdminLayout({ children }: { children: React.
   const supabase = await createClient();
   const count = { count: "exact" as const, head: true };
   // The sidebar badges: what is waiting for review.
-  const [apps, jobs] = await Promise.all([
+  const [apps, jobs, requests] = await Promise.all([
     supabase.from("applications").select("id", count).eq("status", "submitted"),
     supabase.from("jobs").select("id", count).eq("status", "pending"),
+    supabase.from("sponsor_requests").select("id", count).eq("status", "new"),
   ]);
   return (
     <AdminShell
-      counts={{ applications: apps.count ?? 0, jobs: jobs.count ?? 0 }}
+      counts={{
+        applications: apps.count ?? 0,
+        jobs: jobs.count ?? 0,
+        requests: requests.count ?? 0,
+      }}
       name={profile.full_name || "Wemuste Admin"}
     >
       {children}

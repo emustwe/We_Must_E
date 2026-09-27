@@ -756,6 +756,62 @@ export type Database = {
         }
         Relationships: []
       }
+      sponsor_requests: {
+        Row: {
+          city: string
+          company_name: string
+          contact_person: string
+          created_at: string
+          email: string
+          handled_at: string | null
+          handled_by: string | null
+          id: string
+          ip_hash: string | null
+          message: string | null
+          phone: string
+          status: Database["public"]["Enums"]["sponsor_request_status"]
+          website: string | null
+        }
+        Insert: {
+          city: string
+          company_name: string
+          contact_person: string
+          created_at?: string
+          email: string
+          handled_at?: string | null
+          handled_by?: string | null
+          id?: string
+          ip_hash?: string | null
+          message?: string | null
+          phone: string
+          status?: Database["public"]["Enums"]["sponsor_request_status"]
+          website?: string | null
+        }
+        Update: {
+          city?: string
+          company_name?: string
+          contact_person?: string
+          created_at?: string
+          email?: string
+          handled_at?: string | null
+          handled_by?: string | null
+          id?: string
+          ip_hash?: string | null
+          message?: string | null
+          phone?: string
+          status?: Database["public"]["Enums"]["sponsor_request_status"]
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sponsor_requests_handled_by_fkey"
+            columns: ["handled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       survey_questions: {
         Row: {
           created_at: string
@@ -1045,6 +1101,13 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_handle_sponsor_request: {
+        Args: {
+          p_request_id: string
+          p_status: Database["public"]["Enums"]["sponsor_request_status"]
+        }
+        Returns: undefined
+      }
       admin_review_application: {
         Args: {
           p_application_id: string
@@ -1098,6 +1161,10 @@ export type Database = {
       }
       app_delete_expired: {
         Args: { p_application_ids: string[] }
+        Returns: number
+      }
+      app_delete_old_sponsor_requests: {
+        Args: { p_days: number }
         Returns: number
       }
       app_expired_applications: {
@@ -1283,6 +1350,7 @@ export type Database = {
         | "long_text"
         | "number"
         | "scale"
+      sponsor_request_status: "new" | "approved" | "declined"
       test_question_type:
         | "single_choice"
         | "multi_choice"
@@ -1448,6 +1516,7 @@ export const Constants = {
         "number",
         "scale",
       ],
+      sponsor_request_status: ["new", "approved", "declined"],
       test_question_type: [
         "single_choice",
         "multi_choice",

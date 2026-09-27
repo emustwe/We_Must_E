@@ -35,6 +35,18 @@ export const TEMPLATES = {
       />
     ),
   },
+  newSponsorRequest: {
+    subject: "New request to become a sponsor",
+    render: (site: string) => (
+      <EmailLayout
+        preview="A company asked to become a sponsor"
+        heading="New sponsor request"
+        body="A company asked to become a sponsor on Wemuste. Log in to the admin area to see the request and create their account."
+        cta="See sponsor requests"
+        href={`${site}/admin/sponsor-requests`}
+      />
+    ),
+  },
   jobApproved: {
     subject: "Your job is live on Wemuste",
     render: (site: string) => (

@@ -1,18 +1,17 @@
-import { Mail } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { AuthShell } from "@/components/auth/auth-shell";
-import { buttonVariants } from "@/components/ui/button";
+import { SponsorRequestForm } from "@/components/sponsors/sponsor-request-form";
 import { SUPPORT_EMAIL } from "@/lib/legal";
-import { cn } from "@/lib/utils";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("forEmployers");
   return { title: t("title") };
 }
 
-// Employers can't sign up themselves; the Wemuste team creates their accounts.
+// Companies can't sign up themselves: they send a request, and the Wemuste
+// team checks them and creates their sponsor account.
 export default async function ForEmployersPage() {
   const t = await getTranslations("forEmployers");
   const tc = await getTranslations("common");
@@ -43,14 +42,11 @@ export default async function ForEmployersPage() {
           </li>
         ))}
       </ol>
-      <a
-        href={`mailto:${SUPPORT_EMAIL}`}
-        className={cn(buttonVariants({ size: "touch" }), "mt-6 w-full")}
-      >
-        <Mail className="size-4" aria-hidden="true" />
-        {t("contact")}
-      </a>
-      <p className="mt-2 text-center text-xs text-muted-foreground">
+      <div id="request" className="mt-6 scroll-mt-6">
+        <h2 className="mb-3 text-lg font-extrabold">{t("formTitle")}</h2>
+        <SponsorRequestForm />
+      </div>
+      <p className="mt-4 text-center text-xs text-muted-foreground">
         {t("contactNote", { email: SUPPORT_EMAIL })}
       </p>
     </AuthShell>

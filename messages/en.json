@@ -553,14 +553,28 @@
     "retry": "Try again"
   },
   "forEmployers": {
-    "title": "Hiring with Wemuste",
-    "body": "Sponsor accounts are created by our team after a short check, so job seekers can trust every job on the map.",
-    "step1": "Tell us about your company",
-    "step2": "We verify you and create your login",
-    "step3": "Post jobs and review requests",
+    "title": "Become a sponsor",
+    "body": "Post jobs on the Wemuste map and meet candidates our team has checked. Send us your details and we will set up your sponsor account.",
+    "step1": "Send us your company details",
+    "step2": "We check your company and create your login",
+    "step3": "Post jobs and meet approved candidates",
     "contact": "Contact our team",
-    "contactNote": "Or email us at {email}. We reply within 7 working days.",
-    "haveLogin": "Already have a sponsor login?"
+    "contactNote": "Questions? Email us at {email}. We reply within 7 working days.",
+    "haveLogin": "Already a sponsor?",
+    "formTitle": "Request a sponsor account",
+    "companyName": "Company name",
+    "contactPerson": "Your name",
+    "email": "Work email",
+    "phone": "Phone number",
+    "city": "City",
+    "website": "Website",
+    "message": "What kind of people are you hiring?",
+    "messagePlaceholder": "For example: 3 delivery riders in Dubai, full-time",
+    "optional": "optional",
+    "send": "Send request",
+    "sending": "Sending…",
+    "sentTitle": "Request sent",
+    "sentBody": "Thank you! Our team will check your details and email your login within 7 working days."
   },
   "tabs": {
     "jobs": "Jobs",
@@ -751,7 +765,11 @@
     },
     "applicantsFact": "Applicants",
     "applicantsCount": "{count, plural, one {# person applied} other {# people applied}}",
-    "applicantsNone": "Be the first to apply"
+    "applicantsNone": "Be the first to apply",
+    "forSponsorsMenu": "For sponsors",
+    "becomeSponsor": "Become a sponsor",
+    "becomeSponsorHint": "Send us a request to post jobs",
+    "sponsorLoginHint": "I already have a sponsor account"
   },
   "apply": {
     "title": "Apply",
@@ -998,7 +1016,8 @@
       "jobs": "Jobs",
       "sponsors": "Sponsors",
       "content": "Content",
-      "audit": "Audit log"
+      "audit": "Audit log",
+      "requests": "Sponsor requests"
     },
     "waiting": "Waiting for review",
     "openMap": "Open the public map",
@@ -1322,7 +1341,26 @@
     "deleteAppTitle": "Delete this application permanently?",
     "deleteAppBody": "The CV, videos, answers and contact details are deleted now, for the Wemuste team and for sponsors. This can’t be undone.",
     "deleteAppConfirm": "Delete permanently",
-    "deleteAppDone": "Application deleted."
+    "deleteAppDone": "Application deleted.",
+    "requestsTitle": "Sponsor requests",
+    "requestsBody": "Companies that asked to become a sponsor from the \"For sponsors\" button. Check them, then create their account or decline.",
+    "requestsNew": "New",
+    "requestsHandled": "Handled",
+    "requestsEmpty": "No requests here.",
+    "requestStatus": {
+      "new": "New",
+      "approved": "Account created",
+      "declined": "Declined"
+    },
+    "requestContact": "Contact person",
+    "requestEmail": "Email",
+    "requestPhone": "Phone",
+    "requestWebsite": "Website",
+    "requestCreate": "Create sponsor account",
+    "requestDecline": "Decline",
+    "requestDeclineTitle": "Decline this request?",
+    "requestDeclineBody": "The request moves to Handled. No email is sent to the company.",
+    "requestCreatedNote": "From a sponsor request: the details are filled in. Choose a password and create the account."
   },
   "sponsorUi": {
     "sponsor": "Sponsor",

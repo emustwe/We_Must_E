@@ -557,6 +557,22 @@ select is((select count(*)::int from applications) + (select count(*)::int from 
 select is((select count(*)::int from ecoin_ledger where employer_id = :E3 and application_id is null), 2,
   'coin history stays, without the link to the deleted application');
 
+-- Sponsor requests: written only by the server, read only by MFA admins.
+insert into sponsor_requests (id, company_name, contact_person, email, phone, city)
+  values ('50000000-0000-0000-0000-000000000001', 'Harbour Coffee', 'Lina K.', 'lina@example.test', '+971500000001', 'Dubai');
+select is(tests.rows_as(null, 'select 1 from sponsor_requests'), -1, 'anon cannot read sponsor requests');
+select ok(tests.denied_as(null, $$insert into sponsor_requests (company_name, contact_person, email, phone, city) values ('X Co', 'X', 'x@x.test', '+971500000009', 'Dubai')$$), 'anon cannot send a request directly (only through the server)');
+select is(tests.rows_as(:E1, 'select 1 from sponsor_requests'), 0, 'sponsors cannot see requests');
+select is(tests.rows_as(:AD, 'select 1 from sponsor_requests'), 0, 'admin without MFA sees no requests');
+select is(tests.rows_as(:AD, 'select 1 from sponsor_requests', 'aal2'), 1, 'MFA admins see requests');
+select ok(tests.denied_as(:AD, $$select admin_handle_sponsor_request('50000000-0000-0000-0000-000000000001', 'declined')$$), 'handling a request needs MFA');
+select tests.run_as(:AD, $$select admin_handle_sponsor_request('50000000-0000-0000-0000-000000000001', 'declined')$$, 'aal2');
+select is((select status::text from sponsor_requests where id = '50000000-0000-0000-0000-000000000001'), 'declined', 'the admin declined the request');
+select ok(exists (select 1 from audit_logs where action = 'sponsor_request.handled' and actor_id = :AD::uuid), 'handling a request is audited');
+select ok(not has_function_privilege('authenticated', 'public.app_delete_old_sponsor_requests(integer)', 'execute'), 'only the server clears old requests');
+update sponsor_requests set handled_at = now() - interval '91 days';
+select is(app_delete_old_sponsor_requests(90), 1, 'handled requests go after 90 days');
+
 -- ---------------------------------------------------------------------------
 -- audit_logs is append-only
 -- ---------------------------------------------------------------------------

@@ -14,7 +14,13 @@ import { logError } from "@/lib/log";
 // Sends one transactional email. Resend in production; Mailpit over SMTP in
 // local development. Never logs recipients or content.
 export async function sendEmail(
-  kind: "newApplication" | "newJob" | "jobApproved" | "jobRejected" | "newCandidate",
+  kind:
+    | "newApplication"
+    | "newJob"
+    | "newSponsorRequest"
+    | "jobApproved"
+    | "jobRejected"
+    | "newCandidate",
   to: string,
 ): Promise<boolean>;
 export async function sendEmail(

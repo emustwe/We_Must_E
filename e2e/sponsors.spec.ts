@@ -183,3 +183,35 @@ async function openSponsorMenu(page: Page) {
   const menu = page.getByRole("button", { name: "Open menu" });
   if (await menu.isVisible()) await menu.click();
 }
+
+test("a company asks to become a sponsor; the admin creates the account from the request", async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  const company = `Harbour Coffee ${unique()}`;
+  const started = new Date();
+  // On a phone the "For sponsors" choices are in the map's Filters panel.
+  await page.goto("/");
+  await page.getByRole("button", { name: "Filters" }).click();
+  await expect(page.getByRole("link", { name: /Sponsor login/ })).toBeVisible();
+  await page.getByRole("link", { name: /Become a sponsor/ }).click();
+  await expect(page).toHaveURL(/\/for-sponsors$/);
+
+  await page.getByLabel("Company name").fill(company);
+  await page.getByLabel("Your name").fill("Lina Karim");
+  await page.getByLabel("Work email").fill(`lina-${unique()}@example.test`);
+  await page.getByLabel("Phone number").fill("+971 50 123 4567");
+  await page.getByLabel("City").fill("Dubai");
+  await page.getByRole("button", { name: "Send request" }).click();
+  await expect(page.getByRole("heading", { name: "Request sent" })).toBeVisible();
+  await waitForEmail("admin@wemuste.local", /New request to become a sponsor/, started);
+
+  await loginAsAdmin(page);
+  await page.goto("/admin/sponsor-requests");
+  const card = page.getByRole("listitem").filter({ hasText: company });
+  await expect(card).toContainText("Lina Karim");
+  await card.getByRole("link", { name: "Create sponsor account" }).click();
+  await expect(page.getByLabel("Company name")).toHaveValue(company);
+  await expect(page.getByLabel("Contact person")).toHaveValue("Lina Karim");
+  psql(`delete from public.sponsor_requests where company_name = '${company}'`);
+});

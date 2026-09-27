@@ -9,7 +9,7 @@ type SponsorEmail = "jobApproved" | "jobRejected" | "newCandidate";
 
 // Emails go out after the response, so an email problem never breaks an action.
 
-export function notifyAdmins(kind: "newApplication" | "newJob") {
+export function notifyAdmins(kind: "newApplication" | "newJob" | "newSponsorRequest") {
   const to = serverEnv.ADMIN_NOTIFY_EMAIL;
   if (to) after(() => sendEmail(kind, to));
 }

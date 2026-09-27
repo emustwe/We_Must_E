@@ -1,5 +1,6 @@
 "use client";
 
+import { SponsorLinks, SponsorMenu } from "@/components/explore/sponsor-menu";
 import type L from "leaflet";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -456,15 +457,12 @@ export function JobExplorer({
                 {!origin ? (
                   <p className="mt-2 text-xs text-wm-caption">{t("distanceNeedsPlace")}</p>
                 ) : null}
-                <Link
-                  href="/login"
-                  className="mt-4 flex h-11 items-center justify-center gap-2 rounded-full border border-wm-line text-sm font-bold text-wm-ink"
-                >
-                  <span className="text-wm-blue">
-                    <WmIcon name="briefcase" size={17} stroke={2.1} />
+                <div className="mt-4 flex flex-col gap-1 border-t border-wm-line pt-3">
+                  <span className="px-3 text-xs font-bold text-wm-caption">
+                    {t("forSponsorsMenu")}
                   </span>
-                  {t("employerLogin")}
-                </Link>
+                  <SponsorLinks />
+                </div>
               </div>
             ) : null}
           </div>
@@ -532,18 +530,7 @@ export function JobExplorer({
           </button>
         </form>
 
-        <Link
-          href="/login"
-          className={cn(
-            "absolute top-[30px] right-6 z-[1000] flex h-11 items-center gap-2 rounded-full ps-3.5 pe-[18px] text-sm font-bold text-wm-ink no-underline",
-            floating,
-          )}
-        >
-          <span className="text-wm-blue">
-            <WmIcon name="briefcase" size={17} stroke={2.1} />
-          </span>
-          {t("employerLogin")}
-        </Link>
+        <SponsorMenu className="absolute top-[30px] right-6" />
 
         <nav
           aria-label={t("filters")}

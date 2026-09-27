@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { useForm, type Path } from "react-hook-form";
 import { createEmployer, type CreatedSponsor } from "@/actions/admin";
+import { handleSponsorRequest } from "@/actions/sponsor-request";
 import { PasswordInput } from "@/components/admin/password-input";
 import { Field } from "@/components/forms/field";
 import { FormAlert } from "@/components/forms/form-alert";
@@ -15,7 +16,20 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createEmployerSchema, type CreateEmployerInput } from "@/lib/validations/jobs";
 
-export function CreateEmployerForm() {
+// `request`: filled in from a "Become a sponsor" request, which is marked
+// approved once the account exists.
+export function CreateEmployerForm({
+  request,
+}: {
+  request?: {
+    id: string;
+    companyName: string;
+    contactPerson: string;
+    email: string;
+    phone: string;
+    website: string;
+  };
+} = {}) {
   const t = useTranslations("admin");
   const te = useTranslations("errors");
   const [created, setCreated] = useState<CreatedSponsor | null>(null);
@@ -25,13 +39,13 @@ export function CreateEmployerForm() {
     resolver: zodResolver(createEmployerSchema),
     mode: "onBlur",
     defaultValues: {
-      companyName: "",
-      contactPerson: "",
-      email: "",
+      companyName: request?.companyName ?? "",
+      contactPerson: request?.contactPerson ?? "",
+      email: request?.email ?? "",
       password: "",
-      phone: "",
+      phone: request?.phone ?? "",
       tradeLicenseNo: "",
-      website: "",
+      website: request?.website ?? "",
     },
   });
   const { errors } = form.formState;
@@ -41,6 +55,7 @@ export function CreateEmployerForm() {
     startTransition(async () => {
       const result = await createEmployer(values);
       if (result.ok) {
+        if (request) await handleSponsorRequest({ requestId: request.id, status: "approved" });
         setCreated(result.data);
         form.reset();
         return;

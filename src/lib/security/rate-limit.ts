@@ -23,6 +23,8 @@ export const LIMITS = {
   applicationStepPerIp: { max: 600, windowSeconds: 3600 },
   videoUploadPerIp: { max: 40, windowSeconds: 3600 },
   phoneCodePerIp: { max: 5, windowSeconds: 3600 },
+  // "Become a sponsor" requests.
+  sponsorRequestPerIp: { max: 3, windowSeconds: 3600 },
 } as const;
 
 /**

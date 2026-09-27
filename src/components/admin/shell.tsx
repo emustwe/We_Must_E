@@ -10,15 +10,16 @@ import { Avatar } from "@/components/admin/wm";
 import { WmIcon, type IconName } from "@/components/map/wm-icons";
 import { cn } from "@/lib/utils";
 
-type Counts = { applications: number; jobs: number };
+type Counts = { applications: number; jobs: number; requests: number };
 
-type NavKey = "overview" | "applications" | "jobs" | "sponsors" | "content" | "audit";
+type NavKey = "overview" | "applications" | "jobs" | "sponsors" | "requests" | "content" | "audit";
 const NAV: { href: string; key: NavKey; icon: IconName; count?: keyof Counts; exact?: boolean }[] =
   [
     { href: "/admin", key: "overview", icon: "home", exact: true },
     { href: "/admin/applications", key: "applications", icon: "inbox", count: "applications" },
     { href: "/admin/jobs", key: "jobs", icon: "pin", count: "jobs" },
     { href: "/admin/sponsors", key: "sponsors", icon: "building" },
+    { href: "/admin/sponsor-requests", key: "requests", icon: "mail", count: "requests" },
     { href: "/admin/content", key: "content", icon: "fileText" },
     { href: "/admin/audit", key: "audit", icon: "shieldClock" },
   ];
