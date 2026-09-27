@@ -99,6 +99,7 @@ export default function ExploreMap({
   variant,
   onReady,
   onView,
+  start,
 }: {
   jobs: MapJob[];
   bounds: Bounds;
@@ -113,6 +114,9 @@ export default function ExploreMap({
   variant: "light" | "satellite";
   onReady: (map: L.Map) => void;
   onView: (bounds: Bounds) => void;
+  // Where the map is first drawn, before it glides to `target` (so the first
+  // "jobs in this area" is about the right place). Default: Dubai.
+  start?: { center: [number, number]; zoom: number };
 }) {
   const bySpot = useMemo(() => {
     const m = new Map<string, string[]>();
@@ -150,8 +154,8 @@ export default function ExploreMap({
   return (
     <div role="region" aria-label={label} className="absolute inset-0 z-0">
       <MapContainer
-        center={[25.2048, 55.2708]}
-        zoom={11}
+        center={start?.center ?? [25.2048, 55.2708]}
+        zoom={start?.zoom ?? 11}
         minZoom={2}
         maxZoom={MAX_ZOOM}
         worldCopyJump

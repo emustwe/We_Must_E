@@ -185,6 +185,7 @@ test("maps stay under menus and pop-ups on a phone", async ({ page }) => {
   await page.keyboard.press("Escape");
   const barista = psql(`select id from public.jobs where title = '[SAMPLE] Weekend barista'`);
   await page.goto(`/?job=${barista}`);
+  await expect(page.locator('[aria-labelledby="wm-job-title"]')).toBeVisible();
   await expectOnTop(page, '[aria-labelledby="wm-job-title"]', "job sheet");
   await page.screenshot({ path: test.info().outputPath("map-sheet.png") });
 

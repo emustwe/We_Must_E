@@ -122,6 +122,20 @@ export function JobExplorer({
       ? { center: [job.lat, job.lng], zoom: 14 }
       : boundsOf(startJobs(initialJobs, homeCountry));
   });
+  // The map is first drawn around where it opens (it then fits the area).
+  const [start] = useState(() =>
+    !target
+      ? undefined
+      : "center" in target
+        ? target
+        : {
+            center: [
+              (target.bounds[0][0] + target.bounds[1][0]) / 2,
+              (target.bounds[0][1] + target.bounds[1][1]) / 2,
+            ] as [number, number],
+            zoom: 5,
+          },
+  );
   const heading = useRef<HTMLHeadingElement>(null);
   const search = useRef<PlaceSearchHandle>(null);
 
@@ -201,11 +215,16 @@ export function JobExplorer({
       })),
     [filtered],
   );
-  // "N jobs in this area": what the map shows, or everything that matches.
-  const count =
-    moveSearch && view
+  // "N jobs in this area": what the map shows (before the map has reported
+  // its first view, the area it is opening on), or everything that matches.
+  const count = !moveSearch
+    ? filtered.length
+    : view
       ? filtered.filter(({ job }) => isInside(view, job.lat, job.lng)).length
-      : filtered.length;
+      : startJobs(
+          filtered.map(({ job }) => job),
+          homeCountry,
+        ).length;
 
   const selected = selectedId ? withDistance.find((j) => j.job.id === selectedId) : undefined;
 
@@ -399,6 +418,7 @@ export function JobExplorer({
         variant={variant}
         onReady={setMap}
         onView={setView}
+        start={start}
       />
 
       {/* Both top bars are rendered; CSS picks one, so phones never flash the desktop bar. */}
