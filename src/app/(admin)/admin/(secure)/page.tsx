@@ -74,11 +74,24 @@ export default async function AdminHome() {
         .select("id, actor_id, action, target_type, target_id, metadata, created_at")
         .order("created_at", { ascending: false })
         .limit(4),
-      supabase
-        .from("jobs")
-        .select("id, title, lat, lng, status, city")
-        .in("status", ["published", "pending"])
-        .limit(300),
+      // The map: every job waiting for review and the newest live ones (the
+      // totals in the caption are the real counts above).
+      Promise.all([
+        supabase
+          .from("jobs")
+          .select("id, title, lat, lng, status, city")
+          .eq("status", "pending")
+          .order("created_at", { ascending: false })
+          .limit(300),
+        supabase
+          .from("jobs")
+          .select("id, title, lat, lng, status, city")
+          .eq("status", "published")
+          .order("published_at", { ascending: false })
+          .limit(700),
+      ]).then(([pending, published]) => ({
+        data: [...(pending.data ?? []), ...(published.data ?? [])],
+      })),
     ]);
 
   const queue = [
@@ -310,12 +323,12 @@ export default async function AdminHome() {
           </div>
           <span className="text-[13px] font-medium text-wm-slate">
             {t("mapSummary", {
-              live: liveJobs.length,
+              live: live.count ?? liveJobs.length,
               liveArea: mainArea(
                 liveJobs.map((j) => j.city),
                 t("severalAreas"),
               ),
-              pending: waitingJobs.length,
+              pending: jobsToReview.count ?? waitingJobs.length,
               pendingArea: mainArea(
                 waitingJobs.map((j) => j.city),
                 t("severalAreas"),

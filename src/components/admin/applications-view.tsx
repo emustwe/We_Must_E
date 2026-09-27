@@ -60,11 +60,14 @@ export async function ApplicationsView({
   const [{ data: rows, count }, { data: jobs }, { data: sponsors }, { count: toReview }] =
     await Promise.all([
       query,
+      // The Job and Area filters list only jobs that have applications (there
+      // are thousands of jobs, most with none yet).
       supabase
         .from("jobs")
-        .select("id, title, city")
+        .select("id, title, city, applications!inner(id)")
+        .limit(1, { referencedTable: "applications" })
         .order("created_at", { ascending: false })
-        .limit(300),
+        .limit(500),
       supabase.from("employer_profiles").select("user_id, company_name").order("company_name"),
       supabase
         .from("applications")

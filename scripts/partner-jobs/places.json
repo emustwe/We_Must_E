@@ -1,0 +1,1162 @@
+{
+  "PK:Karachi": {
+    "center": [24.85468, 67.02071],
+    "areas": [
+      {
+        "name": "Saddar",
+        "lat": 24.86057,
+        "lng": 67.03174
+      },
+      {
+        "name": "Clifton",
+        "lat": 24.81906,
+        "lng": 67.02624
+      },
+      {
+        "name": "DHA Phase 6",
+        "lat": 24.79744,
+        "lng": 67.06164
+      },
+      {
+        "name": "Gulshan-e-Iqbal",
+        "lat": 24.90673,
+        "lng": 67.09866
+      },
+      {
+        "name": "North Nazimabad",
+        "lat": 24.94246,
+        "lng": 67.04772
+      },
+      {
+        "name": "PECHS",
+        "lat": 24.86848,
+        "lng": 67.05872
+      },
+      {
+        "name": "Korangi Industrial Area",
+        "lat": 24.84582,
+        "lng": 67.1355
+      },
+      {
+        "name": "SITE Area",
+        "lat": 24.91996,
+        "lng": 66.99579
+      },
+      {
+        "name": "Gulistan-e-Jauhar",
+        "lat": 24.92402,
+        "lng": 67.13821
+      },
+      {
+        "name": "Tariq Road",
+        "lat": 24.86804,
+        "lng": 67.05754
+      },
+      {
+        "name": "Nazimabad",
+        "lat": 24.90586,
+        "lng": 67.03072
+      },
+      {
+        "name": "Malir",
+        "lat": 24.89592,
+        "lng": 67.19692
+      }
+    ]
+  },
+  "PK:Lahore": {
+    "center": [31.56568, 74.31418],
+    "areas": [
+      {
+        "name": "Gulberg",
+        "lat": 31.512,
+        "lng": 74.34302
+      },
+      {
+        "name": "DHA Phase 5",
+        "lat": 31.46346,
+        "lng": 74.41043
+      },
+      {
+        "name": "Johar Town",
+        "lat": 31.46316,
+        "lng": 74.29392
+      },
+      {
+        "name": "Model Town",
+        "lat": 31.48363,
+        "lng": 74.32599
+      },
+      {
+        "name": "Township",
+        "lat": 31.45651,
+        "lng": 74.32008
+      },
+      {
+        "name": "Iqbal Town",
+        "lat": 31.51079,
+        "lng": 74.28801
+      },
+      {
+        "name": "Anarkali",
+        "lat": 31.56794,
+        "lng": 74.30743
+      },
+      {
+        "name": "Shadman",
+        "lat": 31.54021,
+        "lng": 74.32697
+      },
+      {
+        "name": "Faisal Town",
+        "lat": 31.4769,
+        "lng": 74.3049
+      },
+      {
+        "name": "Wapda Town",
+        "lat": 31.43688,
+        "lng": 74.26998
+      },
+      {
+        "name": "Garden Town",
+        "lat": 31.50167,
+        "lng": 74.32477
+      },
+      {
+        "name": "Cantt",
+        "lat": 31.5221,
+        "lng": 74.37904
+      }
+    ]
+  },
+  "PK:Faisalabad": {
+    "center": [31.42206, 73.09233],
+    "areas": [
+      {
+        "name": "D Ground",
+        "lat": 31.40741,
+        "lng": 73.11061
+      },
+      {
+        "name": "Peoples Colony",
+        "lat": 31.40854,
+        "lng": 73.10826
+      },
+      {
+        "name": "Madina Town",
+        "lat": 31.41615,
+        "lng": 73.12027
+      },
+      {
+        "name": "Satiana Road",
+        "lat": 31.39351,
+        "lng": 73.11732
+      },
+      {
+        "name": "Samanabad",
+        "lat": 31.38732,
+        "lng": 73.0676
+      },
+      {
+        "name": "Jinnah Colony",
+        "lat": 31.42037,
+        "lng": 73.06655
+      },
+      {
+        "name": "Ghulam Muhammad Abad",
+        "lat": 31.44542,
+        "lng": 73.0474
+      }
+    ]
+  },
+  "PK:Islamabad": {
+    "center": [33.69381, 73.06515],
+    "areas": [
+      {
+        "name": "Blue Area",
+        "lat": 33.72205,
+        "lng": 73.07879
+      },
+      {
+        "name": "F-7",
+        "lat": 33.72043,
+        "lng": 73.05612
+      },
+      {
+        "name": "F-10",
+        "lat": 33.69182,
+        "lng": 73.00668
+      },
+      {
+        "name": "G-9",
+        "lat": 33.69144,
+        "lng": 73.03072
+      },
+      {
+        "name": "I-8",
+        "lat": 33.66886,
+        "lng": 73.07296
+      },
+      {
+        "name": "I-9",
+        "lat": 33.65755,
+        "lng": 73.05556
+      },
+      {
+        "name": "E-11",
+        "lat": 33.69512,
+        "lng": 72.97242
+      },
+      {
+        "name": "G-11",
+        "lat": 33.66872,
+        "lng": 72.99874
+      }
+    ]
+  },
+  "PK:Rawalpindi": {
+    "center": [33.59154, 73.05372],
+    "areas": [
+      {
+        "name": "Saddar",
+        "lat": 33.59788,
+        "lng": 73.0501
+      },
+      {
+        "name": "Satellite Town",
+        "lat": 33.6384,
+        "lng": 73.06969
+      },
+      {
+        "name": "Commercial Market",
+        "lat": 33.63776,
+        "lng": 73.0709
+      },
+      {
+        "name": "Chaklala",
+        "lat": 33.60092,
+        "lng": 73.09645
+      },
+      {
+        "name": "Westridge",
+        "lat": 33.61013,
+        "lng": 73.02195
+      },
+      {
+        "name": "Raja Bazaar",
+        "lat": 33.61231,
+        "lng": 73.05634
+      }
+    ]
+  },
+  "PK:Multan": {
+    "center": [30.19784, 71.47197],
+    "areas": [
+      {
+        "name": "Gulgasht Colony",
+        "lat": 30.23025,
+        "lng": 71.47411
+      },
+      {
+        "name": "Bosan Road",
+        "lat": 30.22714,
+        "lng": 71.47838
+      },
+      {
+        "name": "Cantt",
+        "lat": 30.18486,
+        "lng": 71.42794
+      },
+      {
+        "name": "Shah Rukn-e-Alam Colony",
+        "lat": 30.19913,
+        "lng": 71.47165
+      },
+      {
+        "name": "Hussain Agahi",
+        "lat": 30.19564,
+        "lng": 71.47409
+      }
+    ]
+  },
+  "PK:Peshawar": {
+    "center": [34.01238, 71.57875],
+    "areas": [
+      {
+        "name": "University Town",
+        "lat": 33.99414,
+        "lng": 71.49671
+      },
+      {
+        "name": "Hayatabad",
+        "lat": 33.97672,
+        "lng": 71.43726
+      },
+      {
+        "name": "Saddar",
+        "lat": 33.99747,
+        "lng": 71.54002
+      },
+      {
+        "name": "Gulbahar",
+        "lat": 34.01069,
+        "lng": 71.59694
+      },
+      {
+        "name": "Warsak Road",
+        "lat": 34.0451,
+        "lng": 71.52305
+      }
+    ]
+  },
+  "PK:Hyderabad": {
+    "center": [25.40754, 68.36135],
+    "areas": [
+      {
+        "name": "Latifabad",
+        "lat": 25.36778,
+        "lng": 68.35657
+      },
+      {
+        "name": "Qasimabad",
+        "lat": 25.39306,
+        "lng": 68.33431
+      },
+      {
+        "name": "Saddar",
+        "lat": 25.39315,
+        "lng": 68.36355
+      },
+      {
+        "name": "Hirabad",
+        "lat": 25.40508,
+        "lng": 68.36941
+      }
+    ]
+  },
+  "PK:Gujranwala": {
+    "center": [32.15253, 74.19337],
+    "areas": [
+      {
+        "name": "Satellite Town",
+        "lat": 32.16196,
+        "lng": 74.20037
+      },
+      {
+        "name": "Model Town",
+        "lat": 32.17427,
+        "lng": 74.17884
+      },
+      {
+        "name": "Peoples Colony",
+        "lat": 32.13761,
+        "lng": 74.209
+      },
+      {
+        "name": "Civil Lines",
+        "lat": 32.1742,
+        "lng": 74.19171
+      }
+    ]
+  },
+  "PK:Sialkot": {
+    "center": [32.49449, 74.54156],
+    "areas": [
+      {
+        "name": "Cantt",
+        "lat": 32.52875,
+        "lng": 74.56023
+      },
+      {
+        "name": "Paris Road",
+        "lat": 32.50943,
+        "lng": 74.53817
+      },
+      {
+        "name": "Model Town",
+        "lat": 32.50005,
+        "lng": 74.5228
+      },
+      {
+        "name": "Kashmir Road",
+        "lat": 32.50079,
+        "lng": 74.49857
+      }
+    ]
+  },
+  "PK:Quetta": {
+    "center": [30.19577, 67.01724],
+    "areas": [
+      {
+        "name": "Jinnah Road",
+        "lat": 30.19734,
+        "lng": 67.01212
+      },
+      {
+        "name": "Satellite Town",
+        "lat": 30.16624,
+        "lng": 67.00152
+      },
+      {
+        "name": "Samungli Road",
+        "lat": 30.21935,
+        "lng": 66.97381
+      },
+      {
+        "name": "Cantt",
+        "lat": 30.2267,
+        "lng": 67.04562
+      }
+    ]
+  },
+  "IN:Mumbai": {
+    "center": [19.055, 72.8692],
+    "areas": [
+      {
+        "name": "Andheri East",
+        "lat": 19.11588,
+        "lng": 72.8542
+      },
+      {
+        "name": "Andheri West",
+        "lat": 19.11725,
+        "lng": 72.83397
+      },
+      {
+        "name": "Bandra West",
+        "lat": 19.05834,
+        "lng": 72.83027
+      },
+      {
+        "name": "Lower Parel",
+        "lat": 18.99568,
+        "lng": 72.83028
+      },
+      {
+        "name": "Powai",
+        "lat": 19.11872,
+        "lng": 72.90735
+      },
+      {
+        "name": "Goregaon",
+        "lat": 19.16487,
+        "lng": 72.84955
+      },
+      {
+        "name": "Malad",
+        "lat": 19.18672,
+        "lng": 72.84859
+      },
+      {
+        "name": "Kurla",
+        "lat": 19.06528,
+        "lng": 72.87938
+      },
+      {
+        "name": "Dadar",
+        "lat": 19.01923,
+        "lng": 72.84285
+      },
+      {
+        "name": "Borivali",
+        "lat": 19.22907,
+        "lng": 72.85736
+      },
+      {
+        "name": "Chembur",
+        "lat": 19.05482,
+        "lng": 72.89797
+      },
+      {
+        "name": "Vikhroli",
+        "lat": 19.11148,
+        "lng": 72.92802
+      }
+    ]
+  },
+  "IN:Delhi": {
+    "center": [28.6328, 77.21977],
+    "areas": [
+      {
+        "name": "Connaught Place",
+        "lat": 28.63177,
+        "lng": 77.21938
+      },
+      {
+        "name": "Karol Bagh",
+        "lat": 28.653,
+        "lng": 77.18902
+      },
+      {
+        "name": "Lajpat Nagar",
+        "lat": 28.56609,
+        "lng": 77.24329
+      },
+      {
+        "name": "Rohini",
+        "lat": 28.70631,
+        "lng": 77.10879
+      },
+      {
+        "name": "Dwarka",
+        "lat": 28.61494,
+        "lng": 77.02276
+      },
+      {
+        "name": "Okhla",
+        "lat": 28.56366,
+        "lng": 77.28905
+      },
+      {
+        "name": "Saket",
+        "lat": 28.52117,
+        "lng": 77.20222
+      },
+      {
+        "name": "Janakpuri",
+        "lat": 28.62193,
+        "lng": 77.08748
+      },
+      {
+        "name": "Nehru Place",
+        "lat": 28.54926,
+        "lng": 77.25295
+      },
+      {
+        "name": "Laxmi Nagar",
+        "lat": 28.6306,
+        "lng": 77.27752
+      },
+      {
+        "name": "Mayapuri",
+        "lat": 28.63718,
+        "lng": 77.12973
+      },
+      {
+        "name": "Pitampura",
+        "lat": 28.70327,
+        "lng": 77.13225
+      }
+    ]
+  },
+  "IN:Bengaluru": {
+    "center": [12.97679, 77.59008],
+    "areas": [
+      {
+        "name": "Koramangala",
+        "lat": 12.93574,
+        "lng": 77.62408
+      },
+      {
+        "name": "Whitefield",
+        "lat": 12.99574,
+        "lng": 77.75795
+      },
+      {
+        "name": "Electronic City",
+        "lat": 12.84876,
+        "lng": 77.64825
+      },
+      {
+        "name": "HSR Layout",
+        "lat": 12.91162,
+        "lng": 77.63886
+      },
+      {
+        "name": "Indiranagar",
+        "lat": 12.97329,
+        "lng": 77.64047
+      },
+      {
+        "name": "Marathahalli",
+        "lat": 12.95526,
+        "lng": 77.69842
+      },
+      {
+        "name": "Jayanagar",
+        "lat": 12.92927,
+        "lng": 77.58242
+      },
+      {
+        "name": "Yeshwanthpur",
+        "lat": 13.01769,
+        "lng": 77.5555
+      },
+      {
+        "name": "Peenya",
+        "lat": 13.03298,
+        "lng": 77.53318
+      },
+      {
+        "name": "BTM Layout",
+        "lat": 12.914,
+        "lng": 77.61028
+      },
+      {
+        "name": "Hebbal",
+        "lat": 13.03822,
+        "lng": 77.5919
+      },
+      {
+        "name": "Rajajinagar",
+        "lat": 13.00054,
+        "lng": 77.5497
+      }
+    ]
+  },
+  "IN:Hyderabad": {
+    "center": [17.36059, 78.47406],
+    "areas": [
+      {
+        "name": "HITEC City",
+        "lat": 17.44901,
+        "lng": 78.38314
+      },
+      {
+        "name": "Gachibowli",
+        "lat": 17.44362,
+        "lng": 78.35196
+      },
+      {
+        "name": "Madhapur",
+        "lat": 17.44089,
+        "lng": 78.39163
+      },
+      {
+        "name": "Kukatpally",
+        "lat": 17.49308,
+        "lng": 78.40544
+      },
+      {
+        "name": "Secunderabad",
+        "lat": 17.43372,
+        "lng": 78.50068
+      },
+      {
+        "name": "Banjara Hills",
+        "lat": 17.41775,
+        "lng": 78.4399
+      },
+      {
+        "name": "Ameerpet",
+        "lat": 17.4375,
+        "lng": 78.44825
+      },
+      {
+        "name": "Uppal",
+        "lat": 17.40251,
+        "lng": 78.56126
+      },
+      {
+        "name": "Kondapur",
+        "lat": 17.45879,
+        "lng": 78.37306
+      }
+    ]
+  },
+  "IN:Chennai": {
+    "center": [13.08369, 80.27019],
+    "areas": [
+      {
+        "name": "T. Nagar",
+        "lat": 13.03783,
+        "lng": 80.23184
+      },
+      {
+        "name": "Guindy",
+        "lat": 13.00867,
+        "lng": 80.21261
+      },
+      {
+        "name": "Velachery",
+        "lat": 12.98017,
+        "lng": 80.22285
+      },
+      {
+        "name": "Anna Nagar",
+        "lat": 13.08825,
+        "lng": 80.20734
+      },
+      {
+        "name": "Adyar",
+        "lat": 13.00645,
+        "lng": 80.25778
+      },
+      {
+        "name": "Sholinganallur",
+        "lat": 12.91744,
+        "lng": 80.21649
+      },
+      {
+        "name": "Ambattur",
+        "lat": 13.10557,
+        "lng": 80.16396
+      },
+      {
+        "name": "Tambaram",
+        "lat": 12.94543,
+        "lng": 80.11866
+      }
+    ]
+  },
+  "IN:Pune": {
+    "center": [18.52137, 73.85451],
+    "areas": [
+      {
+        "name": "Hinjawadi",
+        "lat": 18.59275,
+        "lng": 73.73822
+      },
+      {
+        "name": "Kharadi",
+        "lat": 18.55128,
+        "lng": 73.94166
+      },
+      {
+        "name": "Viman Nagar",
+        "lat": 18.57039,
+        "lng": 73.91333
+      },
+      {
+        "name": "Kothrud",
+        "lat": 18.50726,
+        "lng": 73.80567
+      },
+      {
+        "name": "Shivajinagar",
+        "lat": 18.53259,
+        "lng": 73.85131
+      },
+      {
+        "name": "Hadapsar",
+        "lat": 18.50077,
+        "lng": 73.93791
+      },
+      {
+        "name": "Wakad",
+        "lat": 18.60225,
+        "lng": 73.76445
+      },
+      {
+        "name": "Baner",
+        "lat": 18.55899,
+        "lng": 73.78452
+      }
+    ]
+  },
+  "IN:Kolkata": {
+    "center": [22.57265, 88.3639],
+    "areas": [
+      {
+        "name": "Salt Lake",
+        "lat": 22.59042,
+        "lng": 88.41692
+      },
+      {
+        "name": "Park Street",
+        "lat": 22.55516,
+        "lng": 88.35012
+      },
+      {
+        "name": "New Town",
+        "lat": 22.58828,
+        "lng": 88.47345
+      },
+      {
+        "name": "Gariahat",
+        "lat": 22.51964,
+        "lng": 88.36562
+      },
+      {
+        "name": "Ballygunge",
+        "lat": 22.52803,
+        "lng": 88.36591
+      },
+      {
+        "name": "Behala",
+        "lat": 22.50157,
+        "lng": 88.32094
+      },
+      {
+        "name": "Dum Dum",
+        "lat": 22.62111,
+        "lng": 88.3929
+      },
+      {
+        "name": "Esplanade",
+        "lat": 22.56329,
+        "lng": 88.35036
+      }
+    ]
+  },
+  "IN:Ahmedabad": {
+    "center": [23.02154, 72.58006],
+    "areas": [
+      {
+        "name": "Navrangpura",
+        "lat": 23.036,
+        "lng": 72.56434
+      },
+      {
+        "name": "Bodakdev",
+        "lat": 23.04459,
+        "lng": 72.51734
+      },
+      {
+        "name": "Maninagar",
+        "lat": 22.99866,
+        "lng": 72.6114
+      },
+      {
+        "name": "Satellite",
+        "lat": 23.02723,
+        "lng": 72.50711
+      },
+      {
+        "name": "Naroda",
+        "lat": 23.08541,
+        "lng": 72.65809
+      },
+      {
+        "name": "Vastrapur",
+        "lat": 23.04009,
+        "lng": 72.52904
+      }
+    ]
+  },
+  "IN:Gurugram": {
+    "center": [28.46461, 77.02992],
+    "areas": [
+      {
+        "name": "Cyber City",
+        "lat": 28.49807,
+        "lng": 77.08926
+      },
+      {
+        "name": "Sohna Road",
+        "lat": 28.39994,
+        "lng": 77.04527
+      },
+      {
+        "name": "Udyog Vihar",
+        "lat": 28.49173,
+        "lng": 77.08197
+      },
+      {
+        "name": "Golf Course Road",
+        "lat": 28.44953,
+        "lng": 77.09952
+      },
+      {
+        "name": "Sector 29",
+        "lat": 28.46692,
+        "lng": 77.06713
+      }
+    ]
+  },
+  "IN:Noida": {
+    "center": [28.57063, 77.32721],
+    "areas": [
+      {
+        "name": "Sector 18",
+        "lat": 28.57054,
+        "lng": 77.32289
+      },
+      {
+        "name": "Sector 62",
+        "lat": 28.62114,
+        "lng": 77.36435
+      },
+      {
+        "name": "Sector 63",
+        "lat": 28.61207,
+        "lng": 77.37781
+      },
+      {
+        "name": "Sector 135",
+        "lat": 28.498,
+        "lng": 77.40003
+      }
+    ]
+  },
+  "IN:Jaipur": {
+    "center": [26.91546, 75.81898],
+    "areas": [
+      {
+        "name": "Malviya Nagar",
+        "lat": 26.85937,
+        "lng": 75.80981
+      },
+      {
+        "name": "Vaishali Nagar",
+        "lat": 26.90957,
+        "lng": 75.73917
+      },
+      {
+        "name": "C-Scheme",
+        "lat": 26.97207,
+        "lng": 75.76298
+      },
+      {
+        "name": "Sitapura",
+        "lat": 26.78275,
+        "lng": 75.83795
+      }
+    ]
+  },
+  "IN:Lucknow": {
+    "center": [26.8381, 80.9346],
+    "areas": [
+      {
+        "name": "Hazratganj",
+        "lat": 26.84753,
+        "lng": 80.9432
+      },
+      {
+        "name": "Gomti Nagar",
+        "lat": 26.86117,
+        "lng": 81.00392
+      },
+      {
+        "name": "Aliganj",
+        "lat": 26.90515,
+        "lng": 80.94799
+      },
+      {
+        "name": "Alambagh",
+        "lat": 26.81401,
+        "lng": 80.90251
+      }
+    ]
+  },
+  "BD:Dhaka": {
+    "center": [23.76439, 90.38901],
+    "areas": [
+      {
+        "name": "Gulshan",
+        "lat": 23.79218,
+        "lng": 90.41555
+      },
+      {
+        "name": "Banani",
+        "lat": 23.79032,
+        "lng": 90.4077
+      },
+      {
+        "name": "Dhanmondi",
+        "lat": 23.74791,
+        "lng": 90.37459
+      },
+      {
+        "name": "Motijheel",
+        "lat": 23.72726,
+        "lng": 90.4212
+      },
+      {
+        "name": "Uttara",
+        "lat": 23.86933,
+        "lng": 90.39269
+      },
+      {
+        "name": "Mirpur",
+        "lat": 23.81236,
+        "lng": 90.36409
+      },
+      {
+        "name": "Mohakhali",
+        "lat": 23.77947,
+        "lng": 90.40463
+      },
+      {
+        "name": "Tejgaon",
+        "lat": 23.76282,
+        "lng": 90.3913
+      },
+      {
+        "name": "Bashundhara",
+        "lat": 23.82402,
+        "lng": 90.46997
+      },
+      {
+        "name": "Farmgate",
+        "lat": 23.75904,
+        "lng": 90.38711
+      },
+      {
+        "name": "Mohammadpur",
+        "lat": 23.76367,
+        "lng": 90.36324
+      },
+      {
+        "name": "Badda",
+        "lat": 23.77654,
+        "lng": 90.4463
+      }
+    ]
+  },
+  "BD:Chattogram": {
+    "center": [22.33378, 91.83443],
+    "areas": [
+      {
+        "name": "Agrabad",
+        "lat": 22.32478,
+        "lng": 91.81136
+      },
+      {
+        "name": "GEC Circle",
+        "lat": 22.3593,
+        "lng": 91.82186
+      },
+      {
+        "name": "Nasirabad",
+        "lat": 22.3624,
+        "lng": 91.82417
+      },
+      {
+        "name": "Halishahar",
+        "lat": 22.33504,
+        "lng": 91.78615
+      },
+      {
+        "name": "Panchlaish",
+        "lat": 22.36254,
+        "lng": 91.83436
+      },
+      {
+        "name": "Patenga",
+        "lat": 22.23444,
+        "lng": 91.79226
+      }
+    ]
+  },
+  "BD:Gazipur": {
+    "center": [23.99972, 90.4184],
+    "areas": [
+      {
+        "name": "Tongi",
+        "lat": 23.90849,
+        "lng": 90.398
+      },
+      {
+        "name": "Konabari",
+        "lat": 24.01204,
+        "lng": 90.31664
+      },
+      {
+        "name": "Board Bazar",
+        "lat": 23.94521,
+        "lng": 90.38252
+      },
+      {
+        "name": "Joydebpur",
+        "lat": 24.00012,
+        "lng": 90.42353
+      },
+      {
+        "name": "Kashimpur",
+        "lat": 23.96005,
+        "lng": 90.31624
+      }
+    ]
+  },
+  "BD:Narayanganj": {
+    "center": [23.62367, 90.49881],
+    "areas": [
+      {
+        "name": "Fatullah",
+        "lat": 23.65035,
+        "lng": 90.47579
+      },
+      {
+        "name": "Siddhirganj",
+        "lat": 23.68497,
+        "lng": 90.516
+      },
+      {
+        "name": "Chashara",
+        "lat": 23.62584,
+        "lng": 90.50089
+      },
+      {
+        "name": "Adamjee Nagar",
+        "lat": 23.67351,
+        "lng": 90.51845
+      }
+    ]
+  },
+  "BD:Sylhet": {
+    "center": [24.8949, 91.8687],
+    "areas": [
+      {
+        "name": "Zindabazar",
+        "lat": 24.89492,
+        "lng": 91.86818
+      },
+      {
+        "name": "Uposhohor",
+        "lat": 24.88581,
+        "lng": 91.88098
+      },
+      {
+        "name": "Subid Bazar",
+        "lat": 24.9049,
+        "lng": 91.86011
+      },
+      {
+        "name": "Tilagor",
+        "lat": 24.89619,
+        "lng": 91.89953
+      }
+    ]
+  },
+  "BD:Khulna": {
+    "center": [22.8456, 89.5403],
+    "areas": [
+      {
+        "name": "Sonadanga",
+        "lat": 22.81885,
+        "lng": 89.54548
+      },
+      {
+        "name": "Khalishpur",
+        "lat": 22.86042,
+        "lng": 89.54441
+      },
+      {
+        "name": "Boyra",
+        "lat": 22.83508,
+        "lng": 89.53163
+      },
+      {
+        "name": "Daulatpur",
+        "lat": 22.86945,
+        "lng": 89.52691
+      }
+    ]
+  },
+  "BD:Rajshahi": {
+    "center": [24.3745, 88.6042],
+    "areas": [
+      {
+        "name": "Shaheb Bazar",
+        "lat": 24.36484,
+        "lng": 88.6001
+      },
+      {
+        "name": "Kazla",
+        "lat": 24.36266,
+        "lng": 88.63328
+      },
+      {
+        "name": "Laxmipur",
+        "lat": 24.3739,
+        "lng": 88.58213
+      },
+      {
+        "name": "Uposhohor",
+        "lat": 24.37865,
+        "lng": 88.59927
+      }
+    ]
+  }
+}

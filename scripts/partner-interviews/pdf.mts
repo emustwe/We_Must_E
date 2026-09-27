@@ -8,7 +8,14 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { chromium } from "playwright";
 import { REAL_SURVEY } from "../real-survey.mjs";
+import { CATALOG } from "../partner-jobs/catalog.mjs";
 import { ROLES, buildTest, buildVideos } from "./build.mjs";
+import { ROLES_A } from "./roles-a.mjs";
+import { ROLES_B } from "./roles-b.mjs";
+import { ROLES_C } from "./roles-c.mjs";
+import { ROLES_D } from "./roles-d.mjs";
+import { ROLES_E } from "./roles-e.mjs";
+import { ROLES_F } from "./roles-f.mjs";
 
 const OUT = join(import.meta.dirname, "..", "..", "partner-interviews.pdf");
 
@@ -27,6 +34,24 @@ const date = new Date().toLocaleDateString("en-GB", {
 });
 const office = ROLES.filter((r) => r.typing).map((r) => r.title);
 
+// Where each role's interview is used: the UAE roles (roles-a to roles-f)
+// and the roles of the Pakistan, India and Bangladesh jobs (catalog.mts),
+// with the job title there when it differs.
+const UAE = new Set(
+  [ROLES_A, ROLES_B, ROLES_C, ROLES_D, ROLES_E, ROLES_F].flat().map((r) => r.title),
+);
+const NAMES = { PK: "Pakistan", IN: "India", BD: "Bangladesh" } as const;
+function usedIn(title: string) {
+  const places: string[] = UAE.has(title) ? ["UAE"] : [];
+  for (const c of CATALOG.filter((x) => (x.role ?? x.title) === title)) {
+    const countries = (Object.keys(c.weight) as (keyof typeof NAMES)[]).map((k) => NAMES[k]);
+    places.push(
+      c.title === title ? countries.join(", ") : `${countries.join(", ")} (as “${c.title}”)`,
+    );
+  }
+  return places.join(", ") || "not used yet";
+}
+
 const rolePages = ROLES.map((role) => {
   const test = buildTest(role)
     .map(
@@ -43,6 +68,7 @@ const rolePages = ROLES.map((role) => {
     .join("");
   return `<section class="role" id="${slug(role.title)}">
     <header><p class="kicker">Partner job interview</p><h2>${esc(role.title)}</h2>
+    <p class="meta"><b>Used for jobs in:</b> ${esc(usedIn(role.title))}</p>
     <p class="meta">Test 25 questions · 25 min &nbsp;|&nbsp; Video 7 × 30 s · 25 min &nbsp;|&nbsp; Survey 25 questions · 25 min (shared, see the end)</p></header>
     <h3>Test</h3><ol class="qs">${test}</ol>
     <h3>Video interview</h3><ol class="qs">${videos}</ol>
@@ -91,7 +117,7 @@ const html = `<!doctype html><html><head><meta charset="utf-8"><title>Partner jo
 <section class="cover">
   <div class="brand"><b>W</b> Wemuste</div>
   <h1>Partner job interviews</h1>
-  <p class="lead">One interview for each partner role, in the same pattern as the real job (Online Office &amp; Translation Administrator). Every partner job with that title uses its role's interview.</p>
+  <p class="lead">One interview for each partner role, in the same pattern as the real job (Online Office &amp; Translation Administrator). Every partner job with that title uses its role's interview. Jobs in Pakistan, India and Bangladesh get prices, ID cards and phone numbers in their own country's format.</p>
   <table class="pattern">
     <tr><th>Section</th><th>What the applicant does</th><th>Time</th></tr>
     <tr><td>Test</td><td>25 written questions: 16 about the role, 9 the same for every role. Office roles start with a typing test.</td><td>25 min</td></tr>

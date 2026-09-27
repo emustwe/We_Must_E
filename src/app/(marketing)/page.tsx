@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import { JobExplorer } from "@/components/explore/job-explorer";
 import { jobAreaBounds } from "@/lib/jobs/area";
@@ -15,5 +16,15 @@ export default async function ExplorePage({ searchParams }: PageProps<"/">) {
   const { job } = await searchParams;
   const initialJobId = typeof job === "string" && idSchema.safeParse(job).success ? job : null;
   const jobs = await getPublicJobs();
-  return <JobExplorer jobs={jobs} bounds={jobAreaBounds()} initialJobId={initialJobId} />;
+  // The map opens on the jobs in the visitor's country (Vercel sets this
+  // header from the connection and overwrites any a client sends).
+  const country = (await headers()).get("x-vercel-ip-country");
+  return (
+    <JobExplorer
+      jobs={jobs}
+      bounds={jobAreaBounds()}
+      initialJobId={initialJobId}
+      homeCountry={country && /^[A-Z]{2}$/.test(country) ? country : null}
+    />
+  );
 }

@@ -35,11 +35,21 @@ async function stubMapTiler(page: Page) {
   });
 }
 
-// "N jobs in this area" (what the map shows).
+// "N jobs in this area" (what the map shows), once the map has stopped
+// moving: it opens on all jobs and then glides to the visitor's area.
 async function jobsInArea(page: Page) {
-  const pill = page.getByText(/^\d+ jobs? in this area$/);
+  const pill = page.getByText(/^[\d,]+ jobs? in this area$/);
   await expect(pill).toBeVisible();
-  return Number((await pill.textContent())!.match(/^\d+/)![0]);
+  const read = async () =>
+    Number((await pill.textContent())!.match(/^[\d,]+/)![0].replace(/,/g, ""));
+  let last = await read();
+  for (let i = 0; i < 20; i++) {
+    await page.waitForTimeout(700);
+    const now = await read();
+    if (now === last) return now;
+    last = now;
+  }
+  return last;
 }
 const pin = (page: Page, title: string) =>
   page.locator(`.leaflet-marker-icon[title="${title}"] .wm-p-pill`);

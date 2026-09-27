@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { fetchPublicJobs } from "@/lib/jobs/fetch-public-jobs";
 import { toPublicJob, type PublicJob } from "@/lib/jobs/public-job";
 import type { Bounds } from "@/lib/jobs/meta";
 import { createClient } from "@/lib/supabase/client";
@@ -17,6 +18,7 @@ const MIN_RELOAD_GAP_MS = 3_000;
 // the live connection drops.
 export function useLiveJobs(initial: PublicJob[], bounds: Bounds) {
   const [jobs, setJobs] = useState(initial);
+  const { south, west, north, east } = bounds;
 
   useEffect(() => {
     const supabase = createClient();
@@ -26,13 +28,8 @@ export function useLiveJobs(initial: PublicJob[], bounds: Bounds) {
 
     async function reload() {
       last = Date.now();
-      const { data, error } = await supabase.rpc("get_public_jobs", {
-        min_lat: bounds.south,
-        min_lng: bounds.west,
-        max_lat: bounds.north,
-        max_lng: bounds.east,
-      });
-      if (!cancelled && !error && data) setJobs(data.map(toPublicJob));
+      const { rows, error } = await fetchPublicJobs(supabase, { south, west, north, east });
+      if (!cancelled && !error) setJobs(rows.map(toPublicJob));
     }
     // Several changes in a row become one reload, and reloads are spaced out.
     const soon = () => {
@@ -55,7 +52,7 @@ export function useLiveJobs(initial: PublicJob[], bounds: Bounds) {
       document.removeEventListener("visibilitychange", onVisible);
       void supabase.removeChannel(channel);
     };
-  }, [bounds.south, bounds.west, bounds.north, bounds.east]);
+  }, [south, west, north, east]);
 
   return jobs;
 }

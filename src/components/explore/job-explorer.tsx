@@ -60,6 +60,16 @@ function boundsOf(jobs: { lat: number; lng: number }[]): MapTarget | null {
   };
 }
 
+// Where the map opens: the jobs in the visitor's country, else the UAE's,
+// else all of them.
+function startJobs<T extends { countryCode: string | null }>(jobs: T[], country: string | null) {
+  for (const code of [country, "AE"]) {
+    const here = jobs.filter((j) => j.countryCode === code);
+    if (here.length) return here;
+  }
+  return jobs;
+}
+
 function readSaved(): string[] {
   try {
     const v = JSON.parse(localStorage.getItem(SAVED_KEY) ?? "[]");
@@ -75,10 +85,12 @@ export function JobExplorer({
   jobs: initialJobs,
   bounds,
   initialJobId,
+  homeCountry = null,
 }: {
   jobs: PublicJob[];
   bounds: Bounds;
   initialJobId: string | null;
+  homeCountry?: string | null;
 }) {
   const t = useTranslations("explore");
   // Live: approved jobs appear (and closed ones disappear) without a reload.
@@ -106,7 +118,9 @@ export function JobExplorer({
   const [anchor, setAnchor] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const [target, setTarget] = useState<MapTarget | null>(() => {
     const job = initialJobs.find((j) => j.id === initialJobId);
-    return job ? { center: [job.lat, job.lng], zoom: 14 } : boundsOf(initialJobs);
+    return job
+      ? { center: [job.lat, job.lng], zoom: 14 }
+      : boundsOf(startJobs(initialJobs, homeCountry));
   });
   const heading = useRef<HTMLHeadingElement>(null);
   const search = useRef<PlaceSearchHandle>(null);

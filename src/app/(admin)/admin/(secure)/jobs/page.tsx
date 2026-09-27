@@ -38,16 +38,19 @@ export default async function AdminJobsPage({ searchParams }: PageProps<"/admin/
     .limit(300);
   if (status) request = request.eq("status", status);
   if (sponsor) request = request.eq("employer_id", sponsor);
-  let countRequest = supabase.from("jobs").select("status").limit(5000);
-  if (sponsor) countRequest = countRequest.eq("employer_id", sponsor);
-  const [{ data: jobs }, { data: all }, { data: sponsors }] = await Promise.all([
+  // The tab counts (the API returns at most 1,000 rows, so count, don't list).
+  const countOf = (s: JobStatus) => {
+    let q = supabase.from("jobs").select("id", { count: "exact", head: true }).eq("status", s);
+    if (sponsor) q = q.eq("employer_id", sponsor);
+    return q.then((r) => [s, r.count ?? 0] as const);
+  };
+  const [{ data: jobs }, statusCounts, { data: sponsors }] = await Promise.all([
     request,
-    countRequest,
+    Promise.all(STATUSES.map(countOf)),
     supabase.from("employer_profiles").select("user_id, company_name").order("company_name"),
   ]);
 
-  const counts = new Map<string, number>();
-  for (const j of all ?? []) counts.set(j.status, (counts.get(j.status) ?? 0) + 1);
+  const counts = new Map<string, number>(statusCounts);
   const href = (s?: JobStatus) => {
     const p = new URLSearchParams();
     if (s) p.set("status", s);

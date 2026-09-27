@@ -23,7 +23,7 @@
   "landing": {
     "eyebrow": "Private & verified",
     "headline": "Side jobs near you, on the map.",
-    "subhead": "Browse real jobs from verified sponsors around the UAE. Tap one, send a request, get hired.",
+    "subhead": "Browse real jobs from verified sponsors near you. Tap one, send a request, get hired.",
     "findWork": "Find work near me",
     "free": "Free for job seekers",
     "hiring": "I'm hiring",
@@ -685,7 +685,7 @@
   },
   "explore": {
     "metaTitle": "Wemuste · Jobs near you on the map",
-    "metaDescription": "Find side jobs and part-time work near you in the UAE. Free to apply, no account needed.",
+    "metaDescription": "Find jobs and part-time work near you in the UAE, Pakistan, India and Bangladesh. Free to apply, no account needed.",
     "pageTitle": "Jobs near you",
     "mapLabel": "Map of jobs",
     "aboutWemuste": "About Wemuste for sponsors",
@@ -845,7 +845,7 @@
     "contactBody": "Only the Wemuste team sees this. We share it with a sponsor only if we shortlist you.",
     "fullName": "Full name",
     "phone": "Phone number",
-    "phoneHint": "UAE numbers like 050 123 4567 are fine.",
+    "phoneHint": "Local mobile numbers are fine: 050 123 4567 (UAE), 0300 1234567 (Pakistan), 98765 43210 (India), 01712 345678 (Bangladesh).",
     "email": "Email",
     "optional": "optional",
     "codeTitle": "Confirm your phone",

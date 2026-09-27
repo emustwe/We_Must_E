@@ -8,6 +8,9 @@ import { ROLES_C } from "./roles-c.mjs";
 import { ROLES_D } from "./roles-d.mjs";
 import { ROLES_E } from "./roles-e.mjs";
 import { ROLES_F } from "./roles-f.mjs";
+import { ROLES_G } from "./roles-g.mjs";
+import { ROLES_H } from "./roles-h.mjs";
+import { ROLES_I } from "./roles-i.mjs";
 import type { Role } from "./types.mjs";
 
 export type { Role };
@@ -20,6 +23,9 @@ export const ROLES: Role[] = [
   ...ROLES_D,
   ...ROLES_E,
   ...ROLES_F,
+  ...ROLES_G,
+  ...ROLES_H,
+  ...ROLES_I,
 ]
   .slice()
   .sort((a, b) => a.title.localeCompare(b.title));

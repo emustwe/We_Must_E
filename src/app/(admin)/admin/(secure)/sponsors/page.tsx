@@ -28,6 +28,24 @@ export async function generateMetadata(): Promise<Metadata> {
 const TABS = { active: "approved", setup: "pending" } as const;
 const TONE = { approved: "ok", pending: "idle", suspended: "danger" } as const;
 
+// Who posted each (not removed) job, for the job count per sponsor. The API
+// returns at most 1,000 rows per request, so this reads them in pages.
+async function jobOwners() {
+  const supabase = await createClient();
+  const data: { employer_id: string }[] = [];
+  for (let from = 0; from < 20_000; from += 1000) {
+    const page = await supabase
+      .from("jobs")
+      .select("employer_id")
+      .neq("status", "removed")
+      .order("id")
+      .range(from, from + 999);
+    data.push(...(page.data ?? []));
+    if ((page.data?.length ?? 0) < 1000) break;
+  }
+  return { data };
+}
+
 export default async function AdminSponsorsPage({ searchParams }: PageProps<"/admin/sponsors">) {
   const params = await searchParams;
   const t = await getTranslations("adminUi");
@@ -41,7 +59,7 @@ export default async function AdminSponsorsPage({ searchParams }: PageProps<"/ad
       .select("user_id, company_name, contact_person, contact_email, status, logo_path, created_at")
       .order("created_at", { ascending: false })
       .limit(500),
-    supabase.from("jobs").select("employer_id").neq("status", "removed").limit(5000),
+    jobOwners(),
   ]);
   const jobCount = new Map<string, number>();
   for (const j of jobs ?? []) jobCount.set(j.employer_id, (jobCount.get(j.employer_id) ?? 0) + 1);
