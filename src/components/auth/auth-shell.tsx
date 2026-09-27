@@ -12,11 +12,15 @@ export async function AuthShell({
   subtitle,
   children,
   footer,
+  aside,
 }: {
   title: string;
   subtitle?: string;
   children: ReactNode;
   footer?: ReactNode;
+  // Replaces the trust panel on the left (desktop; above the card on phones),
+  // and both cards line up at the top.
+  aside?: ReactNode;
 }) {
   const t = await getTranslations("authShell");
   const tc = await getTranslations("common");
@@ -56,21 +60,32 @@ export async function AuthShell({
         </span>
       </header>
 
-      <div className="relative z-10 mt-6 flex flex-1 items-end justify-center gap-8 sm:mt-0 sm:items-center sm:px-6 sm:py-10 lg:justify-end lg:px-16">
-        <aside className="hidden max-w-sm rounded-[28px] bg-white/95 p-7 shadow-wm-2 backdrop-blur lg:block">
-          <h2 className="m-0 text-2xl leading-tight font-extrabold tracking-[-0.6px]">
-            {t("valueTitle")}
-          </h2>
-          <ul className="m-0 mt-5 flex list-none flex-col gap-3 p-0">
-            {points.map(({ icon, text }) => (
-              <li key={text} className="flex items-center gap-3 text-sm font-semibold text-wm-body">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-wm-tint text-wm-blue">
-                  <WmIcon name={icon} size={17} stroke={2.2} />
-                </span>
-                {text}
-              </li>
-            ))}
-          </ul>
+      <div
+        className={`relative z-10 mt-6 flex flex-1 items-end justify-center gap-8 sm:mt-0 sm:items-center sm:px-6 sm:py-10 lg:justify-end lg:px-16 ${aside ? "lg:items-start" : ""}`}
+      >
+        <aside
+          className={`hidden rounded-[28px] bg-white/95 p-7 shadow-wm-2 backdrop-blur lg:block ${aside ? "max-w-md" : "max-w-sm"}`}
+        >
+          {aside ?? (
+            <>
+              <h2 className="m-0 text-2xl leading-tight font-extrabold tracking-[-0.6px]">
+                {t("valueTitle")}
+              </h2>
+              <ul className="m-0 mt-5 flex list-none flex-col gap-3 p-0">
+                {points.map(({ icon, text }) => (
+                  <li
+                    key={text}
+                    className="flex items-center gap-3 text-sm font-semibold text-wm-body"
+                  >
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-wm-tint text-wm-blue">
+                      <WmIcon name={icon} size={17} stroke={2.2} />
+                    </span>
+                    {text}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </aside>
 
         <main className="w-full rounded-t-[28px] bg-white px-5 pt-3 pb-6 shadow-wm-3 sm:max-w-md sm:rounded-[28px] sm:p-8">
@@ -78,6 +93,9 @@ export async function AuthShell({
             className="mx-auto mb-5 h-[5px] w-10 rounded-full bg-[rgba(11,18,32,0.18)] sm:hidden"
             aria-hidden="true"
           />
+          {aside ? (
+            <div className="mb-6 border-b border-wm-line pb-6 lg:hidden">{aside}</div>
+          ) : null}
           <div className="mb-6 flex flex-col gap-1.5">
             <h1 className="m-0 text-[28px] leading-tight font-extrabold tracking-[-0.8px] text-balance">
               {title}

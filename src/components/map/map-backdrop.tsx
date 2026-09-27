@@ -25,22 +25,13 @@ export function MapBackdrop({
     <div className={cn("absolute inset-0 overflow-hidden", className)}>
       {/* Phones get a small portrait crop; WebP with a JPEG fallback. */}
       <picture>
-        <source
-          media="(prefers-color-scheme: dark) and (max-width: 640px)"
-          srcSet="/brand/map-dark-600.webp"
-          type="image/webp"
-        />
-        <source
-          media="(prefers-color-scheme: dark)"
-          srcSet="/brand/map-dark-1600.webp"
-          type="image/webp"
-        />
-        <source media="(max-width: 640px)" srcSet="/brand/map-light-600.webp" type="image/webp" />
-        <source srcSet="/brand/map-light-1600.webp" type="image/webp" />
+        {/* The same light map as the app (always light: the design has no dark map). */}
+        <source media="(max-width: 640px)" srcSet="/brand/map-2026-600.webp" type="image/webp" />
+        <source srcSet="/brand/map-2026-1600.webp" type="image/webp" />
         <img
-          src="/brand/map-light.jpg"
+          src="/brand/map-2026.jpg"
           alt={alt}
-          className="size-full object-cover object-center sm:object-[60%_40%]"
+          className="size-full object-cover object-center sm:object-[40%_50%]"
           fetchPriority="high"
           decoding="async"
         />
@@ -60,7 +51,7 @@ export function MapBackdrop({
         </div>
       ) : null}
       <span className="absolute end-2 bottom-2 rounded bg-background/70 px-1.5 py-0.5 text-[10px] text-muted-foreground">
-        © OpenStreetMap contributors · OpenFreeMap
+        © MapTiler © OpenStreetMap contributors
       </span>
     </div>
   );

@@ -16,37 +16,42 @@ export default async function ForEmployersPage() {
   const t = await getTranslations("forEmployers");
   const tc = await getTranslations("common");
   const steps = [t("step1"), t("step2"), t("step3")];
-  return (
-    <AuthShell
-      title={t("title")}
-      subtitle={t("body")}
-      footer={
-        <>
-          {t("haveLogin")}{" "}
-          <Link href="/login" className="font-semibold text-primary hover:underline">
-            {tc("logIn")}
-          </Link>
-        </>
-      }
-    >
-      <ol className="space-y-3">
+  const intro = (
+    <>
+      <h2 className="m-0 text-[28px] leading-tight font-extrabold tracking-[-0.8px]">
+        {t("title")}
+      </h2>
+      <p className="m-0 mt-2 text-[15px] leading-relaxed font-medium text-wm-slate">{t("body")}</p>
+      <ol className="m-0 mt-5 flex list-none flex-col gap-3 p-0">
         {steps.map((step, i) => (
           <li
             key={step}
-            className="flex items-center gap-3 rounded-2xl bg-muted/70 p-3.5 text-sm font-semibold"
+            className="flex items-center gap-3 rounded-2xl bg-wm-mist p-3.5 text-sm font-bold"
           >
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-background text-primary">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white text-wm-blue">
               {i + 1}
             </span>
             {step}
           </li>
         ))}
       </ol>
-      <div id="request" className="mt-6 scroll-mt-6">
-        <h2 className="mb-3 text-lg font-extrabold">{t("formTitle")}</h2>
-        <SponsorRequestForm />
-      </div>
-      <p className="mt-4 text-center text-xs text-muted-foreground">
+    </>
+  );
+  return (
+    <AuthShell
+      title={t("formTitle")}
+      aside={intro}
+      footer={
+        <>
+          {t("haveLogin")}{" "}
+          <Link href="/login" className="font-semibold text-wm-blue hover:underline">
+            {tc("logIn")}
+          </Link>
+        </>
+      }
+    >
+      <SponsorRequestForm />
+      <p className="mt-4 text-center text-xs text-wm-caption">
         {t("contactNote", { email: SUPPORT_EMAIL })}
       </p>
     </AuthShell>
