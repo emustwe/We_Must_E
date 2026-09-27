@@ -8,12 +8,13 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("privacyTitle") };
 }
 
-// Draft for the client's lawyer to review. The company's legal name, licence
-// number and address are added once the trade licence is issued.
+// For the client's lawyer to review. Wemuste's company is registered in
+// Pakistan; its legal name, SECP registration number and address go in
+// section 1 once the client sends them.
 const SECTIONS = [
   {
     heading: "1. Who we are",
-    body: `Wemuste runs the job platform at www.wemuste.com. [Company legal name, trade licence number and registered address: to be added.]\nQuestions or requests about your data: ${SUPPORT_EMAIL}.`,
+    body: `Wemuste runs the job platform at www.wemuste.com. Wemuste is run by [company legal name], a company registered in Pakistan (SECP registration no. [number], [registered address]).\nQuestions or requests about your data: ${SUPPORT_EMAIL}.`,
   },
   {
     heading: "2. What we collect",
@@ -21,15 +22,15 @@ const SECTIONS = [
   },
   {
     heading: "3. Why we use it",
-    body: "To review your application for the job you chose, to share it with that job's employer (sponsor) if our team approves you, to contact you about the job, and to protect the platform from fraud and misuse.\nWe use your information on the basis of the consent you give when you send your application, under the UAE Personal Data Protection Law (Federal Decree-Law No. 45 of 2021). You can withdraw your consent at any time (see section 7).",
+    body: "To review your application for the job you chose, to share it with that job's employer (sponsor) or partner employer if our team approves you, to contact you about the job, and to protect the platform from fraud and misuse.\nWe use your information with the consent you give when you send your application. We follow the laws of Pakistan and the data protection laws of the countries our applicants live in, including the UAE, India and Bangladesh. You can withdraw your consent at any time (see section 7).",
   },
   {
     heading: "4. Who can see it",
-    body: "Your profile is never public. The Wemuste team reviews every application. A sponsor sees your details only after our team approves you for their job and the sponsor chooses to open your application. Sponsors never see your gender or age. Every time someone opens your video or CV, it is recorded.\nTo run the platform we use trusted service providers: Supabase (database and file storage), Vercel (website hosting), Resend (emails), Cloudflare (bot protection) and MapTiler (maps). They handle data only to provide their service to us.\nWe never sell your information.",
+    body: "Your profile is never public. The Wemuste team reviews every application. A sponsor sees your details only after our team approves you for their job and the sponsor chooses to open your application. Sponsors never see your gender or age. Every time someone opens your video or CV, it is recorded.\nSome jobs on Wemuste are filled for partner employers: companies that hire through us and other platforms. For those jobs, if our team approves you, we share your application with the partner employer hiring for that role, only for that job. Partner employers may use your information only to consider you for that job and must not share it with anyone else.\nTo run the platform we use trusted service providers: Supabase (database and file storage), Vercel (website hosting), Resend (emails), Cloudflare (bot protection) and MapTiler (maps). They handle data only to provide their service to us.\nWe never sell your information.",
   },
   {
     heading: "5. Where it is stored",
-    body: "Your information is stored with Supabase in Mumbai, India, and our website runs on Vercel servers in Mumbai. The UAE Personal Data Protection Law allows this with your consent and with our providers' security commitments. By sending your application, you agree to this.",
+    body: "Your information is stored with Supabase in Mumbai, India, and our website runs on Vercel servers in Mumbai. Our providers are bound by security commitments to protect it.\nIf you apply for a job in another country, your application may be shared with the employer in that country, for example in the UAE, Pakistan, India or Bangladesh.\nBy sending your application, you agree to this.",
   },
   {
     heading: "6. How long we keep it",
@@ -37,7 +38,7 @@ const SECTIONS = [
   },
   {
     heading: "7. Your rights",
-    body: `You can ask us at any time to show you the information we hold about you, to correct it, to delete it immediately, or to stop using it (withdraw your consent).\nEmail ${SUPPORT_EMAIL} from the email address you applied with, or tell us the phone number you used. We reply within ${REPLY_WORKING_DAYS} working days.\nIf you're not happy with our answer, you can complain to the UAE Data Office.`,
+    body: `You can ask us at any time to show you the information we hold about you, to correct it, to delete it immediately, or to stop using it (withdraw your consent).\nEmail ${SUPPORT_EMAIL} from the email address you applied with, or tell us the phone number you used. We reply within ${REPLY_WORKING_DAYS} working days.\nIf you're not happy with our answer, you can complain to the data protection authority in your country, for example the UAE Data Office or India's Data Protection Board.`,
   },
   {
     heading: "8. How we protect it",

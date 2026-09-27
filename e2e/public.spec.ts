@@ -114,6 +114,10 @@ test("the privacy policy is complete and says how to have data deleted", async (
   await expect(page.getByText("[PLACEHOLDER]")).toHaveCount(0);
   await expect(page.getByText("Mumbai, India", { exact: false })).toBeVisible();
   await expect(page.getByText("within 7 working days", { exact: false })).toBeVisible();
+  await expect(page.getByText("a company registered in Pakistan", { exact: false })).toBeVisible();
+  await expect(
+    page.getByText("Some jobs on Wemuste are filled for partner employers", { exact: false }),
+  ).toBeVisible();
   await expect(page.getByText("emustwe@gmail.com", { exact: false }).first()).toBeVisible();
   // The application's first page says when data is deleted and how to ask sooner.
   const job = psql(
