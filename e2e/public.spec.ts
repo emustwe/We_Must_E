@@ -90,9 +90,9 @@ test("an emailed reset link does nothing until Continue is pressed, and works on
     // Opening the link only shows a page (a scanner or a link from someone
     // else can't use it); pressing Continue signs in for the reset.
     await page.goto(path);
-    await expect(page.getByRole("heading", { name: "Choose a new password" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Choose your password" })).toHaveCount(0);
     await page.getByRole("button", { name: "Continue" }).click();
-    await expect(page.getByRole("heading", { name: "Choose a new password" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Choose your password" })).toBeVisible();
     await page.getByLabel("New password", { exact: true }).fill("Quiet-River-Stone-4821");
     await page.getByLabel("Confirm new password").fill("Quiet-River-Stone-4821");
     await page.getByRole("button", { name: "Change password" }).click();

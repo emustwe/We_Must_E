@@ -8,7 +8,6 @@ import { useState, useTransition } from "react";
 import { useForm, type Path } from "react-hook-form";
 import { createEmployer, type CreatedSponsor } from "@/actions/admin";
 import { handleSponsorRequest } from "@/actions/sponsor-request";
-import { PasswordInput } from "@/components/admin/password-input";
 import { Field } from "@/components/forms/field";
 import { FormAlert } from "@/components/forms/form-alert";
 import { SubmitButton } from "@/components/forms/submit-button";
@@ -42,7 +41,6 @@ export function CreateEmployerForm({
       companyName: request?.companyName ?? "",
       contactPerson: request?.contactPerson ?? "",
       email: request?.email ?? "",
-      password: "",
       phone: request?.phone ?? "",
       tradeLicenseNo: "",
       website: request?.website ?? "",
@@ -123,15 +121,7 @@ export function CreateEmployerForm({
           />
         )}
       </Field>
-      <Field label={t("password")} hint={t("passwordHint")} error={errors.password?.message}>
-        {(props) => (
-          <PasswordInput
-            {...props}
-            {...form.register("password")}
-            onGenerate={(p) => form.setValue("password", p, { shouldValidate: true })}
-          />
-        )}
-      </Field>
+      <p className="rounded-xl bg-wm-mist p-3 text-sm text-wm-body">{t("inviteNote")}</p>
       <div className="grid gap-5 sm:grid-cols-2">
         <Field
           label={t("tradeLicense")}

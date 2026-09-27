@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { loginAsAdmin } from "./admin-session";
 import { createUser, psql } from "./db";
 import { acceptConfirms, answerAll, login, signOut, unique } from "./helpers";
-import { waitForEmail } from "./mailpit";
+import { waitForAuthLink, waitForEmail } from "./mailpit";
 
 // A tiny valid PNG (1x1), for the logo upload.
 const PNG = Buffer.from(
@@ -10,39 +10,36 @@ const PNG = Buffer.from(
   "base64",
 );
 
-test("admin creates a sponsor with a password, emails it, changes it, suspends and deletes the sponsor", async ({
+test("admin creates a sponsor who chooses their own password; block, suspend, resend and delete", async ({
   page,
 }) => {
-  test.setTimeout(150_000);
+  test.setTimeout(180_000);
   await acceptConfirms(page);
   const email = `sponsor${unique()}@example.test`;
   const company = `Harbour Coffee ${unique()}`;
   const password = "Harbour-Coffee-Roast-88";
 
-  // --- Admin (MFA) creates the sponsor and chooses the password ---
+  // --- Admin (MFA) creates the sponsor: no password, an invite link instead ---
   await loginAsAdmin(page);
   // Phones: the admin sidebar is a drawer behind the menu button.
   await page.getByRole("button", { name: "Open menu" }).click();
   const nav = page.getByRole("navigation", { name: "Admin" });
   await nav.getByRole("link", { name: "Sponsors", exact: true }).click();
   await page.getByRole("link", { name: "Create sponsor" }).click();
+  await expect(page.getByLabel("Password", { exact: true })).toHaveCount(0);
   await page.getByLabel("Company name").fill(company);
   await page.getByLabel("Contact person").fill("Omar Ali");
   await page.getByLabel("Phone number").fill("+971 50 123 4567");
   await page.getByLabel("Login email").fill(email);
-  await page.getByLabel("Password", { exact: true }).fill("short");
   const createdAt = new Date(Date.now() - 1000);
   await page.getByRole("button", { name: "Create sponsor" }).click();
-  await expect(page.getByText("Use at least 10 characters.")).toBeVisible();
-  await page.getByLabel("Password", { exact: true }).fill(password);
-  await page.getByRole("button", { name: "Create sponsor" }).click();
   await expect(page.getByRole("heading", { name: "Sponsor created" })).toBeVisible();
-  await expect(page.getByText(`We emailed the login details to ${email}.`)).toBeVisible();
-
-  // The email has the login details and a link to log in.
-  const welcome = await waitForEmail(email, /Your Wemuste sponsor account/, createdAt);
-  expect(welcome.text).toContain(password);
-  expect(welcome.html).toContain("/login");
+  await expect(
+    page.getByText(`We emailed ${email} a link to choose their password.`, { exact: false }),
+  ).toBeVisible();
+  const invite = await waitForEmail(email, /Set up your Wemuste sponsor account/, createdAt);
+  expect(invite.html).toContain("/auth/confirm");
+  expect(invite.text).not.toMatch(/password:/i); // no password in the email
 
   // The same email can't be used twice.
   await page.getByRole("button", { name: "Create another" }).click();
@@ -50,39 +47,31 @@ test("admin creates a sponsor with a password, emails it, changes it, suspends a
   await page.getByLabel("Contact person").fill("Omar Ali");
   await page.getByLabel("Phone number").fill("+971 50 123 4567");
   await page.getByLabel("Login email").fill(email);
-  await page.getByLabel("Password", { exact: true }).fill("Another-Password-123");
   await page.getByRole("button", { name: "Create sponsor" }).click();
   await expect(page.getByText("An account with this email already exists.").first()).toBeVisible();
 
-  // --- Admin opens the sponsor: logo and a new password (emailed) ---
+  // --- Admin adds a logo ---
   await page.getByRole("button", { name: "Open menu" }).click();
   await nav.getByRole("link", { name: "Sponsors", exact: true }).click();
   await page.getByRole("link", { name: new RegExp(company) }).click();
   await expect(page.getByRole("heading", { name: company })).toBeVisible();
-  await expect(page.getByText("Active")).toBeVisible();
   await page
     .getByLabel("Upload logo")
     .setInputFiles({ name: "logo.png", mimeType: "image/png", buffer: PNG });
   await expect(page.getByText("Logo saved.")).toBeVisible();
   await expect(page.locator('img[src*="/sponsor-logos/"]')).toBeVisible();
-  const newPassword = "Orchid-Lantern-Meadow-47";
-  const changedAt = new Date(Date.now() - 1000);
-  await page.getByLabel("New password", { exact: true }).fill(newPassword);
-  await page.getByRole("button", { name: "Set password" }).click();
-  await expect(page.getByText("Password changed and emailed to the sponsor.")).toBeVisible();
-  const changed = await waitForEmail(email, /Your new Wemuste password/, changedAt);
-  expect(changed.text).toContain(newPassword);
-  expect(
-    psql(`select string_agg(a.action, ',' order by a.created_at) from public.audit_logs a join auth.users u on u.id = a.target_id
-          where u.email = '${email}' and a.action like 'sponsor.%'`),
-  ).toBe("sponsor.logo,sponsor.password");
   await signOut(page);
 
-  // --- The sponsor logs in with the new password (the old one no longer works) ---
+  // --- The sponsor opens the link, presses Continue and chooses a password ---
+  const link = new URL(await waitForAuthLink(email, createdAt));
+  await page.goto(`${link.pathname}${link.search}`);
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: "Choose your password" })).toBeVisible();
+  await page.getByLabel("New password", { exact: true }).fill(password);
+  await page.getByLabel("Confirm new password").fill(password);
+  await page.getByRole("button", { name: "Change password" }).click();
+  await expect(page).toHaveURL(/\/login\?reset=1$/);
   await login(page, email, password);
-  await expect(page.getByText("Email or password is incorrect.")).toBeVisible();
-  await page.getByLabel("Password", { exact: true }).fill(newPassword);
-  await page.getByRole("button", { name: "Log in" }).click();
   await expect(page).toHaveURL(/\/sponsor$/);
   await expect(page.getByRole("heading", { name: "Post your first job" })).toBeVisible();
   // The sponsor can change their own logo too.
@@ -104,6 +93,26 @@ test("admin creates a sponsor with a password, emails it, changes it, suspends a
   await expect(page.getByText(/That file didn't work/)).toBeVisible();
   await signOut(page);
 
+  // --- Admin blocks the login for a day: the sponsor can't log in; then unblocks ---
+  await loginAsAdmin(page);
+  await page.goto("/admin/sponsors");
+  await page.getByRole("link", { name: new RegExp(company) }).click();
+  await page.getByLabel("Block for").selectOption("1d");
+  await page.getByRole("button", { name: "Block", exact: true }).click();
+  await expect(page.getByText(/Blocked until/)).toBeVisible();
+  await signOut(page);
+  await login(page, email, password);
+  await expect(page.getByText("Your account is blocked for now.", { exact: false })).toBeVisible();
+  await loginAsAdmin(page);
+  await page.goto("/admin/sponsors");
+  await page.getByRole("link", { name: new RegExp(company) }).click();
+  await page.getByRole("button", { name: "Unblock" }).click();
+  await expect(page.getByText("The sponsor can log in again.")).toBeVisible();
+  await signOut(page);
+  await login(page, email, password);
+  await expect(page).toHaveURL(/\/sponsor$/);
+  await signOut(page);
+
   // --- Admin suspends: the sponsor only sees the paused screen ---
   await loginAsAdmin(page);
   await page.goto("/admin/sponsors");
@@ -111,24 +120,24 @@ test("admin creates a sponsor with a password, emails it, changes it, suspends a
   await page.getByRole("button", { name: "Suspend" }).click();
   await expect(page.getByText("Suspended", { exact: true }).first()).toBeVisible();
   await signOut(page);
-  await login(page, email, newPassword);
+  await login(page, email, password);
   await expect(page).toHaveURL(/\/sponsor\/pending$/);
   await expect(page.getByRole("heading", { name: "Your account is paused" })).toBeVisible();
   await signOut(page);
 
-  // --- "Resend invite" emails a new password with the login link ---
+  // --- "Resend invite" emails a new link to choose a password ---
   await loginAsAdmin(page);
   await page.goto("/admin/sponsors");
   const resentAt = new Date(Date.now() - 1000);
   await page.getByRole("button", { name: `Actions for ${company}` }).click();
   await page.getByRole("menuitem", { name: "Resend invite" }).click();
-  await expect(page.getByText("A new password was emailed.")).toBeVisible();
-  const resent = await waitForEmail(email, /Your Wemuste sponsor account/, resentAt);
-  expect(resent.html).toContain("/login");
+  await expect(page.getByText("A new link to choose their password was emailed.")).toBeVisible();
+  const resent = await waitForEmail(email, /Set up your Wemuste sponsor account/, resentAt);
+  expect(resent.html).toContain("/auth/confirm");
   expect(
-    psql(`select count(*) from public.audit_logs where action = 'sponsor.password'
-          and target_id = (select id from auth.users where email = '${email}')`),
-  ).not.toBe("0");
+    psql(`select string_agg(distinct a.action, ',' order by a.action) from public.audit_logs a
+          where a.target_id = (select id from auth.users where email = '${email}') and a.action like 'sponsor.%'`),
+  ).toBe("sponsor.blocked,sponsor.invite,sponsor.logo,sponsor.unblocked");
 
   // --- Admin deletes the sponsor (type the company name to confirm) ---
   await page.goto("/admin/sponsors");

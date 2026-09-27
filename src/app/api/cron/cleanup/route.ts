@@ -1,7 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { serverEnv } from "@/lib/env.server";
 import { logError } from "@/lib/log";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { cleanupAbandoned, cleanupExpired } from "@/server/public-application";
 
 // Vercel Cron (vercel.json), every night: removes applications that were never
@@ -18,11 +17,7 @@ export async function GET(request: Request) {
   try {
     const abandoned = await cleanupAbandoned();
     const expired = await cleanupExpired();
-    // Handled "become a sponsor" requests, 90 days on.
-    const { data: requests } = await createAdminClient().rpc("app_delete_old_sponsor_requests", {
-      p_days: 90,
-    });
-    return Response.json({ abandoned, expired, sponsorRequests: requests ?? 0 });
+    return Response.json({ abandoned, expired });
   } catch (error) {
     logError("cron-cleanup", error);
     return new Response("Cleanup failed", { status: 500 });

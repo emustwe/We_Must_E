@@ -39,8 +39,9 @@
     "valueTitle": "Real jobs. Verified sponsors.",
     "trust1": "Your profile is never public",
     "trust2": "Every sponsor is checked by our team",
-    "trust3": "You choose which jobs to request",
-    "employerBadge": "Verified by Wemuste"
+    "trust3": "Only candidates our team approved reach sponsors",
+    "employerBadge": "Verified by Wemuste",
+    "tagline": "Jobs near you"
   },
   "login": {
     "title": "Welcome back",
@@ -110,8 +111,8 @@
     "backToLogin": "Back to log in"
   },
   "reset": {
-    "title": "Choose a new password",
-    "subtitle": "You'll be logged out on all devices after the change.",
+    "title": "Choose your password",
+    "subtitle": "Use at least 10 characters. You’ll be logged out on all devices after this.",
     "newPassword": "New password",
     "confirmPassword": "Confirm new password",
     "submit": "Change password",
@@ -213,7 +214,8 @@
     "jobUnavailable": "This job is no longer taking applications.",
     "phoneUnverified": "Please confirm your phone number with the code we sent.",
     "wrongStep": "This step is already done. We've taken you to where you left off.",
-    "noCoins": "You don't have any E-coins left. Contact the Wemuste team to add more."
+    "noCoins": "You don't have any E-coins left. Contact the Wemuste team to add more.",
+    "accountBlocked": "Your account is blocked for now. Please contact the Wemuste team."
   },
   "employee": {
     "welcome": "Hi {name}",
@@ -259,7 +261,7 @@
     "employersTitle": "Sponsors",
     "createEmployer": "Create sponsor",
     "createTitle": "Create a sponsor account",
-    "createBody": "Choose a password for the sponsor. We email them their login details and a link to log in.",
+    "createBody": "We email the sponsor a link to choose their own password. Nobody at Wemuste sees it.",
     "companyName": "Company name",
     "contactPerson": "Contact person",
     "email": "Login email",
@@ -269,7 +271,7 @@
     "optional": "optional",
     "createSubmit": "Create sponsor",
     "createdTitle": "Sponsor created",
-    "createdBody": "We emailed the login details to {email}.",
+    "createdBody": "We emailed {email} a link to choose their password. The link works for 1 hour; use \"Resend invite\" if it expires.",
     "copy": "Copy",
     "copied": "Copied",
     "createAnother": "Create another",
@@ -497,7 +499,7 @@
     "markOneCorrect": "Tick the correct answer",
     "timeLimitOptional": "Time limit (minutes, 0 = none)",
     "newVideoSet": "New video question set",
-    "createdNoEmail": "The account is ready, but the email to {email} couldn't be sent. Share the login details with them another way.",
+    "createdNoEmail": "The account is ready, but the email to {email} couldn’t be sent. Use \"Resend invite\" on the sponsor’s page to try again.",
     "password": "Password",
     "passwordHint": "At least 10 characters. It's sent to the sponsor by email, and they keep it until they change it.",
     "generate": "Generate",
@@ -535,7 +537,24 @@
     "missingStepsBody": "These steps have no live questions, so people applying don't see them. Add questions and tap Make live.",
     "missingStepsLink": "Open Content",
     "videoAnswersTo": "One video answering these questions:",
-    "noRightAnswers": "There are no right or wrong answers: applicants answer freely, and nothing is scored."
+    "noRightAnswers": "There are no right or wrong answers: applicants answer freely, and nothing is scored.",
+    "inviteNote": "No password needed: the sponsor gets an email with a link to choose their own.",
+    "loginTitle": "Login",
+    "loginBody": "Send the sponsor a new link to choose their password, for example if they forgot it or the first link expired.",
+    "blockTitle": "Block login",
+    "blockFor": "Block for",
+    "block": "Block",
+    "unblock": "Unblock",
+    "blocked": "The sponsor is blocked and logged out everywhere.",
+    "unblocked": "The sponsor can log in again.",
+    "blockedUntil": "Blocked until {date}",
+    "blockedForever": "Blocked until you unblock them",
+    "blockOption": {
+      "1d": "1 day",
+      "7d": "7 days",
+      "30d": "30 days",
+      "forever": "Until I unblock"
+    }
   },
   "legal": {
     "placeholder": "PLACEHOLDER — client/lawyer to replace.",
@@ -1107,7 +1126,11 @@
       "exportAudit": "Exported the audit log",
       "other": "Other action",
       "cvViewed": "Opened a CV",
-      "applicationDeleted": "Deleted an application"
+      "applicationDeleted": "Deleted an application",
+      "sponsorInvite": "Sent a set-password link",
+      "sponsorBlocked": "Blocked a sponsor",
+      "sponsorUnblocked": "Unblocked a sponsor",
+      "sponsorRequest": "Handled a sponsor request"
     },
     "activity": {
       "videoViewed": "viewed a video answer on an <t>application</t>",
@@ -1133,7 +1156,11 @@
       "exportAudit": "exported the audit log",
       "other": "did something",
       "cvViewed": "opened the CV on an <t>application</t>",
-      "applicationDeleted": "deleted an <t>application</t> and its files"
+      "applicationDeleted": "deleted an <t>application</t> and its files",
+      "sponsorInvite": "sent a set-password link to a <t>sponsor</t>",
+      "sponsorBlocked": "blocked a <t>sponsor</t>",
+      "sponsorUnblocked": "unblocked a <t>sponsor</t>",
+      "sponsorRequest": "handled a sponsor request"
     },
     "change": "{from} to {to}",
     "statusWord": {
@@ -1268,9 +1295,9 @@
     "openSponsor": "Open sponsor",
     "resendInvite": "Resend invite",
     "resendConfirm": "Email {name} a new password?",
-    "resendBody": "Their old password stops working. The new one is emailed to them with a login link.",
-    "inviteSent": "A new password was emailed.",
-    "inviteNotSent": "The password was changed, but the email could not be sent.",
+    "resendBody": "They get an email with a new link to choose their password. Their current password keeps working until they use it.",
+    "inviteSent": "A new link to choose their password was emailed.",
+    "inviteNotSent": "The link couldn’t be emailed. Please try again.",
     "stillSettingUp": "{name} is still setting up",
     "settingUpBody": "They can't post jobs until they finish. Send them a new invite if they lost the first one.",
     "howSponsors": "How sponsors work",
@@ -1343,7 +1370,7 @@
     "deleteAppConfirm": "Delete permanently",
     "deleteAppDone": "Application deleted.",
     "requestsTitle": "Sponsor requests",
-    "requestsBody": "Companies that asked to become a sponsor from the \"For sponsors\" button. Check them, then create their account or decline.",
+    "requestsBody": "Companies that asked to become a sponsor from the \"For sponsors\" button. Create their account, decline, or delete a request. Requests are kept until you delete them.",
     "requestsNew": "New",
     "requestsHandled": "Handled",
     "requestsEmpty": "No requests here.",
@@ -1360,7 +1387,10 @@
     "requestDecline": "Decline",
     "requestDeclineTitle": "Decline this request?",
     "requestDeclineBody": "The request moves to Handled. No email is sent to the company.",
-    "requestCreatedNote": "From a sponsor request: the details are filled in. Choose a password and create the account."
+    "requestCreatedNote": "From a sponsor request: the details are filled in. Choose a password and create the account.",
+    "requestDelete": "Delete",
+    "requestDeleteTitle": "Delete this request?",
+    "requestDeleteBody": "The company’s details are deleted for good. This can’t be undone."
   },
   "sponsorUi": {
     "sponsor": "Sponsor",

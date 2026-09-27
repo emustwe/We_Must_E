@@ -63,8 +63,6 @@ export const createEmployerSchema = z.strictObject({
     .min(2, { error: "validation.nameRequired" })
     .max(120, { error: "validation.nameTooLong" }),
   email: emailSchema,
-  // The admin chooses it; it is emailed to the sponsor with the login link.
-  password: newPasswordSchema,
   phone: z
     .string()
     .trim()
@@ -81,10 +79,11 @@ export const employerStatusSchema = z.strictObject({
   status: z.enum(["approved", "suspended"]),
 });
 
-export const sponsorPasswordSchema = z.strictObject({
+// Block a sponsor's login for a while (or until unblocked), or unblock.
+export const SPONSOR_BLOCKS = ["1d", "7d", "30d", "forever", "none"] as const;
+export const blockSponsorSchema = z.strictObject({
   employerId: idSchema,
-  password: newPasswordSchema,
-  notify: z.boolean(),
+  duration: z.enum(SPONSOR_BLOCKS),
 });
 
 export const ecoinSchema = z.strictObject({

@@ -5,7 +5,9 @@ import { notFound } from "next/navigation";
 import { getFormatter, getTranslations } from "next-intl/server";
 import { EmployerStatusButton } from "@/components/admin/employer-status-button";
 import { EcoinForm } from "@/components/admin/ecoin-form";
-import { DeleteSponsor, SponsorPasswordForm } from "@/components/admin/sponsor-manage";
+import { ResendInviteButton } from "@/components/admin/sponsor-actions";
+import { BlockSponsor, DeleteSponsor } from "@/components/admin/sponsor-manage";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { EcoinHistory } from "@/components/sponsors/ecoin-history";
 import { Badge, Card } from "@/components/admin/ui";
 import { LogoUploader } from "@/components/sponsors/logo-uploader";
@@ -37,6 +39,10 @@ export default async function AdminSponsorPage({ params }: PageProps<"/admin/spo
     supabase.from("jobs").select("id", { count: "exact", head: true }).eq("employer_id", id),
   ]);
   if (!s) notFound();
+  // Service role, after the MFA check in the layout: whether their login is
+  // blocked lives in the auth system.
+  const { data: auth } = await createAdminClient().auth.admin.getUserById(id);
+  const blockedUntil = auth.user?.banned_until ?? null;
 
   const rows = [
     [t("contactPerson"), s.contact_person],
@@ -90,9 +96,14 @@ export default async function AdminSponsorPage({ params }: PageProps<"/admin/spo
           <EcoinForm employerId={s.user_id} />
           <EcoinHistory employerId={s.user_id} />
         </Card>
-        <Card>
-          <h2 className="mb-3 font-bold">{t("passwordTitle")}</h2>
-          <SponsorPasswordForm employerId={s.user_id} />
+        <Card className="space-y-4">
+          <h2 className="font-bold">{t("loginTitle")}</h2>
+          <p className="text-sm text-muted-foreground">{t("loginBody")}</p>
+          <ResendInviteButton employerId={s.user_id} name={s.company_name} />
+          <div className="border-t pt-4">
+            <h3 className="mb-2 text-sm font-bold">{t("blockTitle")}</h3>
+            <BlockSponsor employerId={s.user_id} blockedUntil={blockedUntil} />
+          </div>
         </Card>
         <Card className="border-2 border-destructive/30">
           <h2 className="mb-3 font-bold text-destructive">{t("deleteSponsor")}</h2>

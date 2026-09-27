@@ -63,3 +63,18 @@ export async function handleSponsorRequest(input: unknown): Promise<ActionResult
   revalidatePath("/admin", "layout");
   return ok(undefined);
 }
+
+// An MFA admin deletes a request (kept until then).
+export async function deleteSponsorRequest(requestId: unknown): Promise<ActionResult> {
+  const id = handleSponsorRequestSchema.shape.requestId.safeParse(requestId);
+  if (!id.success) return fail("invalidInput");
+  await requireAdminMfa();
+  const { error } = await (
+    await createClient()
+  ).rpc("admin_delete_sponsor_request", {
+    p_request_id: id.data,
+  });
+  if (error) return dbFail("admin-delete-sponsor-request", error);
+  revalidatePath("/admin", "layout");
+  return ok(undefined);
+}

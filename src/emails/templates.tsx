@@ -1,14 +1,10 @@
 import { EmailLayout } from "./layout";
 
 // One entry per transactional email. Copy is short and plain for readers of
-// English as a second language. Only the sponsor login emails carry details
-// (their own login email and password, as the Wemuste team chose); none
-// contain applicants' personal data.
-export type LoginDetails = { email: string; password: string };
+// English as a second language. No email contains a password or applicants'
+// personal data.
+export type InviteDetails = { email: string; link: string };
 export type ApplicationDetails = { jobTitle: string; supportEmail: string };
-
-const loginFooter =
-  'Keep this email private and don\'t forward it. You can change your password any time with "Forgot password" on the login page. Wemuste will never ask for your password by phone.';
 
 export const TEMPLATES = {
   newApplication: {
@@ -119,37 +115,25 @@ export const TEMPLATES = {
       />
     ),
   },
-  sponsorAccount: {
-    subject: "Your Wemuste sponsor account",
-    render: (site: string, login: LoginDetails) => (
+  // To a new sponsor (and again with "Resend invite"): choose your own password.
+  sponsorInvite: {
+    subject: "Set up your Wemuste sponsor account",
+    render: (_site: string, invite: InviteDetails) => (
       <EmailLayout
-        preview="Your sponsor account is ready"
+        preview="Your sponsor account is ready: choose your password"
         heading="Your sponsor account is ready"
-        body="The Wemuste team created a sponsor account for your company. Log in with the details below to post jobs and see your candidates."
-        details={[
-          { label: "Email", value: login.email },
-          { label: "Password", value: login.password },
-        ]}
-        cta="Log in to Wemuste"
-        href={`${site}/login`}
-        footer={loginFooter}
-      />
-    ),
-  },
-  sponsorPassword: {
-    subject: "Your new Wemuste password",
-    render: (site: string, login: LoginDetails) => (
-      <EmailLayout
-        preview="Your password was changed"
-        heading="Your password was changed"
-        body="The Wemuste team set a new password for your sponsor account. Use it the next time you log in."
-        details={[
-          { label: "Email", value: login.email },
-          { label: "New password", value: login.password },
-        ]}
-        cta="Log in to Wemuste"
-        href={`${site}/login`}
-        footer={loginFooter}
+        body="The Wemuste team created a sponsor account for your company. Choose your own password to log in, post jobs and meet your candidates."
+        steps={{
+          title: "How to start",
+          items: [
+            "Press the button below and then Continue.",
+            "Choose your password.",
+            `Log in with ${invite.email} and your new password.`,
+          ],
+        }}
+        cta="Set your password"
+        href={invite.link}
+        footer="This link works for 1 hour and only once. If it has expired, ask the Wemuste team to send a new one. Wemuste will never ask for your password by email or phone."
       />
     ),
   },

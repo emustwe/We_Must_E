@@ -41,6 +41,8 @@ function mapAuthError(error: AuthError, context: string): ActionResult<never> {
       return fail("samePassword", { password: "validation.passwordSame" });
     case "captcha_failed":
       return fail("captchaFailed");
+    case "user_banned":
+      return fail("accountBlocked");
     case "over_request_rate_limit":
     case "over_email_send_rate_limit":
       return fail("rateLimited");

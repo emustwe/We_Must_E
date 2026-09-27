@@ -12,6 +12,10 @@ export type AuditRow = {
 };
 
 export type AuditKey =
+  | "sponsorInvite"
+  | "sponsorBlocked"
+  | "sponsorUnblocked"
+  | "sponsorRequest"
   | "applicationDeleted"
   | "videoViewed"
   | "cvViewed"
@@ -148,6 +152,15 @@ export function describeAudit(row: AuditRow): Described {
       return { ...base, key: "sponsorLogo", icon: "building", tone: "grey" };
     case "sponsor.deleted":
       return { ...base, key: "sponsorDeleted", icon: "trash", tone: "red" };
+    case "sponsor.invite":
+      return { ...base, key: "sponsorInvite", icon: "mail", tone: "grey" };
+    case "sponsor.blocked":
+      return { ...base, key: "sponsorBlocked", icon: "lock", tone: "red" };
+    case "sponsor.unblocked":
+      return { ...base, key: "sponsorUnblocked", icon: "key", tone: "green" };
+    case "sponsor_request.handled":
+    case "sponsor_request.deleted":
+      return { ...base, key: "sponsorRequest", icon: "mail", tone: "grey" };
     case "ecoins.added": {
       const amount = typeof m.amount === "number" ? m.amount : null;
       return {

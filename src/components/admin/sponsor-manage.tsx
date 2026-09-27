@@ -1,69 +1,79 @@
 "use client";
 
-import { KeyRound, Trash2 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { Ban, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useFormatter, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { deleteSponsor, setSponsorPassword } from "@/actions/admin";
-import { PasswordInput } from "@/components/admin/password-input";
+import { blockSponsor, deleteSponsor } from "@/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SPONSOR_BLOCKS } from "@/lib/validations/jobs";
 
-export function SponsorPasswordForm({ employerId }: { employerId: string }) {
+// Block the sponsor's login for a while, or until unblocked (also logs them
+// out everywhere); or unblock.
+export function BlockSponsor({
+  employerId,
+  blockedUntil,
+}: {
+  employerId: string;
+  blockedUntil: string | null;
+}) {
   const t = useTranslations("admin");
   const te = useTranslations("errors");
-  const tAll = useTranslations();
-  const [password, setPassword] = useState("");
-  const [notify, setNotify] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const format = useFormatter();
+  const router = useRouter();
+  const [duration, setDuration] = useState<(typeof SPONSOR_BLOCKS)[number]>("7d");
   const [pending, startTransition] = useTransition();
-  return (
-    <form
-      className="space-y-3"
-      onSubmit={(e) => {
-        e.preventDefault();
-        setError(null);
-        startTransition(async () => {
-          const result = await setSponsorPassword({ employerId, password, notify });
-          if (!result.ok) {
-            const key = result.fieldErrors?.password;
-            setError(key && tAll.has(key as never) ? tAll(key as never) : te(result.error));
-            return;
-          }
-          setPassword("");
-          toast.success(result.data.emailed ? t("passwordChangedEmailed") : t("passwordChanged"));
-        });
-      }}
-    >
-      <Label htmlFor="sponsor-password">{t("newPassword")}</Label>
-      <PasswordInput
-        id="sponsor-password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        onGenerate={setPassword}
-        aria-invalid={Boolean(error)}
-        aria-describedby={error ? "sponsor-password-error" : undefined}
-      />
-      {error ? (
-        <p id="sponsor-password-error" className="text-sm font-medium text-destructive">
-          {error}
+  const run = (d: (typeof SPONSOR_BLOCKS)[number]) =>
+    startTransition(async () => {
+      const result = await blockSponsor({ employerId, duration: d });
+      if (!result.ok) toast.error(te(result.error));
+      else {
+        toast.success(d === "none" ? t("unblocked") : t("blocked"));
+        router.refresh();
+      }
+    });
+  const blocked = blockedUntil && new Date(blockedUntil) > new Date();
+  if (blocked) {
+    const until = new Date(blockedUntil);
+    return (
+      <div className="space-y-3">
+        <p className="text-sm font-semibold text-destructive">
+          {until.getFullYear() > 2100
+            ? t("blockedForever")
+            : t("blockedUntil", {
+                date: format.dateTime(until, { dateStyle: "medium", timeStyle: "short" }),
+              })}
         </p>
-      ) : null}
-      <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={notify}
-          onChange={(e) => setNotify(e.target.checked)}
-          className="size-4"
-        />
-        {t("emailNewPassword")}
+        <Button size="touch" variant="outline" disabled={pending} onClick={() => run("none")}>
+          {t("unblock")}
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-wrap items-end gap-2">
+      <label className="flex flex-col gap-1.5 text-sm font-medium">
+        {t("blockFor")}
+        <select
+          value={duration}
+          onChange={(e) => setDuration(e.target.value as (typeof SPONSOR_BLOCKS)[number])}
+          className="h-11 rounded-xl border border-input bg-background px-3 text-base"
+        >
+          {(["1d", "7d", "30d", "forever"] as const).map((d) => (
+            <option key={d} value={d}>
+              {t(`blockOption.${d}`)}
+            </option>
+          ))}
+        </select>
       </label>
-      <Button size="touch" disabled={pending || password.length < 10}>
-        <KeyRound className="size-4" aria-hidden="true" />
-        {t("setPassword")}
+      <Button size="touch" variant="destructive" disabled={pending} onClick={() => run(duration)}>
+        <Ban className="size-4" aria-hidden="true" />
+        {t("block")}
       </Button>
-    </form>
+    </div>
   );
 }
 

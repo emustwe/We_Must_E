@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getFormatter, getTranslations } from "next-intl/server";
-import { DeclineRequestButton } from "@/components/admin/sponsor-request-actions";
+import {
+  DeclineRequestButton,
+  DeleteRequestButton,
+} from "@/components/admin/sponsor-request-actions";
 import { btn, PageHeader, Segmented, StatusPill, WCard } from "@/components/admin/wm";
 import { WmIcon } from "@/components/map/wm-icons";
 import { createClient } from "@/lib/supabase/server";
@@ -78,18 +81,21 @@ export default async function SponsorRequestsPage({
                     {r.message}
                   </p>
                 ) : null}
-                {r.status === "new" ? (
-                  <div className="flex flex-wrap justify-end gap-2">
-                    <DeclineRequestButton requestId={r.id} />
-                    <Link
-                      href={`/admin/sponsors/new?request=${r.id}`}
-                      className={btn("primary", "sm")}
-                    >
-                      <WmIcon name="plus" size={15} stroke={2.4} />
-                      {t("requestCreate")}
-                    </Link>
-                  </div>
-                ) : null}
+                <div className="flex flex-wrap justify-end gap-2">
+                  <DeleteRequestButton requestId={r.id} />
+                  {r.status === "new" ? (
+                    <>
+                      <DeclineRequestButton requestId={r.id} />
+                      <Link
+                        href={`/admin/sponsors/new?request=${r.id}`}
+                        className={btn("primary", "sm")}
+                      >
+                        <WmIcon name="plus" size={15} stroke={2.4} />
+                        {t("requestCreate")}
+                      </Link>
+                    </>
+                  ) : null}
+                </div>
               </WCard>
             </li>
           ))}

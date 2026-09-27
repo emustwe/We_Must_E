@@ -58,12 +58,22 @@ describe("createEmployerSchema", () => {
       companyName: "Acme",
       contactPerson: "Omar Ali",
       email: "o@acme.ae",
-      password: "Long-enough-pass-1",
       phone: "+971 50 123 4567",
     };
     expect(createEmployerSchema.safeParse({ ...base, website: "" }).success).toBe(true);
     expect(
       createEmployerSchema.safeParse({ ...base, website: "javascript:alert(1)" }).success,
+    ).toBe(false);
+  });
+  it("never takes a password: the sponsor chooses their own", () => {
+    const base = {
+      companyName: "Acme",
+      contactPerson: "Omar Ali",
+      email: "o@acme.ae",
+      phone: "+971 50 123 4567",
+    };
+    expect(
+      createEmployerSchema.safeParse({ ...base, password: "Long-enough-pass-1" }).success,
     ).toBe(false);
   });
 });

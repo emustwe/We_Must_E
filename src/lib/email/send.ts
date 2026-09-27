@@ -5,7 +5,7 @@ import {
   TEMPLATES,
   type ApplicationDetails,
   type EmailKind,
-  type LoginDetails,
+  type InviteDetails,
 } from "@/emails/templates";
 import { clientEnv } from "@/lib/env";
 import { serverEnv } from "@/lib/env.server";
@@ -24,9 +24,9 @@ export async function sendEmail(
   to: string,
 ): Promise<boolean>;
 export async function sendEmail(
-  kind: "sponsorAccount" | "sponsorPassword",
+  kind: "sponsorInvite",
   to: string,
-  login: LoginDetails,
+  invite: InviteDetails,
 ): Promise<boolean>;
 export async function sendEmail(
   kind: "applicationReceived" | "jobClosed",
@@ -36,12 +36,12 @@ export async function sendEmail(
 export async function sendEmail(
   kind: EmailKind,
   to: string,
-  data?: LoginDetails | ApplicationDetails,
+  data?: InviteDetails | ApplicationDetails,
 ) {
   const template = TEMPLATES[kind];
   const renderTemplate = template.render as (
     site: string,
-    data?: LoginDetails | ApplicationDetails,
+    data?: InviteDetails | ApplicationDetails,
   ) => ReactElement;
   const element = renderTemplate(clientEnv.NEXT_PUBLIC_SITE_URL, data);
   const [html, text] = await Promise.all([render(element), render(element, { plainText: true })]);

@@ -7,6 +7,7 @@ export type ActionError =
   | "invalidCredentials"
   | "emailNotConfirmed"
   | "weakPassword"
+  | "accountBlocked"
   | "captchaFailed"
   | "sessionExpired"
   | "samePassword"

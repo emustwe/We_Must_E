@@ -1086,6 +1086,10 @@ export type Database = {
         Args: { p_application_id: string }
         Returns: undefined
       }
+      admin_delete_sponsor_request: {
+        Args: { p_request_id: string }
+        Returns: undefined
+      }
       admin_get_answer_keys: {
         Args: { p_test_id: string }
         Returns: {
@@ -1161,10 +1165,6 @@ export type Database = {
       }
       app_delete_expired: {
         Args: { p_application_ids: string[] }
-        Returns: number
-      }
-      app_delete_old_sponsor_requests: {
-        Args: { p_days: number }
         Returns: number
       }
       app_expired_applications: {

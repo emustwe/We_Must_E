@@ -569,9 +569,9 @@ select ok(tests.denied_as(:AD, $$select admin_handle_sponsor_request('50000000-0
 select tests.run_as(:AD, $$select admin_handle_sponsor_request('50000000-0000-0000-0000-000000000001', 'declined')$$, 'aal2');
 select is((select status::text from sponsor_requests where id = '50000000-0000-0000-0000-000000000001'), 'declined', 'the admin declined the request');
 select ok(exists (select 1 from audit_logs where action = 'sponsor_request.handled' and actor_id = :AD::uuid), 'handling a request is audited');
-select ok(not has_function_privilege('authenticated', 'public.app_delete_old_sponsor_requests(integer)', 'execute'), 'only the server clears old requests');
-update sponsor_requests set handled_at = now() - interval '91 days';
-select is(app_delete_old_sponsor_requests(90), 1, 'handled requests go after 90 days');
+select ok(tests.denied_as(:E1, $$select admin_delete_sponsor_request('50000000-0000-0000-0000-000000000001')$$, 'aal2'), 'sponsors cannot delete requests');
+select tests.run_as(:AD, $$select admin_delete_sponsor_request('50000000-0000-0000-0000-000000000001')$$, 'aal2');
+select is((select count(*)::int from sponsor_requests), 0, 'requests stay until an admin deletes them');
 
 -- ---------------------------------------------------------------------------
 -- audit_logs is append-only

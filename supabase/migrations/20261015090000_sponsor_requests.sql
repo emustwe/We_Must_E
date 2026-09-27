@@ -4,8 +4,8 @@
 -- Anyone can send a request from the "For sponsors" page (the server checks
 -- the bot test and a rate limit, then writes it with the service role). Only
 -- MFA admins can read requests, and they mark each one approved (after
--- creating the account) or declined. Handled requests are deleted after 90
--- days by the nightly job, so business contact details aren't kept forever.
+-- creating the account) or declined. Requests are kept until an admin
+-- deletes them.
 -- =============================================================================
 
 create type public.sponsor_request_status as enum ('new', 'approved', 'declined');
@@ -51,22 +51,44 @@ begin
 end;
 $$;
 
--- The nightly job: handled requests older than p_days.
-create function public.app_delete_old_sponsor_requests(p_days integer)
-returns integer language plpgsql security definer set search_path = '' as $$
-declare v_count integer;
+-- An MFA admin deletes a request (audited, without the company's details).
+create function public.admin_delete_sponsor_request(p_request_id uuid)
+returns void language plpgsql security definer set search_path = '' as $$
 begin
-  delete from public.sponsor_requests
-   where status <> 'new' and handled_at < now() - make_interval(days => greatest(p_days, 1));
-  get diagnostics v_count = row_count;
-  return v_count;
+  perform private.require_mfa_admin();
+  delete from public.sponsor_requests where id = p_request_id;
+  if not found then raise exception 'not_found' using errcode = 'P0002'; end if;
+  perform private.log_audit('sponsor_request.deleted', 'sponsor_request', p_request_id);
 end;
 $$;
 
 revoke all on function
   public.admin_handle_sponsor_request(uuid, public.sponsor_request_status),
-  public.app_delete_old_sponsor_requests(integer)
+  public.admin_delete_sponsor_request(uuid)
   from public, anon, authenticated;
-grant execute on function public.admin_handle_sponsor_request(uuid, public.sponsor_request_status)
+grant execute on function
+  public.admin_handle_sponsor_request(uuid, public.sponsor_request_status),
+  public.admin_delete_sponsor_request(uuid)
   to authenticated;
-grant execute on function public.app_delete_old_sponsor_requests(integer) to service_role;
+
+-- Sponsor account changes an admin can log: the set-password invite, and
+-- blocking or unblocking the login. (Sponsors still only log their own logo.)
+create or replace function public.log_sponsor_change(p_employer_id uuid, p_change text)
+returns void language plpgsql security definer set search_path = '' as $$
+begin
+  if p_change not in ('logo', 'password', 'deleted', 'invite', 'blocked', 'unblocked') then
+    raise exception 'invalid_input' using errcode = '22023';
+  end if;
+  if not (private.is_mfa_admin()
+          or (p_change = 'logo' and p_employer_id = (select auth.uid()) and private.is_approved_employer())) then
+    raise exception 'forbidden' using errcode = '42501';
+  end if;
+  if not exists (select 1 from public.employer_profiles where user_id = p_employer_id) then
+    raise exception 'not_found' using errcode = 'P0002';
+  end if;
+  if not private.within_sponsor_limit('sponsor-change') then
+    raise exception 'rate_limited' using errcode = '54000';
+  end if;
+  perform private.log_audit('sponsor.' || p_change, 'employer', p_employer_id);
+end;
+$$;

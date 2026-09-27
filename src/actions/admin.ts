@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdminMfa } from "@/lib/auth/session";
+import { clientEnv } from "@/lib/env";
 import { dbFail } from "@/lib/db-errors";
 import { sendEmail } from "@/lib/email/send";
 import { generatePassword } from "@/lib/generate-password";
@@ -17,23 +18,38 @@ import {
   createEmployerSchema,
   ecoinSchema,
   employerStatusSchema,
+  blockSponsorSchema,
   idSchema,
-  sponsorPasswordSchema,
+  SPONSOR_BLOCKS,
 } from "@/lib/validations/jobs";
 
 export type CreatedSponsor = { email: string; companyName: string; emailed: boolean };
 
-const passwordError = (code?: string) =>
-  code === "weak_password" ? fail("weakPassword", { password: "validation.passwordWeak" }) : null;
+// A one-hour link where the sponsor chooses their own password (a recovery
+// link: /auth/confirm, then "Choose your password"). Service role: only it
+// can make links for another user. Returns whether the email was sent.
+async function sendSetupLink(email: string) {
+  const { data, error } = await createAdminClient().auth.admin.generateLink({
+    type: "recovery",
+    email,
+  });
+  if (error || !data.properties?.hashed_token) {
+    logError("admin-sponsor-setup-link", error);
+    return false;
+  }
+  const link = `${clientEnv.NEXT_PUBLIC_SITE_URL}/auth/confirm?token_hash=${data.properties.hashed_token}&type=recovery`;
+  return sendEmail("sponsorInvite", email, { email, link });
+}
 
-// Creates a sponsor with the password the admin chose, approves it and emails
-// the login details (the sponsor keeps this password until they change it).
+// Creates and approves a sponsor, and emails them a link to choose their own
+// password. Nobody at Wemuste ever knows it.
 export async function createEmployer(input: unknown): Promise<ActionResult<CreatedSponsor>> {
   const parsed = createEmployerSchema.safeParse(input);
   if (!parsed.success) return fail("invalidInput", toFieldErrors(parsed.error));
   const admin = await requireAdminMfa();
-  const { companyName, contactPerson, email, password, phone, tradeLicenseNo, website } =
-    parsed.data;
+  const { companyName, contactPerson, email, phone, tradeLicenseNo, website } = parsed.data;
+  // A random password nobody sees; the sponsor sets their own with the link.
+  const password = generatePassword();
 
   const supabase = await createClient();
   const { data: existing } = await supabase
@@ -65,16 +81,14 @@ export async function createEmployer(input: unknown): Promise<ActionResult<Creat
     if (error?.code === "email_exists" || error?.code === "user_already_exists") {
       return fail("emailTaken", { email: "validation.emailTaken" });
     }
-    const weak = passwordError(error?.code);
-    if (weak) return weak;
     logError("admin-create-sponsor", error);
     return fail("generic");
   }
 
-  // The admin chose the password, so there is no forced change at first login.
+  // They must choose their own password first.
   const { error: flagError } = await service
     .from("employer_profiles")
-    .update({ must_change_password: false })
+    .update({ must_change_password: true })
     .eq("user_id", data.user.id);
   if (flagError) {
     await service.auth.admin.deleteUser(data.user.id);
@@ -88,57 +102,9 @@ export async function createEmployer(input: unknown): Promise<ActionResult<Creat
   });
   if (approveError) return dbFail("admin-approve-sponsor", approveError);
 
-  const emailed = await sendEmail("sponsorAccount", email, { email, password });
+  const emailed = await sendSetupLink(email);
   revalidatePath("/admin/sponsors");
   return ok({ email, companyName, emailed });
-}
-
-// Sets a new password for a sponsor, optionally emailing it to them.
-export async function setSponsorPassword(
-  input: unknown,
-): Promise<ActionResult<{ emailed: boolean }>> {
-  const parsed = sponsorPasswordSchema.safeParse(input);
-  if (!parsed.success) return fail("invalidInput", toFieldErrors(parsed.error));
-  await requireAdminMfa();
-  const { employerId, password, notify } = parsed.data;
-
-  const supabase = await createClient();
-  const { data: sponsor } = await supabase
-    .from("employer_profiles")
-    .select("contact_email")
-    .eq("user_id", employerId)
-    .maybeSingle();
-  if (!sponsor?.contact_email) return fail("notFound");
-  // Log first, as the admin, so the audit names who did it.
-  const { error: logErr } = await supabase.rpc("log_sponsor_change", {
-    p_employer_id: employerId,
-    p_change: "password",
-  });
-  if (logErr) return dbFail("admin-sponsor-password-log", logErr);
-
-  // Service role: only it can change another user's password.
-  const service = createAdminClient();
-  const { error } = await service.auth.admin.updateUserById(employerId, { password });
-  if (error) {
-    const weak = passwordError(error.code);
-    if (weak) return weak;
-    logError("admin-sponsor-password", error);
-    return fail("generic");
-  }
-  // The admin chose it: no forced change at the next login.
-  await service
-    .from("employer_profiles")
-    .update({ must_change_password: false })
-    .eq("user_id", employerId);
-  // Sessions opened with the old password end now.
-  await revokeSessions(employerId);
-  const emailed = notify
-    ? await sendEmail("sponsorPassword", sponsor.contact_email, {
-        email: sponsor.contact_email,
-        password,
-      })
-    : false;
-  return ok({ emailed });
 }
 
 // Deletes a sponsor account with its logo, jobs and every application to
@@ -200,9 +166,8 @@ export async function addEcoins(input: unknown): Promise<ActionResult<{ balance:
   return ok({ balance: data });
 }
 
-// "Resend invite": sponsors don't get an invite link, they get a password the
-// admin sets. Resending makes a new one and emails it with the login link
-// (logged as a password change; the old password stops working).
+// "Resend invite": a new link to choose their password (the old link and
+// their current password keep working until they use it).
 export async function resendSponsorInvite(
   employerId: unknown,
 ): Promise<ActionResult<{ emailed: boolean }>> {
@@ -218,26 +183,43 @@ export async function resendSponsorInvite(
   if (!sponsor?.contact_email) return fail("notFound");
   const { error: logErr } = await supabase.rpc("log_sponsor_change", {
     p_employer_id: id.data,
-    p_change: "password",
+    p_change: "invite",
   });
   if (logErr) return dbFail("admin-sponsor-invite-log", logErr);
+  return ok({ emailed: await sendSetupLink(sponsor.contact_email) });
+}
 
-  const password = generatePassword();
-  // Service role: only it can change another user's password.
-  const service = createAdminClient();
-  const { error } = await service.auth.admin.updateUserById(id.data, { password });
+const BAN: Record<(typeof SPONSOR_BLOCKS)[number], string> = {
+  "1d": "24h",
+  "7d": "168h",
+  "30d": "720h",
+  forever: "876000h",
+  none: "none",
+};
+
+// Blocks a sponsor's login for a while (or until unblocked), or unblocks.
+// Blocking also ends every session at once.
+export async function blockSponsor(input: unknown): Promise<ActionResult> {
+  const parsed = blockSponsorSchema.safeParse(input);
+  if (!parsed.success) return fail("invalidInput");
+  await requireAdminMfa();
+  const { employerId, duration } = parsed.data;
+  const { error: logErr } = await (
+    await createClient()
+  ).rpc("log_sponsor_change", {
+    p_employer_id: employerId,
+    p_change: duration === "none" ? "unblocked" : "blocked",
+  });
+  if (logErr) return dbFail("admin-block-sponsor-log", logErr);
+  // Service role: only it can block another user's login.
+  const { error } = await createAdminClient().auth.admin.updateUserById(employerId, {
+    ban_duration: BAN[duration],
+  });
   if (error) {
-    logError("admin-sponsor-invite", error);
+    logError("admin-block-sponsor", error);
     return fail("generic");
   }
-  await service
-    .from("employer_profiles")
-    .update({ must_change_password: false })
-    .eq("user_id", id.data);
-  await revokeSessions(id.data);
-  const emailed = await sendEmail("sponsorAccount", sponsor.contact_email, {
-    email: sponsor.contact_email,
-    password,
-  });
-  return ok({ emailed });
+  if (duration !== "none") await revokeSessions(employerId);
+  revalidatePath(`/admin/sponsors/${employerId}`);
+  return ok(undefined);
 }
