@@ -215,6 +215,7 @@ export function JobExplorer({
         title: displayTitle(job.title),
         label: shortLabel(job.title),
         isNew: isNewJob(job.publishedAt),
+        filled: Boolean(job.selectedAt),
       })),
     [jobs],
   );

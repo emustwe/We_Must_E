@@ -15,6 +15,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { Json } from "@/types/database";
 import { getSmsProvider, hashCode, newCode, OTP_MAX_ATTEMPTS, OTP_TTL_MINUTES } from "./otp";
 import { clearToken, issueToken, readTokenHash } from "./token";
+import { sendJobClosedEmails } from "@/lib/email/job-closed";
+import { SELECTED_DAYS } from "@/lib/jobs/selected";
 
 // The only code that writes public applications. It uses the service role
 // (no client role can write these tables), so every function first resolves
@@ -684,6 +686,16 @@ export async function cleanupAbandoned(hours = 48) {
 // Nightly: sent applications whose job closed, or that were sent more than
 // RETENTION_DAYS ago (the privacy policy's promise), with the person's contact
 // record once nothing else of theirs is left.
+// Jobs where the sponsor selected someone a month ago close (they leave the
+// map). Their applicants get the "position filled" email first, because the
+// applications of a closed job are deleted next (cleanupExpired).
+export async function closeSelectedJobs() {
+  const { data, error } = await db().rpc("app_close_selected_jobs", { p_days: SELECTED_DAYS });
+  if (error) throw error;
+  for (const jobId of data ?? []) await sendJobClosedEmails(jobId);
+  return data?.length ?? 0;
+}
+
 export async function cleanupExpired(days = RETENTION_DAYS) {
   const { data, error } = await db().rpc("app_expired_applications", { p_days: days });
   if (error) throw error;
@@ -702,15 +714,22 @@ export async function cleanupExpired(days = RETENTION_DAYS) {
 export async function getJobSummary(
   jobId: string,
   hasApplication: boolean,
-): Promise<{ title: string; locationLabel: string } | null> {
+): Promise<{ title: string; locationLabel: string; filled: boolean } | null> {
   const { data } = await db()
     .from("jobs")
-    .select("title, location_label, status, is_example, employer_profiles!inner(status)")
+    .select(
+      "title, location_label, status, is_example, selected_at, employer_profiles!inner(status)",
+    )
     .eq("id", jobId)
     .maybeSingle();
   if (!data) return null;
   const live =
     data.status === "published" && data.employer_profiles.status === "approved" && !data.is_example;
   if (!live && !hasApplication) return null;
-  return { title: data.title, locationLabel: data.location_label };
+  return {
+    title: data.title,
+    locationLabel: data.location_label,
+    // Someone was selected: no more applications, not even unfinished ones.
+    filled: data.selected_at !== null,
+  };
 }

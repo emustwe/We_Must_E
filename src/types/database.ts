@@ -606,6 +606,7 @@ export type Database = {
           review_note: string | null
           reviewed_at: string | null
           reviewed_by: string | null
+          selected_at: string | null
           status: Database["public"]["Enums"]["job_status"]
           survey_id: string | null
           test_id: string | null
@@ -635,6 +636,7 @@ export type Database = {
           review_note?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          selected_at?: string | null
           status?: Database["public"]["Enums"]["job_status"]
           survey_id?: string | null
           test_id?: string | null
@@ -664,6 +666,7 @@ export type Database = {
           review_note?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          selected_at?: string | null
           status?: Database["public"]["Enums"]["job_status"]
           survey_id?: string | null
           test_id?: string | null
@@ -1280,6 +1283,7 @@ export type Database = {
           storage_path: string
         }[]
       }
+      app_close_selected_jobs: { Args: { p_days?: number }; Returns: string[] }
       app_delete_expired: {
         Args: { p_application_ids: string[] }
         Returns: number
@@ -1385,6 +1389,7 @@ export type Database = {
           public_lat: number
           public_lng: number
           published_at: string
+          selected_at: string
           title: string
         }[]
       }

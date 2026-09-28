@@ -9,7 +9,7 @@ export async function getOwnJob(jobId: string) {
   const { data } = await supabase
     .from("jobs")
     .select(
-      "id, title, description, job_type, location_label, lat, lng, status, review_note, published_at, created_at, country_code, city",
+      "id, title, description, job_type, location_label, lat, lng, status, review_note, published_at, created_at, country_code, city, selected_at",
     )
     .eq("id", jobId)
     .maybeSingle();

@@ -626,6 +626,37 @@
 .wm-p-pending {
   border: 1.5px dashed #e08a1e;
 }
+/* Someone was selected for this job: green for its last month on the map. */
+.wm-p-filled {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #ffffff;
+}
+.wm-p-filled .wm-p-icon {
+  background: #ffffff;
+  color: #16a34a;
+}
+.wm-p-filled.wm-p-on {
+  background: #15803d;
+  border-color: #15803d;
+  box-shadow:
+    0 4px 10px rgba(22, 163, 74, 0.25),
+    0 16px 32px rgba(22, 163, 74, 0.3);
+}
+.wm-p:has(.wm-p-filled) .wm-p-dot {
+  background: #16a34a;
+}
+.wm-c-filled {
+  color: #16a34a;
+  box-shadow:
+    0 0 0 10px rgba(22, 163, 74, 0.18),
+    0 2px 4px rgba(11, 18, 32, 0.06),
+    0 12px 32px rgba(11, 18, 32, 0.12);
+}
+.wm-c-badge-filled {
+  background: #16a34a;
+  color: #ffffff;
+}
 .leaflet-marker-icon:focus-visible .wm-p-pill,
 .leaflet-marker-icon:focus-visible .wm-c {
   outline: 2px solid #2457f5;

@@ -10,6 +10,7 @@ import { CandidateRow } from "@/components/sponsors/candidate-row";
 import { JobLocation } from "@/components/sponsors/job-location";
 import { Crumbs } from "@/components/sponsors/sponsor-shell";
 import { getOwnJob } from "@/lib/jobs/employer-queries";
+import { SELECTED_DAYS } from "@/lib/jobs/selected";
 import { createClient } from "@/lib/supabase/server";
 import { idSchema } from "@/lib/validations/jobs";
 
@@ -63,6 +64,28 @@ export default async function EmployerJobPage({
             </p>
           ) : null}
           <p className="m-0 mt-1 font-medium text-wm-slate">{t("rejectedHint")}</p>
+        </div>
+      ) : null}
+
+      {job.selected_at && job.status === "published" ? (
+        <div
+          className="flex items-start gap-3 rounded-2xl border border-[#BFE8D2] bg-[#E7F7EE] px-4 py-3 text-sm"
+          role="status"
+        >
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#16A34A] text-white">
+            <WmIcon name="check" size={16} stroke={2.6} />
+          </span>
+          <span className="flex flex-col gap-0.5">
+            <span className="font-bold text-[#0B6B45]">{tu("selectedTitle")}</span>
+            <span className="font-medium text-[#14532D]">
+              {tu("selectedBody", {
+                date: format.dateTime(
+                  new Date(new Date(job.selected_at).getTime() + SELECTED_DAYS * 86_400_000),
+                  { dateStyle: "medium" },
+                ),
+              })}
+            </span>
+          </span>
         </div>
       ) : null}
 

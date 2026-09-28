@@ -20,5 +20,6 @@ export default async function ApplyPage({ params }: PageProps<"/apply/[jobId]">)
   const view = await getApplyView(jobId);
   const job = await getJobSummary(jobId, view.stage !== "start");
   if (!job) return <JobClosed />;
+  if (job.filled) return <JobClosed filled />;
   return <ApplyWizard jobId={jobId} job={job} view={view} />;
 }

@@ -28,6 +28,8 @@ export type BoardJob = {
   date: string;
   sponsor: string;
   reviewNote: string | null;
+  // The sponsor selected a candidate (green on the map for a month).
+  selected: boolean;
 };
 
 // Moderation actions per status (waiting jobs get Approve / Needs changes).
@@ -220,6 +222,7 @@ function JobCard({
         >
           {displayTitle(job.title)}
           <StatusPill tone={JOB_PILL[job.status]}>{t(`jobTabs.${job.status}`)}</StatusPill>
+          {job.selected ? <StatusPill tone="ok">{t("selectedPill")}</StatusPill> : null}
           {isSample(job.title) ? <StatusPill tone="sample">{t("sample")}</StatusPill> : null}
         </button>
         <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] font-medium text-wm-slate">

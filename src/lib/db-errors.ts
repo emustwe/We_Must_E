@@ -22,6 +22,7 @@ const KNOWN: Record<string, ActionError> = {
   invalid_transition: "invalidInput",
   invalid_token: "sessionExpired",
   job_unavailable: "jobUnavailable",
+  job_filled: "jobFilled",
   wrong_step: "wrongStep",
   invalid_video: "invalidFile",
   phone_unverified: "phoneUnverified",

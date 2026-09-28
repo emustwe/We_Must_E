@@ -714,5 +714,24 @@ select payment_create_order(:E3, 'pack-10', 10, 1000) from generate_series(1, 5)
 select throws_ok(format('select payment_create_order(%L, ''pack-10'', 10, 1000)', :E3), '22023', 'too_many_orders',
   'at most 5 open orders per sponsor');
 
+-- A job turns green when the sponsor opens the first contact: it stays live
+-- for a month, nobody can apply any more, then the nightly job closes it.
+update jobs set status = 'published' where id = :JC;
+select ok((select selected_at is not null from jobs where id = :JC), 'opening the first contact marks the job as selected');
+select is((select status::text from jobs where id = :JC), 'published', 'the selected job stays live (not sent back to review)');
+select ok((select selected_at is not null from get_public_jobs(-90, -180, 90, 180) where id = :JC), 'the public list shows the job as selected');
+select throws_ok(format('select app_start(%s, %L, ''ip'')', :'JC', 'token-filled-0123456789-0123456789-01234'),
+  '22023', 'job_filled', 'nobody can start an application for a selected job');
+insert into applications (job_id, draft_token_hash) values (:JC, 'draft-filled-0123456789-0123456789-0123');
+select throws_ok(format('select app_start_test(%s, %L)', :'JC', 'draft-filled-0123456789-0123456789-0123'),
+  '22023', 'job_filled', 'an unfinished application cannot go on once the job is selected');
+select ok(not has_function_privilege('authenticated', 'public.app_close_selected_jobs(integer)', 'execute')
+      and has_function_privilege('service_role', 'public.app_close_selected_jobs(integer)', 'execute'),
+  'only the server closes selected jobs');
+select is((select count(*)::int from app_close_selected_jobs(30)), 0, 'a selected job stays on the map for a month');
+update jobs set selected_at = now() - interval '31 days' where id = :JC;
+select is((select count(*)::int from app_close_selected_jobs(30)), 1, 'a month after the selection the job closes');
+select is((select status::text from jobs where id = :JC), 'closed', 'the job is closed (off the map)');
+
 select * from finish();
 rollback;

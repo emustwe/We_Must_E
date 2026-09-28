@@ -24,6 +24,8 @@ export type MapJob = {
   title: string;
   label: string;
   isNew: boolean;
+  // Someone was selected for this job: a green pin.
+  filled: boolean;
 };
 
 export const MAX_ZOOM = 18;
@@ -41,8 +43,8 @@ const JobMarker = memo(function JobMarker({
   onSelect: (id: string) => void;
 }) {
   const icon = useMemo(
-    () => jobPillIcon({ label: job.label, isNew: job.isNew }, { selected }),
-    [job.label, job.isNew, selected],
+    () => jobPillIcon({ label: job.label, isNew: job.isNew }, { selected, filled: job.filled }),
+    [job.label, job.isNew, selected, job.filled],
   );
   const eventHandlers = useMemo(() => ({ click: () => onSelect(job.id) }), [onSelect, job.id]);
   return (

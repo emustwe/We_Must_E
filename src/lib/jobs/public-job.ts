@@ -20,6 +20,9 @@ export type PublicJob = {
   city: string | null;
   // Shows what a job looks like; not open for applications.
   isExample: boolean;
+  // When the sponsor selected someone: green on the map for one more month,
+  // no more applications. Null while the job is open.
+  selectedAt: string | null;
 };
 
 // get_public_jobs() row -> what the map uses (only the public, rounded pin).
@@ -37,6 +40,7 @@ export const toPublicJob = (j: Row): PublicJob => ({
   countryName: j.country_name,
   city: j.city,
   isExample: j.is_example,
+  selectedAt: j.selected_at ?? null,
 });
 
 // "Dubai Marina, Dubai, United Arab Emirates" without repeating a part the

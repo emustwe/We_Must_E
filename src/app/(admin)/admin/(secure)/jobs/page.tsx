@@ -32,7 +32,7 @@ export default async function AdminJobsPage({ searchParams }: PageProps<"/admin/
   let request = supabase
     .from("jobs")
     .select(
-      "id, title, description, location_label, city, lat, lng, status, published_at, created_at, review_note, employer_id, employer_profiles(company_name)",
+      "id, title, description, location_label, city, lat, lng, status, published_at, created_at, review_note, selected_at, employer_id, employer_profiles(company_name)",
     )
     .order("created_at", { ascending: false })
     .limit(300);
@@ -100,6 +100,7 @@ export default async function AdminJobsPage({ searchParams }: PageProps<"/admin/
           date: format.dateTime(new Date(j.published_at ?? j.created_at), { dateStyle: "medium" }),
           sponsor: j.employer_profiles?.company_name ?? "—",
           reviewNote: j.review_note,
+          selected: Boolean(j.selected_at) && j.status === "published",
         }))}
       />
     </>

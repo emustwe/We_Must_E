@@ -23,6 +23,8 @@ test.afterEach(async () => {
   psql(`delete from public.applicants where phone_e164 = '${PHONE}'`);
   psql(`delete from public.applications where status = 'in_progress' and draft_token_hash is not null
         and job_id in (select id from public.jobs where title = '[SAMPLE] Evening cashier')`);
+  // Opening the contact selects someone; the sample job takes applications again.
+  psql(`update public.jobs set selected_at = null where title = '[SAMPLE] Evening cashier'`);
 });
 
 test("full journey: apply with test, video and survey -> admin approves -> sponsor sees the candidate", async ({

@@ -169,17 +169,19 @@ const el = (tag: string, className: string) => {
 // sponsor-written text can never inject HTML.
 export function jobPillIcon(
   job: { label: string; isNew?: boolean },
-  state: { selected?: boolean; pending?: boolean; small?: boolean } = {},
+  state: { selected?: boolean; pending?: boolean; small?: boolean; filled?: boolean } = {},
 ) {
   const root = el("span", state.small ? "wm-p wm-p-sm" : "wm-p");
+  // A job where someone was selected: green (clusters read this too).
+  if (state.filled) root.dataset.filled = "1";
   if (state.selected) root.append(el("span", "wm-p-pulse"));
   root.append(el("span", "wm-p-dot"));
   const pill = el(
     "span",
-    `wm-p-pill${state.selected ? " wm-p-on" : ""}${state.pending ? " wm-p-pending" : ""}`,
+    `wm-p-pill${state.selected ? " wm-p-on" : ""}${state.pending ? " wm-p-pending" : ""}${state.filled ? " wm-p-filled" : ""}`,
   );
   const icon = el("span", "wm-p-icon");
-  icon.append(iconNode("briefcase", 16, 2.2));
+  icon.append(iconNode(state.filled ? "check" : "briefcase", 16, state.filled ? 2.8 : 2.2));
   const text = el("span", "wm-p-label");
   text.textContent = job.label;
   pill.append(icon, text);
@@ -196,13 +198,20 @@ export function jobPillIcon(
 // Pins within 40px merge: a white disc with the count in blue, a soft blue
 // halo and small badges for the jobs inside.
 export function wmClusterIcon(cluster: L.MarkerCluster) {
-  const root = el("span", "wm-c");
   const count = cluster.getChildCount();
+  // Jobs where someone was selected: all of them -> a green cluster; some ->
+  // a green badge.
+  const filled = cluster.getAllChildMarkers().filter((m) => {
+    const html = (m.options.icon?.options as L.DivIconOptions | undefined)?.html;
+    return html instanceof HTMLElement && html.dataset.filled === "1";
+  }).length;
+  const root = el("span", filled === count ? "wm-c wm-c-filled" : "wm-c");
   root.textContent = String(count);
   const badges = el("span", "wm-c-badges");
   for (let i = 0; i < Math.min(count, 2); i++) {
-    const badge = el("span", "wm-c-badge");
-    badge.append(iconNode("briefcase", 12, 2.4));
+    const green = i === 0 && filled > 0;
+    const badge = el("span", green ? "wm-c-badge wm-c-badge-filled" : "wm-c-badge");
+    badge.append(iconNode(green ? "check" : "briefcase", 12, 2.4));
     badges.append(badge);
   }
   root.append(badges);

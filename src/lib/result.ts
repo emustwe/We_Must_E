@@ -32,7 +32,8 @@ export type ActionError =
   | "noCoins"
   | "priceChanged"
   | "paymentsOff"
-  | "tooManyOrders";
+  | "tooManyOrders"
+  | "jobFilled";
 
 export type ActionResult<T = undefined> =
   { ok: true; data: T } | { ok: false; error: ActionError; fieldErrors?: Record<string, string> };

@@ -36,7 +36,7 @@ export default async function EmployerJobsPage({ searchParams }: PageProps<"/spo
   const supabase = await createClient();
   const { data } = await supabase
     .from("jobs")
-    .select("id, title, location_label, status, published_at, created_at")
+    .select("id, title, location_label, status, published_at, created_at, selected_at")
     .eq("employer_id", profile.id)
     .neq("status", "removed")
     .order("created_at", { ascending: false });
@@ -147,7 +147,11 @@ export default async function EmployerJobsPage({ searchParams }: PageProps<"/spo
                     >
                       <WmIcon name="briefcase" size={21} stroke={2.1} />
                     </span>
-                    <StatusPill tone={JOB_PILL[job.status]}>{ts(job.status)}</StatusPill>
+                    {job.selected_at && job.status === "published" ? (
+                      <StatusPill tone="ok">{tu("selectedPill")}</StatusPill>
+                    ) : (
+                      <StatusPill tone={JOB_PILL[job.status]}>{ts(job.status)}</StatusPill>
+                    )}
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <span className="text-lg font-extrabold tracking-[-0.3px] break-words">

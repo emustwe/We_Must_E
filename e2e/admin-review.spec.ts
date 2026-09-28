@@ -143,7 +143,23 @@ test("an admin reviews an application (answers, logged video view, approval); th
       psql(`select count(*) from public.audit_logs a join public.profiles p on p.id = a.actor_id
             where a.action = 'application.video_viewed' and a.target_id = '${appId}' and p.role = 'employer'`),
     ).toBe("1");
+
+    // The first opened contact selects someone: the job turns green on the
+    // map, and nobody can apply any more.
+    const jobId = psql(`select job_id from public.applications where id = '${appId}'`);
+    expect(psql(`select selected_at is not null from public.jobs where id = '${jobId}'`)).toBe("t");
+    await page.goto(`/sponsor/jobs/${jobId}`);
+    await expect(page.getByText("You selected a candidate for this job")).toBeVisible();
+    await page.goto(`/?job=${jobId}`);
+    const card = page.locator('[aria-labelledby="wm-job-title"]');
+    await expect(card.getByText("Someone has been selected for this job")).toBeVisible();
+    await expect(card.getByRole("link", { name: "Apply" })).toHaveCount(0);
+    await expect(page.locator(".wm-p-filled").first()).toBeAttached();
+    await page.goto(`/apply/${jobId}`);
+    await expect(page.getByRole("heading", { name: "Someone has been selected for this job" })).toBeVisible();
   } finally {
+    // The sample job takes applications again for the other tests.
+    psql(`update public.jobs set selected_at = null where title = '${JOB}'`);
     await removeObjects("application-videos", paths);
     psql(`delete from public.applicants where phone_e164 = '${PHONE}'`);
     psql(`delete from public.ecoin_ledger where employer_id =

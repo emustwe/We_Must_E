@@ -11,24 +11,28 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // Service role: sponsors can't read applications, and the addresses are read
 // only here, right after an authorised close.
 export function notifyApplicantsJobClosed(jobId: string) {
-  after(async () => {
-    const db = createAdminClient();
-    const [{ data: job }, { data: apps, error }] = await Promise.all([
-      db.from("jobs").select("title").eq("id", jobId).maybeSingle(),
-      db
-        .from("applications")
-        .select("contact_email")
-        .eq("job_id", jobId)
-        .neq("status", "in_progress")
-        .not("contact_email", "is", null),
-    ]);
-    if (error) return logError("job-closed-applicants", error);
-    const recipients = [
-      ...new Set((apps ?? []).map((a) => a.contact_email?.trim().toLowerCase()).filter(Boolean)),
-    ] as string[];
-    await sendEmailToMany("jobClosed", recipients, {
-      jobTitle: displayTitle(job?.title ?? "the job"),
-      supportEmail: SUPPORT_EMAIL,
-    });
+  after(() => sendJobClosedEmails(jobId));
+}
+
+// The same, waited for (the nightly job sends them before the applications
+// are deleted).
+export async function sendJobClosedEmails(jobId: string) {
+  const db = createAdminClient();
+  const [{ data: job }, { data: apps, error }] = await Promise.all([
+    db.from("jobs").select("title").eq("id", jobId).maybeSingle(),
+    db
+      .from("applications")
+      .select("contact_email")
+      .eq("job_id", jobId)
+      .neq("status", "in_progress")
+      .not("contact_email", "is", null),
+  ]);
+  if (error) return logError("job-closed-applicants", error);
+  const recipients = [
+    ...new Set((apps ?? []).map((a) => a.contact_email?.trim().toLowerCase()).filter(Boolean)),
+  ] as string[];
+  await sendEmailToMany("jobClosed", recipients, {
+    jobTitle: displayTitle(job?.title ?? "the job"),
+    supportEmail: SUPPORT_EMAIL,
   });
 }

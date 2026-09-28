@@ -218,7 +218,8 @@
     "accountBlocked": "Your account is blocked for now. Please contact the Muste team.",
     "priceChanged": "The price changed because a new candidate was approved. Check the new price and try again.",
     "paymentsOff": "Payments with USDT aren't set up yet. Please contact the Muste team to add E-coins.",
-    "tooManyOrders": "You have 5 open orders. Pay one of them, or wait until they expire."
+    "tooManyOrders": "You have 5 open orders. Pay one of them, or wait until they expire.",
+    "jobFilled": "This job has been filled: someone was selected, so applications are closed."
   },
   "employee": {
     "welcome": "Hi {name}",
@@ -769,9 +770,9 @@
     "kmShort": "{km} km",
     "howApplying": "How applying works",
     "shortSteps": "3 short steps",
-    "stepTest": "Quick test",
-    "stepVideo": "Short video",
-    "stepQuestions": "A few questions",
+    "stepTest": "Exam",
+    "stepVideo": "Execute",
+    "stepQuestions": "Engage",
     "applyForJob": "Apply for this job",
     "trustLine": "Free to apply. We never ask for money.",
     "postedAgo": "{days, plural, =0 {Posted today} one {Posted yesterday} other {Posted # days ago}}",
@@ -791,7 +792,11 @@
     "forSponsorsMenu": "For sponsors",
     "becomeSponsor": "Become a sponsor",
     "becomeSponsorHint": "Send us a request to post jobs",
-    "sponsorLoginHint": "I already have a sponsor account"
+    "sponsorLoginHint": "I already have a sponsor account",
+    "selectedBadge": "Candidate selected",
+    "selectedTitle": "Someone has been selected for this job",
+    "selectedBody": "This position is filled, so applications are closed. The job stays on the map until {date}.",
+    "applicationsClosed": "Applications closed"
   },
   "apply": {
     "title": "Apply",
@@ -966,7 +971,9 @@
     "typingTimeUp": "Time is up for the typing test.",
     "typingFinish": "Finish typing",
     "typingLeft": "Typing time left",
-    "retentionNote": "Your data is deleted automatically when the job closes, or 1 month after you apply. Want it deleted now? Email <mail>{email}</mail> and we will reply within {days} working days."
+    "retentionNote": "Your data is deleted automatically when the job closes, or 1 month after you apply. Want it deleted now? Email <mail>{email}</mail> and we will reply within {days} working days.",
+    "jobFilledTitle": "Someone has been selected for this job",
+    "jobFilledBody": "This position is filled, so applications are closed. Have a look at other jobs nearby."
   },
   "applicationStatus": {
     "in_progress": "Unfinished",
@@ -1403,7 +1410,8 @@
     "requestCreatedNote": "From a sponsor request: the details are filled in. Choose a password and create the account.",
     "requestDelete": "Delete",
     "requestDeleteTitle": "Delete this request?",
-    "requestDeleteBody": "The company’s details are deleted for good. This can’t be undone."
+    "requestDeleteBody": "The company’s details are deleted for good. This can’t be undone.",
+    "selectedPill": "Candidate selected"
   },
   "sponsorUi": {
     "sponsor": "Sponsor",
@@ -1451,7 +1459,10 @@
     "companyNameBody": "Shown on your jobs. To change it, contact the Muste team.",
     "dangerZone": "Danger zone",
     "retentionNote": "Candidates are visible for 1 month after they apply, or until the job closes. Contact them in time.",
-    "visibleUntil": "Visible until {date}. Contact this candidate before then: after that their details are deleted."
+    "visibleUntil": "Visible until {date}. Contact this candidate before then: after that their details are deleted.",
+    "selectedPill": "Candidate selected",
+    "selectedTitle": "You selected a candidate for this job",
+    "selectedBody": "The job is green on the map and no longer takes applications. It closes by itself on {date}. You can still open other candidates who already applied, for 1 E-coin each."
   },
   "confirmLink": {
     "title": "Continue to Muste",

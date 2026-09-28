@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { WmIcon, type IconName } from "@/components/map/wm-icons";
 import { daysSince, displayTitle, isNewJob, isSample } from "@/lib/jobs/display";
 import type { PublicJob } from "@/lib/jobs/public-job";
+import { SELECTED_DAYS } from "@/lib/jobs/selected";
 import { cn } from "@/lib/utils";
 
 export type CardJob = { job: PublicJob; km: number | null };
@@ -69,6 +70,14 @@ function Badges({ job }: { job: PublicJob }) {
     return (
       <span className="flex h-6 items-center rounded-full bg-white/85 px-2.5 text-xs font-bold text-wm-sample">
         {t("exampleBadge")}
+      </span>
+    );
+  }
+  if (job.selectedAt) {
+    return (
+      <span className="flex h-6 items-center gap-1 rounded-full bg-[#16A34A] px-2.5 text-xs font-extrabold text-white">
+        <WmIcon name="check" size={12} stroke={3} />
+        {t("selectedBadge")}
       </span>
     );
   }
@@ -169,6 +178,29 @@ function HowApplying() {
   );
 }
 
+// Someone was selected: no more applications; the job stays for a month.
+function SelectedNotice({ selectedAt }: { selectedAt: string }) {
+  const t = useTranslations("explore");
+  const format = useFormatter();
+  const until = new Date(new Date(selectedAt).getTime() + SELECTED_DAYS * 86_400_000);
+  return (
+    <div
+      role="status"
+      className="flex items-start gap-3 rounded-[18px] border border-[#BFE8D2] bg-[#E7F7EE] p-4"
+    >
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#16A34A] text-white">
+        <WmIcon name="check" size={18} stroke={2.6} />
+      </span>
+      <span className="flex flex-col gap-1">
+        <span className="text-sm font-extrabold text-[#0B6B45]">{t("selectedTitle")}</span>
+        <span className="text-[13px] leading-[1.5] font-medium text-[#14532D]">
+          {t("selectedBody", { date: format.dateTime(until, { dateStyle: "medium" }) })}
+        </span>
+      </span>
+    </div>
+  );
+}
+
 // Example jobs: what a job looks like, with no way to apply.
 function ExampleNotice() {
   const t = useTranslations("explore");
@@ -265,7 +297,11 @@ export function JobCard({
         <div className="grid grid-cols-2 gap-x-3 gap-y-3.5">
           <Fact icon="pin" label={t("area")} value={areaOf(job)} />
           <Fact icon="calendar" label={t("jobTypeFact")} value={t(`jobType.${job.jobType}`)} />
-          <Fact icon="list" label={t("applicantsFact")} value={applicantsText(t, job.applicants)} />
+          <Fact
+            icon="list"
+            label={t("applicantsFact")}
+            value={job.selectedAt ? t("applicationsClosed") : applicantsText(t, job.applicants)}
+          />
           {km !== null ? (
             <Fact icon="route" label={t("distanceFact")} value={t("fromYou", { km: kmText(km) })} />
           ) : null}
@@ -273,10 +309,16 @@ export function JobCard({
         <p className="m-0 text-[15px] leading-[1.6] font-medium whitespace-pre-line text-wm-body">
           {job.description}
         </p>
-        {job.isExample ? null : <HowApplying />}
+        {job.isExample || job.selectedAt ? null : <HowApplying />}
       </div>
       <div className="flex flex-col gap-3 border-t border-[#EEF0F4] bg-white px-[22px] pt-4 pb-5">
-        {job.isExample ? <ExampleNotice /> : <ApplyFooter jobId={job.id} />}
+        {job.isExample ? (
+          <ExampleNotice />
+        ) : job.selectedAt ? (
+          <SelectedNotice selectedAt={job.selectedAt} />
+        ) : (
+          <ApplyFooter jobId={job.id} />
+        )}
       </div>
     </article>
   );
@@ -435,7 +477,7 @@ export function JobSheet({
           <FactTile
             icon="list"
             label={t("applicantsFact")}
-            value={applicantsText(t, job.applicants)}
+            value={job.selectedAt ? t("applicationsClosed") : applicantsText(t, job.applicants)}
           />
           {km !== null ? (
             <FactTile
@@ -450,7 +492,13 @@ export function JobSheet({
         </p>
       </div>
       <div className="flex shrink-0 flex-col gap-2.5 px-5 pt-4 pb-[max(22px,env(safe-area-inset-bottom))]">
-        {job.isExample ? <ExampleNotice /> : <ApplyFooter jobId={job.id} mobile />}
+        {job.isExample ? (
+          <ExampleNotice />
+        ) : job.selectedAt ? (
+          <SelectedNotice selectedAt={job.selectedAt} />
+        ) : (
+          <ApplyFooter jobId={job.id} mobile />
+        )}
       </div>
     </section>
   );
