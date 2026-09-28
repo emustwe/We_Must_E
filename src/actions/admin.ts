@@ -42,7 +42,7 @@ async function sendSetupLink(email: string) {
 }
 
 // Creates and approves a sponsor, and emails them a link to choose their own
-// password. Nobody at Muste ever knows it.
+// password. Nobody at WemustE ever knows it.
 export async function createEmployer(input: unknown): Promise<ActionResult<CreatedSponsor>> {
   const parsed = createEmployerSchema.safeParse(input);
   if (!parsed.success) return fail("invalidInput", toFieldErrors(parsed.error));

@@ -91,7 +91,7 @@ const PROFILE_ORDER = [
   "lookingFor",
 ];
 
-// A candidate approved by the Muste team for this sponsor's job: the whole
+// A candidate approved by the WemustE team for this sponsor's job: the whole
 // application is visible. The contact details (name, phone, email, CV, and
 // any contact written in an answer, which the database replaces with •••)
 // open with E-coins and then stay open until the job closes.
@@ -151,7 +151,7 @@ export default async function CandidatePage({
           </div>
           <span className="inline-flex h-8 items-center gap-1.5 self-start rounded-full bg-wm-ok-bg px-3 text-[13px] font-bold text-wm-ok">
             <WmIcon name="shieldCheck" size={15} stroke={2.2} />
-            {tu("approvedByMuste")}
+            {tu("approvedByWemuste")}
           </span>
           <p className="m-0 flex items-start gap-2 rounded-2xl bg-[#FEF6E4] px-3.5 py-3 text-[13px] font-semibold text-[#7A4B06]">
             <span className="shrink-0">

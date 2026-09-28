@@ -1,12 +1,12 @@
 import { cn } from "@/lib/utils";
 
-// Placeholder mark until a brand kit exists: rounded square with an "M".
+// Placeholder mark until a brand kit exists: rounded square with a "W".
 export function LogoMark({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 32 32" aria-hidden="true" className={cn("size-8", className)}>
       <rect width="32" height="32" rx="9" className="fill-primary" />
       <path
-        d="M9 22V10.5l7 7.5 7-7.5V22"
+        d="M8 11l3.2 10L16 13.5 20.8 21 24 11"
         fill="none"
         strokeWidth="2.6"
         strokeLinecap="round"
@@ -28,7 +28,7 @@ export function Logo({ className, inverted }: { className?: string; inverted?: b
           inverted ? "text-white" : "text-foreground",
         )}
       >
-        Muste
+        WemustE
       </span>
     </span>
   );

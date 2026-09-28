@@ -11,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("candidatesTitle") };
 }
 
-// Every candidate the Muste team approved for this sponsor's jobs.
+// Every candidate the WemustE team approved for this sponsor's jobs.
 export default async function SponsorCandidatesPage({
   searchParams,
 }: PageProps<"/sponsor/candidates">) {

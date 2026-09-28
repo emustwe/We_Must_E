@@ -12,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
 const SECTIONS = [
   {
     heading: "1. The service",
-    body: "[PLACEHOLDER] What Muste provides to people looking for work and to sponsors.",
+    body: "[PLACEHOLDER] What WemustE provides to people looking for work and to sponsors.",
   },
   {
     heading: "2. Accounts",
@@ -28,7 +28,7 @@ const SECTIONS = [
   },
   {
     heading: "5. Ending your account",
-    body: "[PLACEHOLDER] How you or Muste can close an account and what happens to data.",
+    body: "[PLACEHOLDER] How you or WemustE can close an account and what happens to data.",
   },
   {
     heading: "6. Liability and law",

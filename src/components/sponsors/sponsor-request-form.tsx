@@ -23,7 +23,7 @@ const EMPTY: Values = {
   message: "",
 };
 
-// "Become a sponsor": the company's details go to the Muste team, who create
+// "Become a sponsor": the company's details go to the WemustE team, who create
 // the account and email the login details.
 export function SponsorRequestForm() {
   const t = useTranslations("forEmployers");

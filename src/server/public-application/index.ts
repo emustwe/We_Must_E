@@ -549,7 +549,7 @@ export async function sendPhoneCode(jobId: string, phoneE164: string): Promise<A
       expires_at: new Date(Date.now() + OTP_TTL_MINUTES * 60_000).toISOString(),
     });
   if (error) return dbFail("app-otp-insert", error);
-  await provider.send(phoneE164, `Your Muste code is ${code}`);
+  await provider.send(phoneE164, `Your WemustE code is ${code}`);
   return ok(undefined);
 }
 

@@ -21,7 +21,7 @@ type Company = {
 
 const CRUMBS_ID = "wm-sponsor-crumbs";
 
-// The sponsor portal shell (Muste sponsor portal redesign): a 264px sidebar
+// The sponsor portal shell (WemustE sponsor portal redesign): a 264px sidebar
 // with the company, "Post a job", the menu and "How it works"; a 64px top bar
 // with the page trail and "See your jobs on the map". A drawer on phones.
 export function SponsorShell({
@@ -77,9 +77,9 @@ export function SponsorShell({
         className="flex items-center gap-2.5 px-1.5 py-1 text-wm-ink no-underline"
       >
         <span className="flex size-[34px] items-center justify-center rounded-[11px] bg-wm-blue text-lg font-extrabold text-white">
-          M
+          W
         </span>
-        <span className="text-[17px] font-extrabold tracking-[-0.4px]">Muste</span>
+        <span className="text-[17px] font-extrabold tracking-[-0.4px]">WemustE</span>
         <span className="ms-auto rounded-full bg-wm-tint px-2 py-[3px] text-[11px] font-bold text-wm-blue">
           {t("sponsor")}
         </span>

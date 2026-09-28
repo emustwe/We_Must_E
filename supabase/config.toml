@@ -253,19 +253,19 @@ otp_expiry = 86400
 # token_hash links work across devices (the PKCE default needs the same browser).
 # Paste the same templates into the hosted project's Auth > Email Templates.
 [auth.email.template.invite]
-subject = "You're invited to Muste"
+subject = "You're invited to WemustE"
 content_path = "./supabase/templates/invite.html"
 
 [auth.email.template.confirmation]
-subject = "Your Muste activation code"
+subject = "Your WemustE activation code"
 content_path = "./supabase/templates/confirmation.html"
 
 [auth.email.template.recovery]
-subject = "Reset your Muste password"
+subject = "Reset your WemustE password"
 content_path = "./supabase/templates/recovery.html"
 
 [auth.email.template.email_change]
-subject = "Confirm your new email for Muste"
+subject = "Confirm your new email for WemustE"
 content_path = "./supabase/templates/email_change.html"
 
 # Uncomment to customize notification email template

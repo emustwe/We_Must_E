@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { WmIcon, type IconName } from "@/components/map/wm-icons";
 import { MapBackdrop } from "@/components/map/map-backdrop";
 
-// Auth screens in the Muste design (like the map and the portals): the map
+// Auth screens in the WemustE design (like the map and the portals): the map
 // behind, the W logo pill, and one white card; a trust panel beside it on
 // desktop, a bottom sheet on phones.
 export async function AuthShell({
@@ -43,10 +43,12 @@ export async function AuthShell({
           className="flex items-center gap-2.5 rounded-[20px] bg-white py-2 ps-2 pe-4 no-underline shadow-wm-2"
         >
           <span className="flex size-9 items-center justify-center rounded-xl bg-wm-blue text-lg font-extrabold text-white">
-            M
+            W
           </span>
           <span className="flex flex-col leading-tight">
-            <span className="text-[17px] font-extrabold tracking-[-0.4px] text-wm-ink">Muste</span>
+            <span className="text-[17px] font-extrabold tracking-[-0.4px] text-wm-ink">
+              WemustE
+            </span>
             <span className="text-[11px] font-medium text-wm-slate">{t("tagline")}</span>
           </span>
         </Link>

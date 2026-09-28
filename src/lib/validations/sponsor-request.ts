@@ -4,7 +4,7 @@ import { z } from "@/lib/validations/zod";
 const text = (min: number, max: number, required: string) =>
   z.string().trim().min(min, { error: required }).max(max, { error: "validation.tooLong" });
 
-// "Become a sponsor": what a company sends to the Muste team.
+// "Become a sponsor": what a company sends to the WemustE team.
 export const sponsorRequestSchema = z.strictObject({
   companyName: text(2, 160, "validation.companyRequired"),
   contactPerson: text(2, 120, "validation.nameRequired"),

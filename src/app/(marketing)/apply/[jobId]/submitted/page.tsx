@@ -15,7 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 // Shown after sending. Nothing is sent to the employer at this point: the
-// Muste team reviews the application first.
+// WemustE team reviews the application first.
 export default async function SubmittedPage({ params }: PageProps<"/apply/[jobId]/submitted">) {
   const { jobId } = await params;
   if (!idSchema.safeParse(jobId).success) notFound();

@@ -5,8 +5,8 @@ const serverSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(20),
   IP_HASH_SECRET: z.string().min(32),
   RESEND_API_KEY: z.string().optional(),
-  // Verified Resend sender, e.g. "Muste <no-reply@wemuste.com>".
-  EMAIL_FROM: z.string().min(3).default("Muste <no-reply@wemuste.example>"),
+  // Verified Resend sender, e.g. "WemustE <no-reply@wemuste.com>".
+  EMAIL_FROM: z.string().min(3).default("WemustE <no-reply@wemuste.example>"),
   // Local development only: deliver app emails to Mailpit instead of Resend.
   SMTP_URL: z.url().optional(),
   // Where jobs may be placed: "south,west,north,east". Default: the whole world.

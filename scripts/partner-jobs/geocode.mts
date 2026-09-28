@@ -17,7 +17,7 @@ export type Places = Record<
 
 const FILE = join(import.meta.dirname, "places.json");
 const places: Places = existsSync(FILE) ? JSON.parse(readFileSync(FILE, "utf8")) : {};
-const UA = "Muste job setup (https://www.wemuste.com; emustwe@gmail.com)";
+const UA = "WemustE job setup (https://www.wemuste.com; emustwe@gmail.com)";
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // Areas are searched only within ~35 km of their city's centre.

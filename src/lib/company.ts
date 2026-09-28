@@ -1,4 +1,4 @@
-// The company behind Muste, shown in the privacy policy, the terms, the legal
+// The company behind WemustE, shown in the privacy policy, the terms, the legal
 // pages' footer and the email footer. PLACEHOLDERS: fill in the real details
 // here only; anything left null is simply not shown.
 export const COMPANY = {
@@ -18,7 +18,7 @@ export const COMPANY = {
   country: "Pakistan",
 };
 
-// "Muste is run by Example (Private) Limited, a company registered in
+// "WemustE is run by Example (Private) Limited, a company registered in
 // Pakistan (SECP no. 0123456, NTN 1234567-8), Street, City." Only the
 // details that are filled in.
 export function companyLine(): string | null {
@@ -33,7 +33,7 @@ export function companyLine(): string | null {
       ? `a company registered in ${c.country}`
       : `a business registered with the Federal Board of Revenue in ${c.country}`;
   return [
-    `Muste is run by ${c.legalName}, ${kind}${numbers.length ? ` (${numbers.join(", ")})` : ""}.`,
+    `WemustE is run by ${c.legalName}, ${kind}${numbers.length ? ` (${numbers.join(", ")})` : ""}.`,
     c.address ? `Address: ${c.address}.` : null,
     c.phone ? `Phone: ${c.phone}.` : null,
   ]

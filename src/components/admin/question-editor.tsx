@@ -113,7 +113,7 @@ export function QuestionEditor({
                   >
                     <ArrowDown className="size-4" />
                   </Button>
-                  {/* Typing questions (paragraph + timer) are set up by the Muste team. */}
+                  {/* Typing questions (paragraph + timer) are set up by the WemustE team. */}
                   {q.type === "typing" ? null : (
                     <Button
                       variant="ghost"

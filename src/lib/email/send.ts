@@ -13,9 +13,9 @@ import { logError } from "@/lib/log";
 
 // Sends one transactional email. Resend in production; Mailpit over SMTP in
 // local development. Never logs recipients or content.
-// Emails always come from "Muste", whatever display name EMAIL_FROM has
+// Emails always come from "WemustE", whatever display name EMAIL_FROM has
 // (the address stays the verified one, e.g. no-reply@wemuste.com).
-const FROM = `Muste <${serverEnv.EMAIL_FROM.match(/<([^>]+)>/)?.[1] ?? serverEnv.EMAIL_FROM.trim()}>`;
+const FROM = `WemustE <${serverEnv.EMAIL_FROM.match(/<([^>]+)>/)?.[1] ?? serverEnv.EMAIL_FROM.trim()}>`;
 
 export async function sendEmail(
   kind:

@@ -101,7 +101,7 @@ describe("payment helpers", () => {
   });
 
   it("makes a Solana Pay link with the exact amount and the USDT mint", () => {
-    const url = solanaPayUrl(US, 50_013_700, "Muste E-coins");
+    const url = solanaPayUrl(US, 50_013_700, "WemustE E-coins");
     expect(url.startsWith(`solana:${US}?`)).toBe(true);
     const params = new URLSearchParams(url.split("?")[1]);
     expect(params.get("amount")).toBe("50.0137");

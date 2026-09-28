@@ -13,7 +13,7 @@ export const TEMPLATES = {
       <EmailLayout
         preview="A new application is waiting for review"
         heading="New application to review"
-        body="Someone applied for a job on Muste. Log in to the admin area to review it."
+        body="Someone applied for a job on WemustE. Log in to the admin area to review it."
         cta="Open applications"
         href={`${site}/admin/applications`}
       />
@@ -37,7 +37,7 @@ export const TEMPLATES = {
       <EmailLayout
         preview="A company asked to become a sponsor"
         heading="New sponsor request"
-        body="A company asked to become a sponsor on Muste. Log in to the admin area to see the request and create their account."
+        body="A company asked to become a sponsor on WemustE. Log in to the admin area to see the request and create their account."
         cta="See sponsor requests"
         href={`${site}/admin/sponsor-requests`}
       />
@@ -61,19 +61,19 @@ export const TEMPLATES = {
       <EmailLayout
         preview="Thank you for your payment"
         heading="Your E-coins were added"
-        body="We received your USDT payment and added the E-coins to your Muste account. Log in to see your balance and open candidates' contact details."
+        body="We received your USDT payment and added the E-coins to your WemustE account. Log in to see your balance and open candidates' contact details."
         cta="See your E-coins"
         href={`${site}/sponsor/coins`}
       />
     ),
   },
   jobApproved: {
-    subject: "Your job is live on Muste",
+    subject: "Your job is live on WemustE",
     render: (site: string) => (
       <EmailLayout
         preview="Your job is now on the map"
         heading="Your job is live"
-        body="The Muste team approved your job. It is now on the map, and people can apply."
+        body="The WemustE team approved your job. It is now on the map, and people can apply."
         cta="See your jobs"
         href={`${site}/sponsor`}
       />
@@ -85,7 +85,7 @@ export const TEMPLATES = {
       <EmailLayout
         preview="Your job was not approved yet"
         heading="Your job needs changes"
-        body="The Muste team couldn't approve your job yet. Log in to see why, edit the job and send it again."
+        body="The WemustE team couldn't approve your job yet. Log in to see why, edit the job and send it again."
         cta="See your jobs"
         href={`${site}/sponsor`}
       />
@@ -95,9 +95,9 @@ export const TEMPLATES = {
     subject: "You have a new candidate",
     render: (site: string) => (
       <EmailLayout
-        preview="The Muste team shared a candidate with you"
+        preview="The WemustE team shared a candidate with you"
         heading="You have a new candidate"
-        body="The Muste team approved an application for one of your jobs. Log in to see the candidate."
+        body="The WemustE team approved an application for one of your jobs. Log in to see the candidate."
         cta="See candidates"
         href={`${site}/sponsor`}
       />
@@ -121,7 +121,7 @@ export const TEMPLATES = {
         }}
         cta="See more jobs"
         href={site}
-        footer={`You don't need to do anything else. Your data is deleted automatically when the job closes, or 1 month after you applied. Want it deleted sooner? Email ${app.supportEmail}. Muste never asks for money: if someone asks you to pay for a job, it isn't us.`}
+        footer={`You don't need to do anything else. Your data is deleted automatically when the job closes, or 1 month after you applied. Want it deleted sooner? Email ${app.supportEmail}. WemustE never asks for money: if someone asks you to pay for a job, it isn't us.`}
       />
     ),
   },
@@ -132,21 +132,21 @@ export const TEMPLATES = {
       <EmailLayout
         preview={`${app.jobTitle} is now closed`}
         heading="This job is now closed"
-        body={`Thank you again for applying for ${app.jobTitle}. The employer has now closed this position. If you were selected, they have already contacted you or will do so very soon. If not, please don't be discouraged: we truly appreciate the time you put into your application, and new jobs are added to Muste every day.`}
+        body={`Thank you again for applying for ${app.jobTitle}. The employer has now closed this position. If you were selected, they have already contacted you or will do so very soon. If not, please don't be discouraged: we truly appreciate the time you put into your application, and new jobs are added to WemustE every day.`}
         cta="Explore more jobs"
         href={site}
-        footer={`As promised in our privacy policy, your application for this job is now being deleted. Questions? Email ${app.supportEmail}. Muste never asks for money: if someone asks you to pay for a job, it isn't us.`}
+        footer={`As promised in our privacy policy, your application for this job is now being deleted. Questions? Email ${app.supportEmail}. WemustE never asks for money: if someone asks you to pay for a job, it isn't us.`}
       />
     ),
   },
   // To a new sponsor (and again with "Resend invite"): choose your own password.
   sponsorInvite: {
-    subject: "Set up your Muste sponsor account",
+    subject: "Set up your WemustE sponsor account",
     render: (_site: string, invite: InviteDetails) => (
       <EmailLayout
         preview="Your sponsor account is ready: choose your password"
         heading="Your sponsor account is ready"
-        body="The Muste team created a sponsor account for your company. Choose your own password to log in, post jobs and meet your candidates."
+        body="The WemustE team created a sponsor account for your company. Choose your own password to log in, post jobs and meet your candidates."
         steps={{
           title: "How to start",
           items: [
@@ -157,7 +157,7 @@ export const TEMPLATES = {
         }}
         cta="Set your password"
         href={invite.link}
-        footer="This link works for 1 hour and only once. If it has expired, ask the Muste team to send a new one. Muste will never ask for your password by email or phone."
+        footer="This link works for 1 hour and only once. If it has expired, ask the WemustE team to send a new one. WemustE will never ask for your password by email or phone."
       />
     ),
   },
