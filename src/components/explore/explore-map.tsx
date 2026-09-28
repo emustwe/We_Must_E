@@ -1,7 +1,7 @@
 "use client";
 
 import L from "leaflet";
-import { useEffect, useMemo, useRef } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 import { AttributionControl, MapContainer, Marker, useMap, useMapEvents } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import {
@@ -29,7 +29,9 @@ export type MapJob = {
 export const MAX_ZOOM = 18;
 const spot = (lat: number, lng: number) => `${lat.toFixed(6)},${lng.toFixed(6)}`;
 
-function JobMarker({
+// Memoized: with thousands of jobs, a pin redraws only when its own job or
+// selection changes, not on every move of the map.
+const JobMarker = memo(function JobMarker({
   job,
   selected,
   onSelect,
@@ -42,6 +44,7 @@ function JobMarker({
     () => jobPillIcon({ label: job.label, isNew: job.isNew }, { selected }),
     [job.label, job.isNew, selected],
   );
+  const eventHandlers = useMemo(() => ({ click: () => onSelect(job.id) }), [onSelect, job.id]);
   return (
     <Marker
       position={[job.lat, job.lng]}
@@ -50,10 +53,10 @@ function JobMarker({
       alt={job.title}
       keyboard
       zIndexOffset={selected ? 1000 : 0}
-      eventHandlers={{ click: () => onSelect(job.id) }}
+      eventHandlers={eventHandlers}
     />
   );
-}
+});
 
 // Reports the map and its visible area to the page (custom controls, the
 // "jobs in this area" count, and placing the job card beside its pin).
@@ -86,7 +89,8 @@ function MapBridge({
 }
 
 // The full-screen public map. Loaded client-side only (Leaflet needs `window`).
-export default function ExploreMap({
+// Memoized, so the page's own updates ("jobs in this area") don't redraw it.
+export default memo(function ExploreMap({
   jobs,
   bounds,
   selectedId,
@@ -197,7 +201,7 @@ export default function ExploreMap({
       </MapContainer>
     </div>
   );
-}
+});
 
 function AttributionText() {
   const map = useMap();

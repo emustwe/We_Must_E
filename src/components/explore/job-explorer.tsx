@@ -203,9 +203,12 @@ export function JobExplorer({
     () => withDistance.filter(({ km }) => !distance || km === null || km <= distance),
     [withDistance, distance],
   );
-  const mapJobs: MapJob[] = useMemo(
+  // The pins: one object per job, made again only when the jobs change (a new
+  // place or "Near me" doesn't redraw thousands of pins; a distance filter
+  // only picks from them).
+  const allPins: MapJob[] = useMemo(
     () =>
-      filtered.map(({ job }) => ({
+      jobs.map((job) => ({
         id: job.id,
         lat: job.lat,
         lng: job.lng,
@@ -213,8 +216,16 @@ export function JobExplorer({
         label: shortLabel(job.title),
         isNew: isNewJob(job.publishedAt),
       })),
-    [filtered],
+    [jobs],
   );
+  const mapJobs: MapJob[] = useMemo(() => {
+    if (!distance || !origin) return allPins;
+    const keep = new Set(filtered.map(({ job }) => job.id));
+    return allPins.filter((pin) => keep.has(pin.id));
+  }, [allPins, filtered, distance, origin]);
+  const onPin = useCallback((id: string) => select(id), [select]);
+  const onSpot = useCallback((ids: string[]) => select(ids[0] ?? null, ids), [select]);
+  const onEmptyClick = useCallback(() => select(null), [select]);
   // "N jobs in this area": what the map shows (before the map has reported
   // its first view, the area it is opening on), or everything that matches.
   const count = !moveSearch
@@ -409,9 +420,9 @@ export function JobExplorer({
         jobs={mapJobs}
         bounds={bounds}
         selectedId={selectedId}
-        onSelect={(id) => select(id)}
-        onSpot={(ids) => select(ids[0] ?? null, ids)}
-        onEmptyClick={() => select(null)}
+        onSelect={onPin}
+        onSpot={onSpot}
+        onEmptyClick={onEmptyClick}
         target={target}
         me={origin?.kind === "me" ? origin.point : null}
         label={t("mapLabel")}
