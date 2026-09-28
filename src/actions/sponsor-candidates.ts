@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "@/lib/validations/zod";
 import { requireRole } from "@/lib/auth/session";
 import { dbFail } from "@/lib/db-errors";
 import { logError } from "@/lib/log";
@@ -12,7 +13,7 @@ import { videoViewSchema } from "@/lib/validations/admin";
 import { idSchema } from "@/lib/validations/jobs";
 import { CV_BUCKET, VIDEO_BUCKET } from "@/server/public-application";
 
-// A 5-minute link to one of an unlocked candidate's videos. The database
+// A 5-minute link to one of an approved candidate's videos. The database
 // checks access, rate-limits and logs the view, and only then returns the
 // file's path; sponsors can't read the files any other way.
 export async function getCandidateVideoUrl(input: unknown): Promise<ActionResult<{ url: string }>> {
@@ -46,16 +47,20 @@ async function signedLink(
   return ok({ url: data.signedUrl });
 }
 
-// Spends 1 E-coin to open an approved candidate for good.
+// Opens an approved candidate's contact details at the price the sponsor
+// was shown (the database recounts it and refuses if it changed).
 export async function unlockCandidate(
   applicationId: unknown,
+  expectedPrice: unknown,
 ): Promise<ActionResult<{ balance: number }>> {
   const parsed = idSchema.safeParse(applicationId);
-  if (!parsed.success) return fail("invalidInput");
+  const price = z.number().int().min(1).max(100_000).safeParse(expectedPrice);
+  if (!parsed.success || !price.success) return fail("invalidInput");
   await requireRole("employer");
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("sponsor_unlock_candidate", {
     p_application_id: parsed.data,
+    p_expected_price: price.data,
   });
   if (error) return dbFail("sponsor-unlock", error);
   revalidatePath("/sponsor", "layout");

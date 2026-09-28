@@ -37,7 +37,7 @@ test("admin creates a sponsor who chooses their own password; block, suspend, re
   await expect(
     page.getByText(`We emailed ${email} a link to choose their password.`, { exact: false }),
   ).toBeVisible();
-  const invite = await waitForEmail(email, /Set up your Wemuste sponsor account/, createdAt);
+  const invite = await waitForEmail(email, /Set up your Muste sponsor account/, createdAt);
   expect(invite.html).toContain("/auth/confirm");
   expect(invite.text).not.toMatch(/password:/i); // no password in the email
 
@@ -132,7 +132,7 @@ test("admin creates a sponsor who chooses their own password; block, suspend, re
   await page.getByRole("button", { name: `Actions for ${company}` }).click();
   await page.getByRole("menuitem", { name: "Resend invite" }).click();
   await expect(page.getByText("A new link to choose their password was emailed.")).toBeVisible();
-  const resent = await waitForEmail(email, /Set up your Wemuste sponsor account/, resentAt);
+  const resent = await waitForEmail(email, /Set up your Muste sponsor account/, resentAt);
   expect(resent.html).toContain("/auth/confirm");
   expect(
     psql(`select string_agg(distinct a.action, ',' order by a.action) from public.audit_logs a

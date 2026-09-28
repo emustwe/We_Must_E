@@ -115,7 +115,7 @@ const html = `<!doctype html><html><head><meta charset="utf-8"><title>Partner jo
   .opts { margin-top: 1mm; color: #4A5568; font-size: 9.5pt; }
 </style></head><body>
 <section class="cover">
-  <div class="brand"><b>W</b> Wemuste</div>
+  <div class="brand"><b>M</b> Muste</div>
   <h1>Partner job interviews</h1>
   <p class="lead">One interview for each partner role, in the same pattern as the real job (Online Office &amp; Translation Administrator). Every partner job with that title uses its role's interview. Jobs in Pakistan, India and Bangladesh get prices, ID cards and phone numbers in their own country's format.</p>
   <table class="pattern">
@@ -146,7 +146,7 @@ const pdf = await page.pdf({
   displayHeaderFooter: true,
   headerTemplate: "<span></span>",
   footerTemplate:
-    '<div style="width:100%;font:8pt Arial;color:#8792A2;padding:0 15mm;display:flex;justify-content:space-between"><span>Wemuste · Partner job interviews</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>',
+    '<div style="width:100%;font:8pt Arial;color:#8792A2;padding:0 15mm;display:flex;justify-content:space-between"><span>Muste · Partner job interviews</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>',
   margin: { top: "16mm", bottom: "18mm", left: "15mm", right: "15mm" },
 });
 await browser.close();

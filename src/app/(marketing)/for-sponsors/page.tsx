@@ -10,7 +10,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("title") };
 }
 
-// Companies can't sign up themselves: they send a request, and the Wemuste
+// Companies can't sign up themselves: they send a request, and the Muste
 // team checks them and creates their sponsor account.
 export default async function ForEmployersPage() {
   const t = await getTranslations("forEmployers");

@@ -98,14 +98,18 @@ test("full journey: apply with test, video and survey -> admin approves -> spons
 
   // ---------------------------------------------------------------- sponsor
   // E-coins are added by hand for now (a wallet comes later).
-  psql(`update public.employer_profiles set ecoin_balance = 1
+  psql(`update public.employer_profiles set ecoin_balance = 50
          where user_id = (select id from auth.users where email = '${SPONSOR}')`);
   await login(page, SPONSOR);
   await expect(page).toHaveURL(/\/sponsor$/);
   await page.goto(`/sponsor/jobs/${job}`);
-  await page.getByRole("link", { name: new RegExp(name) }).click();
+  const appId = psql(`select id from public.applications where contact_name = '${name}'`);
+  const label = `Candidate ${appId.replace(/-/g, "").slice(0, 5).toUpperCase()}`;
+  await page.getByRole("link", { name: new RegExp(label) }).click();
+  await expect(page.getByRole("heading", { name: label })).toBeVisible();
+  await expect(page.getByText(PHONE)).toHaveCount(0);
+  await page.getByRole("button", { name: /^Open contact for \d+ E-coins?$/ }).click();
   await expect(page.getByRole("heading", { name })).toBeVisible();
-  await page.getByRole("button", { name: "Open for 1 E-coin" }).click();
   // The test answers are shared too, question by question.
   const testAnswers = page
     .locator("section")

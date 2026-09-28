@@ -180,6 +180,7 @@ async function Candidates({ jobId, page }: { jobId: string; page: number }) {
                 name={c.full_name}
                 sharedAt={c.reviewed_at}
                 unlocked={c.unlocked}
+                price={c.price}
               />
             </li>
           ))}

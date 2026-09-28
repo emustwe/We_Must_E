@@ -20,7 +20,7 @@ export default async function SecureAdminLayout({ children }: { children: React.
         jobs: jobs.count ?? 0,
         requests: requests.count ?? 0,
       }}
-      name={profile.full_name || "Wemuste Admin"}
+      name={profile.full_name || "Muste Admin"}
     >
       {children}
     </AdminShell>

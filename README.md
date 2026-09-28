@@ -1,8 +1,8 @@
-# Wemuste
+# Muste
 
 A private, map-first job platform for the UAE. Verified employers post jobs that appear as pins on a map;
-signed-in job seekers tap a job and send a request. Wemuste owns and controls all employee data: nothing
-is public, employers are created by the Wemuste team, and an employer only sees people who requested one
+signed-in job seekers tap a job and send a request. Muste owns and controls all employee data: nothing
+is public, employers are created by the Muste team, and an employer only sees people who requested one
 of their jobs (or whom an admin granted).
 
 Stack: Next.js 16 (App Router, TypeScript strict) · Tailwind CSS 4 + shadcn/ui · Supabase (Postgres, Auth,
@@ -122,7 +122,7 @@ password at first login. Under the hood the service role creates the user with
 - **Auth > Rate limits:** review the defaults. The app adds its own limits on signup, login and reset.
 - **Auth > MFA:** TOTP enabled.
 - **Auth > SMTP:** Resend as custom SMTP (host `smtp.resend.com`, port 465, user `resend`, password =
-  a Resend API key), sender on your verified domain, so verification/reset emails come from Wemuste.
+  a Resend API key), sender on your verified domain, so verification/reset emails come from Muste.
 - **Storage:** the project-wide upload limit must be ≥ 100 MB for video resumes (the Free plan caps it at 50 MB).
 
 ## Security model (summary)

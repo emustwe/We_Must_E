@@ -52,10 +52,10 @@ export function AdminShell({
         className="flex items-center gap-[11px] px-1.5 py-1 text-wm-ink no-underline"
       >
         <span className="flex size-10 items-center justify-center rounded-[13px] bg-wm-blue text-[21px] font-extrabold text-white shadow-[inset_0_-3px_0_rgba(0,0,0,0.12)]">
-          W
+          M
         </span>
         <span className="flex flex-col">
-          <span className="text-lg leading-[1.15] font-extrabold tracking-[-0.4px]">Wemuste</span>
+          <span className="text-lg leading-[1.15] font-extrabold tracking-[-0.4px]">Muste</span>
           <span className="text-xs font-semibold text-wm-caption">{t("console")}</span>
         </span>
       </Link>

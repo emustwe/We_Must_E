@@ -26,6 +26,7 @@ const KNOWN: Record<string, ActionError> = {
   invalid_video: "invalidFile",
   phone_unverified: "phoneUnverified",
   no_coins: "noCoins",
+  price_changed: "priceChanged",
   invalid_input: "invalidInput",
   rate_limited: "rateLimited",
 };

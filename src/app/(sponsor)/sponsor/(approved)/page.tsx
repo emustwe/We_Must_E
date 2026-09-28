@@ -41,7 +41,7 @@ export default async function EmployerJobsPage({ searchParams }: PageProps<"/spo
     .neq("status", "removed")
     .order("created_at", { ascending: false });
   const jobs = data ?? [];
-  // Candidates per job (approved by Wemuste; names only until opened).
+  // Candidates per job (approved by Muste).
   const counts = new Map(
     await Promise.all(
       jobs.slice(0, 60).map(async (j) => {

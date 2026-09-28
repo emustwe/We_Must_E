@@ -42,7 +42,7 @@ export function MfaForm({ verifiedFactorId }: { verifiedFactorId: string | null 
       }
       const { data, error } = await supabase.auth.mfa.enroll({
         factorType: "totp",
-        friendlyName: `Wemuste admin ${new Date().toISOString()}`,
+        friendlyName: `Muste admin ${new Date().toISOString()}`,
       });
       if (error || !data) {
         setFormError(te("generic"));

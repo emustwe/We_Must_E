@@ -433,10 +433,10 @@ export function JobExplorer({
           >
             <Link
               href="/for-sponsors"
-              aria-label={t("aboutWemuste")}
+              aria-label={t("aboutMuste")}
               className="flex size-11 shrink-0 items-center justify-center rounded-full bg-wm-blue text-xl font-extrabold text-white"
             >
-              W
+              M
             </Link>
             <label className="flex min-w-0 grow flex-col gap-px">
               <span className="text-xs font-extrabold">{t("where")}</span>
@@ -507,18 +507,18 @@ export function JobExplorer({
         {/* ----------------------------------------------------- desktop top */}
         <Link
           href="/for-sponsors"
-          aria-label={t("aboutWemuste")}
+          aria-label={t("aboutMuste")}
           className={cn(
             "absolute top-5 left-6 z-[1000] box-border flex h-16 items-center gap-[11px] rounded-[20px] ps-3 pe-5 text-wm-ink no-underline",
             floating,
           )}
         >
           <span className="flex size-10 items-center justify-center rounded-[13px] bg-wm-blue text-[21px] font-extrabold tracking-[-1px] text-white shadow-[inset_0_-3px_0_rgba(0,0,0,0.12)]">
-            W
+            M
           </span>
           <span className="flex flex-col">
             <span className="text-[19px] leading-[1.1] font-extrabold tracking-[-0.4px]">
-              Wemuste
+              Muste
             </span>
             <span className="text-[11px] font-semibold text-wm-caption">{t("tagline")}</span>
           </span>

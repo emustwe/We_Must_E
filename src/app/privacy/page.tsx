@@ -8,13 +8,13 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("privacyTitle") };
 }
 
-// For the client's lawyer to review. Wemuste's company is registered in
+// For the client's lawyer to review. Muste's company is registered in
 // Pakistan; its legal name, SECP registration number and address go in
 // section 1 once the client sends them.
 const SECTIONS = [
   {
     heading: "1. Who we are",
-    body: `Wemuste runs the job platform at www.wemuste.com. Wemuste is run by [company legal name], a company registered in Pakistan (SECP registration no. [number], [registered address]).\nQuestions or requests about your data: ${SUPPORT_EMAIL}.`,
+    body: `Muste runs the job platform at www.wemuste.com. Muste is run by [company legal name], a company registered in Pakistan (SECP registration no. [number], [registered address]).\nQuestions or requests about your data: ${SUPPORT_EMAIL}.`,
   },
   {
     heading: "2. What we collect",
@@ -26,7 +26,7 @@ const SECTIONS = [
   },
   {
     heading: "4. Who can see it",
-    body: "Your profile is never public. The Wemuste team reviews every application. A sponsor sees your details only after our team approves you for their job and the sponsor chooses to open your application. Sponsors never see your gender or age. Every time someone opens your video or CV, it is recorded.\nSome jobs on Wemuste are filled for partner employers: companies that hire through us and other platforms. For those jobs, if our team approves you, we share your application with the partner employer hiring for that role, only for that job. Partner employers may use your information only to consider you for that job and must not share it with anyone else.\nTo run the platform we use trusted service providers: Supabase (database and file storage), Vercel (website hosting), Resend (emails), Cloudflare (bot protection) and MapTiler (maps). They handle data only to provide their service to us.\nWe never sell your information.",
+    body: "Your profile is never public. The Muste team reviews every application. A sponsor sees your details only after our team approves you for their job and the sponsor chooses to open your application. Sponsors never see your gender or age. Every time someone opens your video or CV, it is recorded.\nSome jobs on Muste are filled for partner employers: companies that hire through us and other platforms. For those jobs, if our team approves you, we share your application with the partner employer hiring for that role, only for that job. Partner employers may use your information only to consider you for that job and must not share it with anyone else.\nTo run the platform we use trusted service providers: Supabase (database and file storage), Vercel (website hosting), Resend (emails), Cloudflare (bot protection) and MapTiler (maps). They handle data only to provide their service to us.\nWe never sell your information.",
   },
   {
     heading: "5. Where it is stored",
@@ -34,7 +34,7 @@ const SECTIONS = [
   },
   {
     heading: "6. How long we keep it",
-    body: `Unfinished applications are deleted automatically after 48 hours.\nA sent application, including your CV and videos, is deleted automatically when the job closes, or ${RETENTION_DAYS} days (1 month) after you apply if the job is still open, whichever comes first. After that, neither sponsors nor Wemuste can see it.\nWe only keep a record that something happened (for example "a video was viewed"), without your personal details.`,
+    body: `Unfinished applications are deleted automatically after 48 hours.\nA sent application, including your CV and videos, is deleted automatically when the job closes, or ${RETENTION_DAYS} days (1 month) after you apply if the job is still open, whichever comes first. After that, neither sponsors nor Muste can see it.\nWe only keep a record that something happened (for example "a video was viewed"), without your personal details.`,
   },
   {
     heading: "7. Your rights",

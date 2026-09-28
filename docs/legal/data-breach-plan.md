@@ -1,4 +1,4 @@
-# Wemuste data-breach plan
+# Muste data-breach plan
 
 Version 2026-09-28 · Owner: the data protection contact (below) · Review: once a year, and after every incident.
 For the lawyer: the legal deadlines in step 4 are our understanding and need confirming.
@@ -6,7 +6,7 @@ For the lawyer: the legal deadlines in step 4 are our understanding and need con
 ## Who is in charge
 
 **Data protection contact:** the founder, reached at emustwe@gmail.com (the address in the privacy policy).
-**Back-up:** the second Wemuste admin. Name one before the platform grows.
+**Back-up:** the second Muste admin. Name one before the platform grows.
 
 This person decides whether something is a breach, runs the steps below, and signs every notice.
 
@@ -16,7 +16,7 @@ This person decides whether something is a breach, runs the steps below, and sig
 - India: a DPO is required only for companies the government names as "Significant Data Fiduciaries".
 - Pakistan: no data protection law is in force yet.
 
-We name a data protection contact instead, and check this again with the lawyer, and again when Wemuste passes about 100,000 applicants or starts paying for Supabase Pro.
+We name a data protection contact instead, and check this again with the lawyer, and again when Muste passes about 100,000 applicants or starts paying for Supabase Pro.
 
 ## What counts as a breach
 
@@ -86,17 +86,17 @@ Also tell our service providers if the breach involves them (Supabase, Vercel, R
 
 **Email to affected people:**
 
-> Subject: Important: a security problem affecting your Wemuste application
+> Subject: Important: a security problem affecting your Muste application
 >
-> We are writing to tell you about a security problem at Wemuste. On [date], [what happened, in one sentence]. The information involved was [which details]. It did not include [what was safe].
+> We are writing to tell you about a security problem at Muste. On [date], [what happened, in one sentence]. The information involved was [which details]. It did not include [what was safe].
 >
 > We have [what we did: for example "closed the problem and changed our security keys"].
 >
-> To protect yourself: [for example "be careful with calls or messages asking for money or passwords in Wemuste's name. We will never ask for them."].
+> To protect yourself: [for example "be careful with calls or messages asking for money or passwords in Muste's name. We will never ask for them."].
 >
 > If you want your data deleted now, or have questions, email [contact email]. We reply within 7 working days.
 >
-> [Name], Wemuste
+> [Name], Muste
 
 **Report to an authority** (use its form if it has one). Include:
 

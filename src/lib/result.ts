@@ -29,7 +29,8 @@ export type ActionError =
   | "wrongStep"
   | "fileTooBig"
   | "uploadFailed"
-  | "noCoins";
+  | "noCoins"
+  | "priceChanged";
 
 export type ActionResult<T = undefined> =
   { ok: true; data: T } | { ok: false; error: ActionError; fieldErrors?: Record<string, string> };

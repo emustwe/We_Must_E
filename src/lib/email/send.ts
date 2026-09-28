@@ -13,6 +13,10 @@ import { logError } from "@/lib/log";
 
 // Sends one transactional email. Resend in production; Mailpit over SMTP in
 // local development. Never logs recipients or content.
+// Emails always come from "Muste", whatever display name EMAIL_FROM has
+// (the address stays the verified one, e.g. no-reply@wemuste.com).
+const FROM = `Muste <${serverEnv.EMAIL_FROM.match(/<([^>]+)>/)?.[1] ?? serverEnv.EMAIL_FROM.trim()}>`;
+
 export async function sendEmail(
   kind:
     | "newApplication"
@@ -45,7 +49,7 @@ export async function sendEmail(
   ) => ReactElement;
   const element = renderTemplate(clientEnv.NEXT_PUBLIC_SITE_URL, data);
   const [html, text] = await Promise.all([render(element), render(element, { plainText: true })]);
-  const message = { from: serverEnv.EMAIL_FROM, to, subject: template.subject, html, text };
+  const message = { from: FROM, to, subject: template.subject, html, text };
 
   try {
     if (serverEnv.RESEND_API_KEY) {
@@ -99,7 +103,7 @@ export async function sendEmailToMany(
   let sent = 0;
   for (let i = 0; i < recipients.length; i += 100) {
     const batch = recipients.slice(i, i + 100).map((to) => ({
-      from: serverEnv.EMAIL_FROM,
+      from: FROM,
       to,
       subject: template.subject,
       html,

@@ -7,31 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       applicants: {
@@ -365,6 +340,39 @@ export type Database = {
           target_type?: string | null
         }
         Relationships: []
+      }
+      candidate_counted: {
+        Row: {
+          application_id: string
+          counted_at: string
+          employer_id: string
+        }
+        Insert: {
+          application_id: string
+          counted_at?: string
+          employer_id: string
+        }
+        Update: {
+          application_id?: string
+          counted_at?: string
+          employer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_counted_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: true
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_counted_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employer_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       candidate_unlocks: {
         Row: {
@@ -1290,6 +1298,7 @@ export type Database = {
           job_id: string
           job_title: string
           locked_total: number
+          price: number
           reviewed_at: string
           total: number
           unlocked: boolean
@@ -1302,6 +1311,7 @@ export type Database = {
           full_name: string
           job_id: string
           job_title: string
+          price: number
           reviewed_at: string
           unlocked: boolean
         }[]
@@ -1315,13 +1325,14 @@ export type Database = {
         Returns: {
           application_id: string
           full_name: string
+          price: number
           reviewed_at: string
           total: number
           unlocked: boolean
         }[]
       }
       sponsor_unlock_candidate: {
-        Args: { p_application_id: string }
+        Args: { p_application_id: string; p_expected_price: number }
         Returns: number
       }
     }
@@ -1484,9 +1495,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       application_status: ["in_progress", "submitted", "approved", "rejected"],

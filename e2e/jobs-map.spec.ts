@@ -160,7 +160,7 @@ test("a sponsor's job waits for approval, then appears live on an open map; hidi
   await expect(page.getByLabel("Country")).toHaveValue("AE");
   await expect(page.getByLabel("City")).toHaveValue("Dubai");
   await page.getByRole("button", { name: "Post job" }).click();
-  await expect(page.getByText(/sent to the Wemuste team/)).toBeVisible();
+  await expect(page.getByText(/sent to the Muste team/)).toBeVisible();
   await expect(page.getByText("Waiting for review", { exact: true })).toBeVisible();
   await signOut(page);
 

@@ -58,7 +58,7 @@ export function EmailLayout({
           }}
         >
           <Text style={{ margin: "0 0 24px", fontSize: 18, fontWeight: 600, color: "#1E3A8A" }}>
-            Wemuste
+            Muste
           </Text>
           <Heading as="h1" style={{ margin: "0 0 12px", fontSize: 22, lineHeight: 1.3 }}>
             {heading}
@@ -125,7 +125,7 @@ export function EmailLayout({
           </Section>
           <Text style={{ margin: "24px 0 0", fontSize: 13, lineHeight: 1.6, color: "#64748b" }}>
             {footer ??
-              "For your privacy we never put details in emails. Wemuste will never ask for your password by email or phone."}
+              "For your privacy we never put details in emails. Muste will never ask for your password by email or phone."}
           </Text>
         </Container>
       </Body>

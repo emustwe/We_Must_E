@@ -10,7 +10,7 @@ import { randomInt } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { loadEnv } from "./_env.mjs";
 
-const [email, name = "Wemuste Admin"] = process.argv.slice(2).filter((a) => !a.startsWith("--"));
+const [email, name = "Muste Admin"] = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
   console.error('Usage: npm run create-admin -- <email> ["Full Name"] [--prod]');
   process.exit(1);

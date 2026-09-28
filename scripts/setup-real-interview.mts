@@ -179,7 +179,7 @@ const REAL_TEST: TestQ[] = [
   {
     type: "long_text",
     prompt:
-      "The Meaning of “E”\n\nOnce upon a time, we believed in one simple idea:\n“We Must E.”\n\nBut what does “E” mean to you?\n\nIt could be anything you believe — Eat, Enjoy, Explore, Educate, Encourage, Empower, Experience, Evolve, or something completely different.\n\nWhat does your “E” stand for?\n\nExplain what it means to you and why you chose it.",
+      "The Meaning of “E”\n\nOur name, Muste, comes from one simple idea:\n“Must E.”\n\nBut what does “E” mean to you?\n\nIt could be anything you believe — Eat, Enjoy, Explore, Educate, Encourage, Empower, Experience, Evolve, or something completely different.\n\nWhat does your “E” stand for?\n\nExplain what it means to you and why you chose it.",
   },
 ];
 
@@ -490,8 +490,8 @@ if (!practice) {
     email_confirm: true,
     app_metadata: {
       wemuste_role: "employer",
-      company_name: "Wemuste practice jobs",
-      contact_person: "Wemuste",
+      company_name: "Muste partner jobs",
+      contact_person: "Muste",
       contact_phone: "+971500000000",
     },
   });

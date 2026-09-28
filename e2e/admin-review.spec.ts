@@ -5,7 +5,7 @@ import { JOB, PHONE, seedApplication } from "./seed-application";
 import { acceptConfirms, answerAll, login, signOut, unique } from "./helpers";
 import { waitForEmail } from "./mailpit";
 
-test("an admin reviews an application (answers, logged video view, approval); the sponsor opens it with an E-coin", async ({
+test("an admin reviews an application (answers, logged video view, approval); the sponsor sees it and opens the contact with E-coins", async ({
   page,
 }) => {
   test.setTimeout(120_000);
@@ -80,29 +80,50 @@ test("an admin reviews an application (answers, logged video view, approval); th
     const sponsorEmail = "employer@wemuste.local";
     const notice = await waitForEmail(sponsorEmail, /You have a new candidate/, since);
     expect(JSON.stringify(notice)).not.toContain(name);
-    // The admin gives the sponsor an E-coin.
+    // The admin gives the sponsor E-coins.
     const sponsorId = psql(`select id from auth.users where email = '${sponsorEmail}'`);
     psql(`update public.employer_profiles set ecoin_balance = 0 where user_id = '${sponsorId}'`);
     await page.goto(`/admin/sponsors/${sponsorId}`);
-    await page.getByLabel("Amount").fill("1");
+    await page.getByLabel("Amount").fill("50");
     await page.getByRole("button", { name: "Update balance" }).click();
     await expect(page.getByText("Balance updated.")).toBeVisible();
+    // The message covers the phone menu until it goes away.
+    await expect(page.getByText("Balance updated.")).toBeHidden({ timeout: 10_000 });
 
     await signOut(page);
     await login(page, sponsorEmail);
     await expect(page.getByRole("link", { name: /new candidate/ })).toBeVisible(); // the bell
     await page.getByRole("link", { name: /new candidate/ }).click();
     await expect(page).toHaveURL(/\/sponsor\/candidates$/);
-    await page.getByRole("link", { name: new RegExp(name) }).click();
+    const label = `Candidate ${appId.replace(/-/g, "").slice(0, 5).toUpperCase()}`;
+    await page.getByRole("link", { name: new RegExp(label) }).click();
 
-    // Locked: only the name; the rest opens with 1 E-coin.
-    await expect(page.getByRole("heading", { name })).toBeVisible();
+    // Before paying: the whole application, but no name, phone, email or CV.
+    await expect(page.getByRole("heading", { name: label })).toBeVisible();
+    await expect(page.getByText(name)).toHaveCount(0);
     await expect(page.getByText(PHONE)).toHaveCount(0);
-    await page.getByRole("button", { name: "Open for 1 E-coin" }).click();
+    // Not just hidden on screen: the contact details are not in the page at all.
+    const html = await page.content();
+    expect(html).not.toContain(PHONE.replace(/^\+/, ""));
+    expect(html).not.toContain(name);
+    await expect(page.getByRole("heading", { name: "Test answers" })).toBeVisible();
+    await expect(page.getByText("I love serving people")).toBeVisible();
+    await expect(page.getByRole("button", { name: /Play video/ }).first()).toBeVisible();
+    // The price: this job's approved candidates not yet counted in a payment.
+    const price = Number(
+      psql(`select count(*) from public.applications a where a.status = 'approved'
+              and a.job_id = (select job_id from public.applications where id = '${appId}')
+              and not exists (select 1 from public.candidate_counted c where c.application_id = a.id)`),
+    );
+    const open = page.getByRole("button", {
+      name: `Open contact for ${price} E-coin${price === 1 ? "" : "s"}`,
+    });
+    await open.click();
     await expect(page.getByText(PHONE)).toBeVisible();
+    await expect(page.getByRole("heading", { name })).toBeVisible();
     expect(
       psql(`select ecoin_balance from public.employer_profiles where user_id = '${sponsorId}'`),
-    ).toBe("0");
+    ).toBe(String(50 - price));
     await expect(page.getByRole("heading", { name: "Test answers" })).toBeVisible();
     await expect(page.getByText("I love serving people")).toBeVisible();
     await expect(page.getByText("Latte art")).toBeVisible();

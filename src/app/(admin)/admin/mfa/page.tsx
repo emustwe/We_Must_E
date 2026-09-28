@@ -24,10 +24,10 @@ export default async function AdminMfaPage() {
     <div className="flex min-h-dvh flex-col items-center justify-center px-4 py-10">
       <div className="mb-6 flex items-center gap-[11px]">
         <span className="flex size-10 items-center justify-center rounded-[13px] bg-wm-blue text-[21px] font-extrabold text-white shadow-[inset_0_-3px_0_rgba(0,0,0,0.12)]">
-          W
+          M
         </span>
         <span className="flex flex-col">
-          <span className="text-lg leading-[1.15] font-extrabold tracking-[-0.4px]">Wemuste</span>
+          <span className="text-lg leading-[1.15] font-extrabold tracking-[-0.4px]">Muste</span>
           <span className="text-xs font-semibold text-wm-caption">Admin console</span>
         </span>
       </div>

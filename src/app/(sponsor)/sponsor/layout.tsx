@@ -3,7 +3,7 @@ import { getEmployerAccount } from "@/lib/auth/employer";
 import { logoUrl } from "@/lib/sponsors/logo";
 import { createClient } from "@/lib/supabase/server";
 
-// The sponsor portal, in the light Wemuste design.
+// The sponsor portal, in the light Muste design.
 export default async function EmployerLayout({ children }: LayoutProps<"/sponsor">) {
   const { profile, employer } = await getEmployerAccount();
   const approved = employer?.status === "approved";

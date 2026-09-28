@@ -474,26 +474,99 @@ select lives_ok($$select tests.run_as('00000000-0000-0000-0000-0000000000ad', 's
 update tests set is_active = false;
 update tests set is_active = true where id = '30000000-0000-0000-0000-000000000001';
 
--- After approval: the name is visible, the rest is locked until 1 E-coin is spent.
-select is(tests.rows_as(:E3, format('select * from sponsor_list_candidates(%s) where not unlocked', :'JC')), 1, 'the sponsor sees the new candidate, still locked');
-select is((select full_name from (select tests.act_as(:E3, 'aal1')) x, sponsor_candidate_summary(:'aa_id')), 'Sara Ali',
-  'the sponsor sees the candidate''s name before unlocking');
+-- After approval: the whole application is visible; only the contact details
+-- (name, phone, email, CV, contacts written in answers) are hidden until paid for.
+select is(tests.rows_as(:E3, format('select * from sponsor_list_candidates(%s) where not unlocked and full_name is null and price = 1', :'JC')), 1,
+  'the sponsor sees the new candidate without a name; opening costs 1 (the only candidate)');
+select is((select full_name from (select tests.act_as(:E3, 'aal1')) x, sponsor_candidate_summary(:'aa_id')), null,
+  'the name is hidden until the contact is opened');
 reset role;
-select ok(tests.denied_as(:E3, format('select sponsor_get_candidate(%L)', :'aa_id')), 'a locked candidate cannot be opened');
-select is(tests.rows_as(:E3, 'select 1 from application_videos'), 0, 'a locked candidate''s video is hidden');
-select throws_ok(format('select tests.run_as(%L, %L)', :E3, format('select sponsor_unlock_candidate(%L)', :'aa_id')),
-  '22023', 'no_coins', 'unlocking needs an E-coin');
+select question_id as q_id from application_test_answers where application_id = :'aa_id' order by question_id limit 1 \gset
+update application_test_answers
+   set answer = '{"text":"I am Sara, call 0300 123 4567 or mail sara@ex.com. I worked there 2019-2023."}'
+ where application_id = :'aa_id' and question_id = :'q_id';
+update applications
+   set profile = '{"fullName":"Sara Ali","preferredName":"Sara","age":29,"gender":"female","adult":"yes","city":"Dubai","previousExperience":"Ask for Sara Ali at +971501234567"}',
+       cv_path = :'aa_id' || '/cv/cv.pdf'
+ where id = :'aa_id';
+select ok(not tests.denied_as(:E3, format('select sponsor_get_candidate(%L)', :'aa_id')),
+  'the sponsor sees an approved candidate''s application before paying');
+select is((select concat_ws('|', c ->> 'full_name', c ->> 'email', c ->> 'phone') from (select tests.act_as(:E3, 'aal1')) x, sponsor_get_candidate(:'aa_id') c), '',
+  'the name, email and phone are hidden');
+reset role;
+select is((select c -> 'profile' ->> 'previousExperience' from (select tests.act_as(:E3, 'aal1')) x, sponsor_get_candidate(:'aa_id') c),
+  'Ask for ••• ••• at •••', 'a name or phone number written in the profile is hidden');
+reset role;
+select is((select (c -> 'profile') ? 'preferredName' from (select tests.act_as(:E3, 'aal1')) x, sponsor_get_candidate(:'aa_id') c), false,
+  'the preferred name is hidden too');
+reset role;
+select is((select t -> 'answer' ->> 'text' from (select tests.act_as(:E3, 'aal1')) x, sponsor_get_candidate(:'aa_id') c,
+                  jsonb_array_elements(c -> 'test') t where t -> 'answer' ->> 'text' like 'I am%'),
+  'I am •••, call ••• or mail •••. I worked there 2019-2023.', 'contact details inside answers are hidden; years stay');
+reset role;
+select is((select jsonb_array_length(sponsor_get_candidate(:'aa_id') -> 'test') from (select tests.act_as(:E3, 'aal1')) x), 4,
+  'the test answers are visible before paying');
+reset role;
+select is((select log_video_view(:'video_id') like :'aa_id' || '/%' from (select tests.act_as(:E3, 'aal1')) x), true,
+  'the sponsor can watch the videos before paying');
+reset role;
+select ok(tests.denied_as(:E3, format('select log_cv_view(%L)', :'aa_id')), 'the CV stays hidden until the contact is opened');
+select is(tests.rows_as(:E3, 'select 1 from application_videos'), 0, 'sponsors don''t read video rows directly');
+select throws_ok(format('select tests.run_as(%L, %L)', :E3, format('select sponsor_unlock_candidate(%L, 1)', :'aa_id')),
+  '22023', 'no_coins', 'opening a contact needs E-coins');
+select is((select count(*)::int from candidate_counted), 0, 'a refused payment counts nobody');
 select ok(tests.denied_as(:E3, format('select admin_add_ecoins(%L, 5, '''')', :E3), 'aal2'), 'sponsors cannot give themselves E-coins');
 select ok(tests.denied_as(:AD, format('select admin_add_ecoins(%L, 5, '''')', :E3)), 'adding E-coins needs an MFA admin');
-select tests.run_as(:AD, format('select admin_add_ecoins(%L, 2, ''Welcome'')', :E3), 'aal2');
-select ok(tests.denied_as(:AD, format('select admin_add_ecoins(%L, -5, '''')', :E3), 'aal2'), 'a balance cannot go below zero');
-select tests.run_as(:E3, format('select sponsor_unlock_candidate(%L)', :'aa_id'));
-select tests.run_as(:E3, format('select sponsor_unlock_candidate(%L)', :'aa_id'));
-select is((select ecoin_balance from employer_profiles where user_id = :E3), 1, 'unlocking costs 1 E-coin, and only once');
-select is((select string_agg(reason || ':' || delta, ',' order by created_at) from ecoin_ledger where employer_id = :E3),
-  'admin_grant:2,unlock:-1', 'every coin movement is in the ledger');
+select tests.run_as(:AD, format('select admin_add_ecoins(%L, 20, ''Welcome'')', :E3), 'aal2');
+select ok(tests.denied_as(:AD, format('select admin_add_ecoins(%L, -50, '''')', :E3), 'aal2'), 'a balance cannot go below zero');
+
+-- The price: the job's approved candidates not yet counted in a payment.
+insert into applications (job_id, applicant_id, status, current_step, submitted_at, reviewed_at, contact_name, contact_phone)
+select job_id, applicant_id, 'approved', 'submitted', now(), now() - interval '1 minute' * g, 'Other ' || g, '+97150000000' || g
+  from applications, generate_series(1, 2) g where id = :'aa_id';
+select is((select price from (select tests.act_as(:E3, 'aal1')) x, sponsor_candidate_summary(:'aa_id')), 3,
+  'with 3 new approved candidates, opening one contact costs 3');
+reset role;
+select throws_ok(format('select tests.run_as(%L, %L)', :E3, format('select sponsor_unlock_candidate(%L, 1)', :'aa_id')),
+  '22023', 'price_changed', 'a price the sponsor was not shown is refused');
+select is((select ecoin_balance from employer_profiles where user_id = :E3), 20, 'a refused payment charges nothing');
+select tests.run_as(:E3, format('select sponsor_unlock_candidate(%L, 3)', :'aa_id'));
+select tests.run_as(:E3, format('select sponsor_unlock_candidate(%L, 3)', :'aa_id'));
+select is((select ecoin_balance from employer_profiles where user_id = :E3), 17, 'opening costs the 3 new candidates, and only once');
+select is((select count(*)::int from candidate_counted where employer_id = :E3), 3, 'all 3 are now counted');
+select id as other_id from applications where contact_name = 'Other 1' \gset
+select is((select concat(price, '/', full_name) from (select tests.act_as(:E3, 'aal1')) x, sponsor_candidate_summary(:'other_id')), '1/',
+  'a candidate counted in the payment still has a hidden name and costs 1 to open');
+reset role;
+insert into applications (job_id, applicant_id, status, current_step, submitted_at, reviewed_at, contact_name, contact_phone)
+select job_id, applicant_id, 'approved', 'submitted', now(), now(), 'New 1', '+971500000011'
+  from applications where id = :'aa_id';
+select id as new_id from applications where contact_name = 'New 1' \gset
+select is((select price from (select tests.act_as(:E3, 'aal1')) x, sponsor_candidate_summary(:'new_id')), 1,
+  'one new candidate after the payment costs 1');
+reset role;
+insert into applications (job_id, applicant_id, status, current_step, submitted_at, reviewed_at, contact_name, contact_phone)
+select job_id, applicant_id, 'approved', 'submitted', now(), now(), 'New ' || g, '+97150000002' || g
+  from applications, generate_series(2, 3) g where id = :'aa_id';
+select is((select price from (select tests.act_as(:E3, 'aal1')) x, sponsor_candidate_summary(:'new_id')), 3,
+  'three new candidates since the last payment: opening one costs 3');
+reset role;
+select tests.run_as(:E3, format('select sponsor_unlock_candidate(%L, 1)', :'other_id'));
+select is((select ecoin_balance from employer_profiles where user_id = :E3), 16, 'opening a counted candidate costs 1');
+select is((select price from (select tests.act_as(:E3, 'aal1')) x, sponsor_candidate_summary(:'new_id')), 3,
+  'opening a counted candidate does not count the new ones');
+reset role;
+select is((select full_name from (select tests.act_as(:E3, 'aal1')) x, sponsor_candidate_summary(:'other_id')), 'Other 1',
+  'an opened contact shows the name');
+reset role;
+select is((select string_agg(reason || ':' || delta, ',' order by delta desc) from ecoin_ledger where employer_id = :E3),
+  'admin_grant:20,unlock:-1,unlock:-3', 'every coin movement is in the ledger');
+select is((select metadata::text from audit_logs where action = 'candidate.unlocked' and target_id = :'aa_id'),
+  '{"price": 3, "counted": 3}', 'the payment is audited with the price, without personal data');
+delete from applications where contact_name like 'Other %' or contact_name like 'New %';
 select ok(tests.denied_as(:E3, $$update employer_profiles set ecoin_balance = 99 where user_id = auth.uid()$$), 'sponsors cannot edit their balance');
 select ok(tests.denied_as(:E3, $$insert into candidate_unlocks (application_id, employer_id) values (gen_random_uuid(), auth.uid())$$), 'sponsors cannot unlock without paying');
+select ok(tests.denied_as(:E3, $$insert into candidate_counted (application_id, employer_id) values (gen_random_uuid(), auth.uid())$$), 'sponsors cannot mark candidates as counted');
 select throws_ok($$update ecoin_ledger set delta = 50$$, '42501', 'append_only', 'ledger entries can never be changed');
 
 -- Unlocked: the sponsor sees everything (with the test answers), nobody else does.
@@ -507,7 +580,7 @@ select is((select (sponsor_get_candidate(:'aa_id') -> 'profile')::text from (sel
 reset role;
 select is(tests.rows_as(:E1, format('select * from sponsor_list_candidates(%s)', :'JC')), 0, 'another sponsor sees nothing for that job');
 select ok(tests.denied_as(:E1, format('select sponsor_get_candidate(%L)', :'aa_id')), 'another sponsor cannot open the candidate');
-select ok(tests.denied_as(:E1, format('select sponsor_unlock_candidate(%L)', :'aa_id')), 'another sponsor cannot unlock the candidate');
+select ok(tests.denied_as(:E1, format('select sponsor_unlock_candidate(%L, 1)', :'aa_id')), 'another sponsor cannot unlock the candidate');
 select is(tests.rows_as(:E3, 'select 1 from application_videos'), 0, 'sponsors don''t read video rows directly (only through logged views)');
 select is(tests.rows_as(:E3, 'select 1 from applications'), 0, 'sponsors still cannot read the applications table (admin notes stay private)');
 select is((select log_video_view(:'video_id') like :'aa_id' || '/%' from (select tests.act_as(:E3, 'aal1')) x), true,
@@ -554,7 +627,7 @@ select ok(exists (select 1 from audit_logs where action = 'application.deleted' 
 select is(app_delete_expired(array(select application_id from app_expired_applications(30))), 1, 'the nightly job deletes the expired application');
 select is((select count(*)::int from applications) + (select count(*)::int from applicants), 0,
   'with the last application, the contact record is deleted too');
-select is((select count(*)::int from ecoin_ledger where employer_id = :E3 and application_id is null), 2,
+select is((select count(*)::int from ecoin_ledger where employer_id = :E3 and application_id is null), 3,
   'coin history stays, without the link to the deleted application');
 
 -- Sponsor requests: written only by the server, read only by MFA admins.
