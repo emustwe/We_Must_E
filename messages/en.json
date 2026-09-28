@@ -1513,7 +1513,8 @@
     "backToCoins": "Back to E-coins",
     "seeCandidates": "See your candidates",
     "date": "Date",
-    "amount": "Amount"
+    "amount": "Amount",
+    "belowMinimum": "Minimum payment is {amount}, so this pack can't be bought with USDT for now."
   },
   "adminPayments": {
     "nav": "Payments",

@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { formatUsd, formatUsdt, packById, PACKS, solanaPayUrl, USDT_MINT } from "./config";
+import {
+  canBuy,
+  formatUsd,
+  formatUsdt,
+  MIN_PAYMENT_CENTS,
+  packById,
+  PACKS,
+  solanaPayUrl,
+  USDT_MINT,
+} from "./config";
 import { incomingUsdt, isSignature, type SolanaTx } from "./solana-tx";
 
 const US = "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin";
@@ -97,6 +106,10 @@ describe("payment helpers", () => {
     const params = new URLSearchParams(url.split("?")[1]);
     expect(params.get("amount")).toBe("50.0137");
     expect(params.get("spl-token")).toBe(USDT_MINT);
+  });
+
+  it("only packs at or above the minimum payment can be bought", () => {
+    for (const p of PACKS) expect(canBuy(p)).toBe(p.usdCents >= MIN_PAYMENT_CENTS);
   });
 
   it("finds packs by id only", () => {

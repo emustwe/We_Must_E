@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getEmployerAccount } from "@/lib/auth/employer";
 import { requireRole } from "@/lib/auth/session";
 import { dbFail } from "@/lib/db-errors";
-import { packById } from "@/lib/payments/config";
+import { canBuy, packById } from "@/lib/payments/config";
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { withinRateLimit } from "@/lib/security/rate-limit";
 import { createClient } from "@/lib/supabase/server";
@@ -16,7 +16,7 @@ import { paymentsConfigured } from "@/server/payments/solana";
 // A sponsor starts paying for a pack: an order with its own exact USDT amount.
 export async function buyPack(packId: unknown): Promise<ActionResult<{ orderId: string }>> {
   const pack = typeof packId === "string" ? packById(packId) : undefined;
-  if (!pack) return fail("invalidInput");
+  if (!pack || !canBuy(pack)) return fail("invalidInput");
   const { profile, employer } = await getEmployerAccount();
   if (employer?.status !== "approved") return fail("forbidden");
   if (!paymentsConfigured()) return fail("paymentsOff");

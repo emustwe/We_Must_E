@@ -156,7 +156,9 @@ test("an admin reviews an application (answers, logged video view, approval); th
     await expect(card.getByRole("link", { name: "Apply" })).toHaveCount(0);
     await expect(page.locator(".wm-p-filled").first()).toBeAttached();
     await page.goto(`/apply/${jobId}`);
-    await expect(page.getByRole("heading", { name: "Someone has been selected for this job" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Someone has been selected for this job" }),
+    ).toBeVisible();
   } finally {
     // The sample job takes applications again for the other tests.
     psql(`update public.jobs set selected_at = null where title = '${JOB}'`);

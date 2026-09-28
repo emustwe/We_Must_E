@@ -6,7 +6,7 @@ import { WmIcon } from "@/components/map/wm-icons";
 import { BuyPackButton } from "@/components/sponsors/buy-pack-button";
 import { Crumbs } from "@/components/sponsors/sponsor-shell";
 import { getEmployerAccount } from "@/lib/auth/employer";
-import { formatUsd, formatUsdt, PACKS } from "@/lib/payments/config";
+import { canBuy, formatUsd, formatUsdt, MIN_PAYMENT_CENTS, PACKS } from "@/lib/payments/config";
 import { createClient } from "@/lib/supabase/server";
 import { paymentsConfigured } from "@/server/payments/solana";
 
@@ -63,7 +63,13 @@ export default async function CoinsPage() {
             <span className="text-[13px] font-medium text-wm-slate">
               {t("perCoin", { price: formatUsd(Math.round(p.usdCents / p.coins)) })}
             </span>
-            {configured ? <BuyPackButton packId={p.id} /> : null}
+            {!configured ? null : canBuy(p) ? (
+              <BuyPackButton packId={p.id} />
+            ) : (
+              <span className="rounded-2xl bg-wm-land px-3.5 py-3 text-[13px] font-semibold text-wm-body">
+                {t("belowMinimum", { amount: formatUsd(MIN_PAYMENT_CENTS) })}
+              </span>
+            )}
           </li>
         ))}
       </ul>

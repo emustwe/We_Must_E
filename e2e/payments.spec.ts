@@ -32,8 +32,12 @@ test("a sponsor buys E-coins with USDT: exact amount, paid once, wrong amounts w
   await expect(page).toHaveURL(/\/sponsor$/);
   await page.goto("/sponsor/coins");
   await expect(page.getByRole("heading", { name: "Buy E-coins" })).toBeVisible();
+  // A pack under the minimum payment ($20) can't be bought.
+  const small = page.locator('[data-pack="pack-10"]');
+  await expect(small.getByText(/Minimum payment is \$20/)).toBeVisible();
+  await expect(small.getByRole("button")).toHaveCount(0);
   await page
-    .locator('[data-pack="pack-10"]')
+    .locator('[data-pack="pack-50"]')
     .getByRole("button", { name: "Pay with USDT" })
     .click();
   await expect(page).toHaveURL(/\/sponsor\/coins\/[0-9a-f-]{36}$/);
@@ -74,10 +78,10 @@ test("a sponsor buys E-coins with USDT: exact amount, paid once, wrong amounts w
   await expect(page.getByRole("heading", { name: "Payment received" })).toBeVisible({
     timeout: 20_000,
   });
-  await expect(page.getByText("10 E-coins were added to your account.")).toBeVisible();
+  await expect(page.getByText("50 E-coins were added to your account.")).toBeVisible();
   expect(
     psql(`select ecoin_balance from public.employer_profiles where user_id = '${sponsorId}'`),
-  ).toBe("10");
+  ).toBe("50");
 
   // The same notice again adds nothing.
   await request.post("/api/payments/solana", {
@@ -86,7 +90,7 @@ test("a sponsor buys E-coins with USDT: exact amount, paid once, wrong amounts w
   });
   expect(
     psql(`select ecoin_balance from public.employer_profiles where user_id = '${sponsorId}'`),
-  ).toBe("10");
+  ).toBe("50");
   await page.goto("/sponsor/coins");
   await expect(page.getByRole("link", { name: new RegExp(`${amount} USDT.*Paid`) })).toBeVisible();
 });
