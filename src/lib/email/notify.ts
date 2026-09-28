@@ -5,11 +5,13 @@ import { serverEnv } from "@/lib/env.server";
 import { logError } from "@/lib/log";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-type SponsorEmail = "jobApproved" | "jobRejected" | "newCandidate";
+type SponsorEmail = "jobApproved" | "jobRejected" | "newCandidate" | "paymentReceived";
 
 // Emails go out after the response, so an email problem never breaks an action.
 
-export function notifyAdmins(kind: "newApplication" | "newJob" | "newSponsorRequest") {
+export function notifyAdmins(
+  kind: "newApplication" | "newJob" | "newSponsorRequest" | "newPayment",
+) {
   const to = serverEnv.ADMIN_NOTIFY_EMAIL;
   if (to) after(() => sendEmail(kind, to));
 }

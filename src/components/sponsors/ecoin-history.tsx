@@ -20,7 +20,7 @@ export async function EcoinHistory({ employerId }: { employerId: string }) {
         <li key={r.id} className="flex items-center justify-between gap-3 py-2">
           <span className="min-w-0">
             <span className="block font-medium">
-              {t(`reason.${r.reason as "admin_grant" | "unlock"}`)}
+              {t(`reason.${r.reason as "admin_grant" | "unlock" | "purchase"}`)}
             </span>
             <span className="block truncate text-xs text-muted-foreground">
               {format.dateTime(new Date(r.created_at), { dateStyle: "medium", timeStyle: "short" })}

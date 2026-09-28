@@ -6,7 +6,7 @@ export const CONSENT_VERSIONS = {
   data_sharing: "2026-09-24",
 } as const;
 
-// Where people ask for their data to be seen, corrected or deleted. Temporary
+// Where people ask for their data to be seen, corrected or deleted. PLACEHOLDER
 // until the company has an official address: change it here only.
 export const SUPPORT_EMAIL = "emustwe@gmail.com";
 // Promised in the privacy policy.

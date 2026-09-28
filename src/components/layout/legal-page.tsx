@@ -2,6 +2,7 @@ import { TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { Logo } from "@/components/brand/logo";
+import { companyLine } from "@/lib/company";
 
 export async function LegalPage({
   title,
@@ -43,6 +44,9 @@ export async function LegalPage({
           </section>
         ))}
       </div>
+      {companyLine() ? (
+        <p className="mt-10 border-t pt-4 text-sm text-muted-foreground">{companyLine()}</p>
+      ) : null}
     </div>
   );
 }

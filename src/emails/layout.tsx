@@ -9,6 +9,7 @@ import {
   Section,
   Text,
 } from "@react-email/components";
+import { companyLine } from "@/lib/company";
 
 // Shared layout. Emails never contain personal data: no names and no profile
 // details. Emails to applicants name the job they applied for (their own
@@ -127,6 +128,11 @@ export function EmailLayout({
             {footer ??
               "For your privacy we never put details in emails. Muste will never ask for your password by email or phone."}
           </Text>
+          {companyLine() ? (
+            <Text style={{ margin: "12px 0 0", fontSize: 12, lineHeight: 1.5, color: "#94a3b8" }}>
+              {companyLine()}
+            </Text>
+          ) : null}
         </Container>
       </Body>
     </Html>

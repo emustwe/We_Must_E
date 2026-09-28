@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { LegalPage } from "@/components/layout/legal-page";
+import { companyLine } from "@/lib/company";
 import { CONSENT_VERSIONS, REPLY_WORKING_DAYS, RETENTION_DAYS, SUPPORT_EMAIL } from "@/lib/legal";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -8,13 +9,12 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("privacyTitle") };
 }
 
-// For the client's lawyer to review. Muste's company is registered in
-// Pakistan; its legal name, SECP registration number and address go in
-// section 1 once the client sends them.
+// For the client's lawyer to review. The company's details (src/lib/company.ts)
+// appear in section 1 once they are filled in.
 const SECTIONS = [
   {
     heading: "1. Who we are",
-    body: `Muste runs the job platform at www.wemuste.com. Muste is run by [company legal name], a company registered in Pakistan (SECP registration no. [number], [registered address]).\nQuestions or requests about your data: ${SUPPORT_EMAIL}.`,
+    body: `Muste runs the job platform at www.wemuste.com. ${companyLine() ?? "Muste is run by a company registered in Pakistan."}\nQuestions or requests about your data: ${SUPPORT_EMAIL}.`,
   },
   {
     heading: "2. What we collect",

@@ -152,7 +152,7 @@ export function SponsorShell({
             })}
           </nav>
           <Link
-            href="/sponsor/account#ecoins"
+            href="/sponsor/coins"
             className="flex items-center gap-2.5 rounded-[14px] border border-wm-line px-3 py-2.5 text-sm font-semibold text-wm-body no-underline hover:bg-wm-mist"
             aria-label={t("coinsLabel", { count: company.balance })}
           >

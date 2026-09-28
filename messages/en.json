@@ -216,7 +216,9 @@
     "wrongStep": "This step is already done. We've taken you to where you left off.",
     "noCoins": "You don't have enough E-coins. Contact the Muste team to add more.",
     "accountBlocked": "Your account is blocked for now. Please contact the Muste team.",
-    "priceChanged": "The price changed because a new candidate was approved. Check the new price and try again."
+    "priceChanged": "The price changed because a new candidate was approved. Check the new price and try again.",
+    "paymentsOff": "Payments with USDT aren't set up yet. Please contact the Muste team to add E-coins.",
+    "tooManyOrders": "You have 5 open orders. Pay one of them, or wait until they expire."
   },
   "employee": {
     "welcome": "Hi {name}",
@@ -1018,7 +1020,8 @@
     "historyEmpty": "No E-coin activity yet.",
     "reason": {
       "admin_grant": "Added by Muste",
-      "unlock": "Opened contact details"
+      "unlock": "Opened contact details",
+      "purchase": "Bought with USDT"
     },
     "adminTitle": "E-coins",
     "adminBody": "E-coins let this sponsor open candidates' contact details. Add coins here (use a minus number to take coins back).",
@@ -1031,7 +1034,8 @@
     "priceCounted": "This candidate was counted in an earlier payment, so opening costs 1 E-coin.",
     "price": "{count, plural, one {# E-coin} other {# E-coins}}",
     "candidateLabel": "Candidate {code}",
-    "hiddenCv": "CV (hidden until you open the contact)"
+    "hiddenCv": "CV (hidden until you open the contact)",
+    "buy": "Buy E-coins"
   },
   "adminUi": {
     "console": "Admin console",
@@ -1042,7 +1046,8 @@
       "sponsors": "Sponsors",
       "content": "Content",
       "audit": "Audit log",
-      "requests": "Sponsor requests"
+      "requests": "Sponsor requests",
+      "payments": "Payments"
     },
     "waiting": "Waiting for review",
     "openMap": "Open the public map",
@@ -1122,6 +1127,7 @@
       "sponsorDeleted": "Deleted a sponsor",
       "ecoinsAdded": "Changed E-coins",
       "candidateUnlocked": "Opened a candidate's contact details with E-coins",
+      "paymentPaid": "E-coins bought with USDT",
       "surveyLive": "Made a survey live",
       "testLive": "Made a test live",
       "videoSetLive": "Made video questions live",
@@ -1152,6 +1158,7 @@
       "sponsorDeleted": "deleted a sponsor",
       "ecoinsAdded": "changed E-coins for a <t>sponsor</t>",
       "candidateUnlocked": "opened the contact details on an <t>application</t>",
+      "paymentPaid": "added E-coins from a USDT <t>payment</t>",
       "surveyLive": "made a <t>survey</t> live",
       "testLive": "made a <t>test</t> live",
       "videoSetLive": "made <t>video questions</t> live",
@@ -1450,5 +1457,73 @@
     "title": "Continue to Muste",
     "body": "Press Continue to use the link from your email. It works once.",
     "continue": "Continue"
+  },
+  "payments": {
+    "title": "Buy E-coins",
+    "body": "Pay with USDT on the Solana network. The E-coins are added as soon as your payment arrives.",
+    "packCoins": "{count, plural, one {# E-coin} other {# E-coins}}",
+    "perCoin": "{price} per E-coin",
+    "buy": "Pay with USDT",
+    "buying": "Starting…",
+    "notSetUp": "Payments with USDT aren't set up yet. Please contact the Muste team to add E-coins.",
+    "historyTitle": "Your payments",
+    "historyEmpty": "No payments yet.",
+    "status": {
+      "pending": "Waiting for payment",
+      "paid": "Paid",
+      "expired": "Expired"
+    },
+    "orderTitle": "Pay {amount} USDT",
+    "orderFor": "{coins, plural, one {For # E-coin} other {For # E-coins}} ({price})",
+    "sendExactly": "Send exactly",
+    "network": "Network",
+    "networkValue": "Solana",
+    "token": "Coin",
+    "tokenValue": "USDT",
+    "address": "To this address",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyAmount": "Copy amount",
+    "copyAddress": "Copy address",
+    "scan": "Or scan with a Solana wallet (Phantom, Solflare…)",
+    "timeLeft": "Time left: {time}",
+    "warnTitle": "Please check before you send",
+    "warn1": "Send only USDT, and only on the Solana network. Other coins or networks can't be recovered.",
+    "warn2": "Send the exact amount, including the last digits: they tell us the payment is yours.",
+    "warn3": "Paying from an exchange? Make sure the exact amount arrives (some exchanges take their fee from it).",
+    "checkNow": "I've paid — check now",
+    "checking": "Checking…",
+    "waitingNote": "We check the blockchain automatically, and this page updates by itself. It usually takes under a minute.",
+    "paidTitle": "Payment received",
+    "paidBody": "{coins, plural, one {# E-coin was added to your account.} other {# E-coins were added to your account.}}",
+    "expiredTitle": "This order has expired",
+    "expiredBody": "If you already paid, don't pay again: contact the Muste team with the time of your payment. Otherwise, start a new order.",
+    "newOrder": "Start a new order",
+    "backToCoins": "Back to E-coins",
+    "seeCandidates": "See your candidates",
+    "date": "Date",
+    "amount": "Amount"
+  },
+  "adminPayments": {
+    "nav": "Payments",
+    "title": "Payments",
+    "body": "USDT payments on Solana. Exact amounts are added to the sponsor's E-coins automatically; the rest waits here for you.",
+    "toCheckTitle": "Payments to check",
+    "toCheckBody": "USDT that arrived but didn't match an open order (wrong amount, or too late). Add it to the right order, or refund it from the wallet.",
+    "noneToCheck": "Nothing to check.",
+    "ordersTitle": "Orders",
+    "noneOrders": "No orders yet.",
+    "sponsor": "Sponsor",
+    "pack": "Pack",
+    "expected": "Expected",
+    "received": "Received",
+    "from": "From",
+    "when": "When",
+    "status": "Status",
+    "addTo": "Add to order",
+    "chooseOrder": "Choose an order",
+    "added": "Added to the order. The E-coins were given to the sponsor.",
+    "explorer": "View on Solscan",
+    "notSetUp": "Payments aren't set up yet: add PAYMENT_SOLANA_ADDRESS and HELIUS_API_KEY in Vercel."
   }
 }

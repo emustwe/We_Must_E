@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { getTranslations } from "next-intl/server";
 import { signOutEverywhere } from "@/actions/auth";
@@ -115,6 +116,10 @@ export default async function EmployerAccountPage() {
             </span>
           </div>
           <p className="m-0 text-[13px] font-medium text-wm-slate">{tc("accountBody")}</p>
+          <Link href="/sponsor/coins" className={`${btn("primary")} self-start`}>
+            <WmIcon name="coin" size={17} stroke={2.2} />
+            {tc("buy")}
+          </Link>
           <EcoinHistory employerId={profile.id} />
         </section>
       ) : null}

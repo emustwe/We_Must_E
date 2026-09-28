@@ -27,6 +27,19 @@ const serverSchema = z.object({
     .enum(["true", "false"])
     .default("false")
     .transform((v) => v === "true"),
+  // USDT payments on Solana (all optional: without them sponsors see "not set
+  // up yet"). The wallet that receives USDT, e.g. the Bybit deposit address.
+  PAYMENT_SOLANA_ADDRESS: z
+    .string()
+    .regex(/^[1-9A-HJ-NP-Za-km-z]{32,44}$/)
+    .optional(),
+  // Helius: the Solana data service that reads the blockchain and sends a
+  // notice when USDT arrives. SOLANA_RPC_URL overrides the Helius address.
+  HELIUS_API_KEY: z.string().min(8).optional(),
+  SOLANA_RPC_URL: z.url().optional(),
+  // Sent by Helius with each notice (its "Authentication header"), so fake
+  // notices are rejected. At least 24 characters.
+  HELIUS_WEBHOOK_SECRET: z.string().min(24).optional(),
 });
 
 const parsed = serverSchema.safeParse({
@@ -41,6 +54,10 @@ const parsed = serverSchema.safeParse({
   CRON_SECRET: process.env.CRON_SECRET || undefined,
   ADMIN_NOTIFY_EMAIL: process.env.ADMIN_NOTIFY_EMAIL || undefined,
   REQUIRE_PHONE_OTP: process.env.REQUIRE_PHONE_OTP || undefined,
+  PAYMENT_SOLANA_ADDRESS: process.env.PAYMENT_SOLANA_ADDRESS || undefined,
+  HELIUS_API_KEY: process.env.HELIUS_API_KEY || undefined,
+  SOLANA_RPC_URL: process.env.SOLANA_RPC_URL || undefined,
+  HELIUS_WEBHOOK_SECRET: process.env.HELIUS_WEBHOOK_SECRET || undefined,
 });
 
 if (!parsed.success) {

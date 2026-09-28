@@ -30,7 +30,9 @@ export type ActionError =
   | "fileTooBig"
   | "uploadFailed"
   | "noCoins"
-  | "priceChanged";
+  | "priceChanged"
+  | "paymentsOff"
+  | "tooManyOrders";
 
 export type ActionResult<T = undefined> =
   { ok: true; data: T } | { ok: false; error: ActionError; fieldErrors?: Record<string, string> };

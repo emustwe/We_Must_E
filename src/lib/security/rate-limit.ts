@@ -25,6 +25,11 @@ export const LIMITS = {
   phoneCodePerIp: { max: 5, windowSeconds: 3600 },
   // "Become a sponsor" requests.
   sponsorRequestPerIp: { max: 3, windowSeconds: 3600 },
+  // USDT payments: new orders per sponsor, "check now" per sponsor, and one
+  // blockchain scan every 15 seconds for everyone together.
+  paymentOrderPerEmployer: { max: 10, windowSeconds: 3600 },
+  paymentCheckPerEmployer: { max: 30, windowSeconds: 600 },
+  paymentScanGlobal: { max: 1, windowSeconds: 15 },
 } as const;
 
 /**

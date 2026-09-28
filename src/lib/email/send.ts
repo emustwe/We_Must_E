@@ -24,7 +24,9 @@ export async function sendEmail(
     | "newSponsorRequest"
     | "jobApproved"
     | "jobRejected"
-    | "newCandidate",
+    | "newCandidate"
+    | "newPayment"
+    | "paymentReceived",
   to: string,
 ): Promise<boolean>;
 export async function sendEmail(

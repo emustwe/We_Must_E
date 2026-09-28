@@ -31,6 +31,7 @@ export type AuditKey =
   | "sponsorDeleted"
   | "ecoinsAdded"
   | "candidateUnlocked"
+  | "paymentPaid"
   | "surveyLive"
   | "testLive"
   | "videoSetLive"
@@ -176,6 +177,16 @@ export function describeAudit(row: AuditRow): Described {
     }
     case "candidate.unlocked":
       return { ...base, key: "candidateUnlocked", icon: "coin", tone: "blue" };
+    case "payment.paid": {
+      const coins = typeof m.coins === "number" ? m.coins : null;
+      return {
+        ...base,
+        key: "paymentPaid",
+        icon: "coin",
+        tone: "green",
+        chip: coins !== null ? { kind: "text", text: `+${coins}` } : null,
+      };
+    }
     case "survey.activated":
       return { ...base, key: "surveyLive", icon: "checklist", tone: "green" };
     case "test.activated":

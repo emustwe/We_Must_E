@@ -671,5 +671,48 @@ select tests.run_as(:AD, $$select log_admin_export('applications', 3)$$, 'aal2')
 select is((select metadata::text from audit_logs where action = 'export.applications' order by created_at desc limit 1),
   '{"rows": 3}', 'the export is logged with its row count only');
 
+-- USDT payments: only the server creates orders and records transfers; the
+-- exact amount pays its order once; anything else waits for an admin.
+select ok(not has_function_privilege('authenticated', 'public.payment_create_order(uuid, text, integer, integer, integer)', 'execute')
+      and not has_function_privilege('authenticated', 'public.payment_record_transfer(text, bigint, timestamptz, text)', 'execute')
+      and has_function_privilege('service_role', 'public.payment_create_order(uuid, text, integer, integer, integer)', 'execute')
+      and has_function_privilege('service_role', 'public.payment_record_transfer(text, bigint, timestamptz, text)', 'execute'),
+  'only the server creates orders and records payments (no sponsor sets a price)');
+update employer_profiles set status = 'approved', ecoin_balance = 0 where user_id = :E3;
+select id as po_id, amount_micro as po_amount from payment_create_order(:E3, 'pack-10', 10, 1000) \gset
+select ok(:po_amount between 10000100 and 10099900, 'the amount is the price plus 0.0001-0.0999 USDT');
+select is(tests.rows_as(:E3, 'select 1 from payment_orders'), 1, 'a sponsor sees their own order');
+select is(tests.rows_as(:E1, 'select 1 from payment_orders'), 0, 'other sponsors see no orders');
+select is(tests.rows_as(:E3, 'select 1 from payment_transfers'), 0, 'sponsors never see transfers');
+select ok(tests.denied_as(:E3, format('insert into payment_orders (employer_id, pack, coins, usd_cents, amount_micro, expires_at) values (%L, ''x'', 999, 1, 1, now())', :E3)),
+  'sponsors cannot write orders');
+select is((select result from payment_record_transfer(repeat('A', 88), :po_amount + 1, now(), 'sender')), 'unmatched',
+  'a wrong amount is not added automatically');
+select is((select ecoin_balance from employer_profiles where user_id = :E3), 0, 'no E-coins for a wrong amount');
+select is((select result from payment_record_transfer(repeat('B', 88), :po_amount, now(), 'sender')), 'paid',
+  'the exact amount pays the order');
+select is((select result from payment_record_transfer(repeat('B', 88), :po_amount, now(), 'sender')), 'duplicate',
+  'the same transfer never counts twice');
+select is((select ecoin_balance from employer_profiles where user_id = :E3), 10, 'the pack''s E-coins are added once');
+select is((select status::text from payment_orders where id = :'po_id'), 'paid', 'the order is paid');
+select is((select count(*)::int from ecoin_ledger where reason = 'purchase' and payment_order_id = :'po_id'), 1,
+  'the purchase is in the E-coin history');
+select is((select result from payment_record_transfer(repeat('C', 88), :po_amount, now(), 'sender')), 'unmatched',
+  'a second payment of the same amount does not pay the order again');
+select id as po2_id, amount_micro as po2_amount from payment_create_order(:E3, 'pack-50', 50, 4500) \gset
+select is((select result from payment_record_transfer(repeat('D', 88), :po2_amount, now() + interval '2 hours', 'sender')), 'unmatched',
+  'a payment long after the order closed waits for an admin');
+select ok(tests.denied_as(:AD, format('select admin_settle_transfer(%L, %L)', repeat('D', 88), :'po2_id')), 'settling a payment needs MFA');
+select ok(tests.denied_as(:E3, format('select admin_settle_transfer(%L, %L)', repeat('D', 88), :'po2_id'), 'aal2'), 'sponsors cannot settle payments');
+select tests.run_as(:AD, format('select admin_settle_transfer(%L, %L)', repeat('D', 88), :'po2_id'), 'aal2');
+select is((select ecoin_balance from employer_profiles where user_id = :E3), 60, 'the admin added the order''s E-coins');
+select ok(exists (select 1 from audit_logs where action = 'payment.paid' and target_id = :'po2_id' and actor_id = :AD::uuid),
+  'settling is audited with the admin');
+select throws_ok(format('select tests.run_as(%L, %L, %L)', :AD, format('select admin_settle_transfer(%L, %L)', repeat('A', 88), :'po_id'), 'aal2'),
+  '22023', 'already_paid', 'a paid order cannot be paid again');
+select payment_create_order(:E3, 'pack-10', 10, 1000) from generate_series(1, 5);
+select throws_ok(format('select payment_create_order(%L, ''pack-10'', 10, 1000)', :E3), '22023', 'too_many_orders',
+  'at most 5 open orders per sponsor');
+
 select * from finish();
 rollback;

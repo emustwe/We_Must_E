@@ -41,6 +41,10 @@ export default defineConfig({
       NEXT_PUBLIC_SITE_URL: BASE_URL,
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: "",
       TURNSTILE_SECRET_KEY: "",
+      // USDT payments against the fake Solana service in e2e/solana-mock.ts.
+      PAYMENT_SOLANA_ADDRESS: "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin",
+      SOLANA_RPC_URL: "http://127.0.0.1:3199",
+      HELIUS_WEBHOOK_SECRET: "e2e-helius-webhook-secret-0123456789",
     },
   },
 });

@@ -448,6 +448,7 @@ export type Database = {
           employer_id: string
           id: string
           note: string | null
+          payment_order_id: string | null
           reason: string
         }
         Insert: {
@@ -458,6 +459,7 @@ export type Database = {
           employer_id: string
           id?: string
           note?: string | null
+          payment_order_id?: string | null
           reason: string
         }
         Update: {
@@ -468,6 +470,7 @@ export type Database = {
           employer_id?: string
           id?: string
           note?: string | null
+          payment_order_id?: string | null
           reason?: string
         }
         Relationships: [
@@ -491,6 +494,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "employer_profiles"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "ecoin_ledger_payment_order_id_fkey"
+            columns: ["payment_order_id"]
+            isOneToOne: false
+            referencedRelation: "payment_orders"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -695,6 +705,101 @@ export type Database = {
             columns: ["video_set_id"]
             isOneToOne: false
             referencedRelation: "video_question_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_orders: {
+        Row: {
+          amount_micro: number
+          coins: number
+          created_at: string
+          employer_id: string
+          expires_at: string
+          id: string
+          pack: string
+          paid_at: string | null
+          settled_by: string | null
+          status: Database["public"]["Enums"]["payment_status"]
+          tx_signature: string | null
+          usd_cents: number
+        }
+        Insert: {
+          amount_micro: number
+          coins: number
+          created_at?: string
+          employer_id: string
+          expires_at: string
+          id?: string
+          pack: string
+          paid_at?: string | null
+          settled_by?: string | null
+          status?: Database["public"]["Enums"]["payment_status"]
+          tx_signature?: string | null
+          usd_cents: number
+        }
+        Update: {
+          amount_micro?: number
+          coins?: number
+          created_at?: string
+          employer_id?: string
+          expires_at?: string
+          id?: string
+          pack?: string
+          paid_at?: string | null
+          settled_by?: string | null
+          status?: Database["public"]["Enums"]["payment_status"]
+          tx_signature?: string | null
+          usd_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_orders_employer_id_fkey"
+            columns: ["employer_id"]
+            isOneToOne: false
+            referencedRelation: "employer_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "payment_orders_settled_by_fkey"
+            columns: ["settled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_transfers: {
+        Row: {
+          amount_micro: number
+          block_time: string
+          from_owner: string | null
+          order_id: string | null
+          seen_at: string
+          signature: string
+        }
+        Insert: {
+          amount_micro: number
+          block_time: string
+          from_owner?: string | null
+          order_id?: string | null
+          seen_at?: string
+          signature: string
+        }
+        Update: {
+          amount_micro?: number
+          block_time?: string
+          from_owner?: string | null
+          order_id?: string | null
+          seen_at?: string
+          signature?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_transfers_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "payment_orders"
             referencedColumns: ["id"]
           },
         ]
@@ -1151,6 +1256,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_settle_transfer: {
+        Args: { p_order_id: string; p_signature: string }
+        Returns: undefined
+      }
       admin_swap_survey_questions: {
         Args: { p_a: string; p_b: string }
         Returns: undefined
@@ -1289,6 +1398,32 @@ export type Database = {
         Returns: undefined
       }
       log_video_view: { Args: { p_video_id: string }; Returns: string }
+      payment_create_order: {
+        Args: {
+          p_coins: number
+          p_employer_id: string
+          p_minutes?: number
+          p_pack: string
+          p_usd_cents: number
+        }
+        Returns: {
+          amount_micro: number
+          expires_at: string
+          id: string
+        }[]
+      }
+      payment_record_transfer: {
+        Args: {
+          p_amount_micro: number
+          p_block_time: string
+          p_from: string
+          p_signature: string
+        }
+        Returns: {
+          order_id: string
+          result: string
+        }[]
+      }
       record_account_deletion: { Args: never; Returns: undefined }
       sponsor_all_candidates: {
         Args: { p_page?: number }
@@ -1354,6 +1489,7 @@ export type Database = {
         | "removed"
         | "rejected"
       job_type: "full_time" | "part_time" | "short_term"
+      payment_status: "pending" | "paid" | "expired"
       question_type:
         | "single_choice"
         | "multi_choice"
@@ -1516,6 +1652,7 @@ export const Constants = {
         "rejected",
       ],
       job_type: ["full_time", "part_time", "short_term"],
+      payment_status: ["pending", "paid", "expired"],
       question_type: [
         "single_choice",
         "multi_choice",
