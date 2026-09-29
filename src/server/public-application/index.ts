@@ -27,7 +27,7 @@ export const VIDEO_BUCKET = "application-videos";
 export const CV_BUCKET = "application-cvs";
 const MAX_CV_BYTES = 5 * 1024 * 1024;
 // The privacy policy version an applicant agrees to (see CONSENT_VERSIONS).
-export const CONSENT_VERSION = "privacy-2026-09-28";
+export const CONSENT_VERSION = "privacy-2026-09-29";
 const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
 // One video answers all the questions; the database allows up to 5 minutes.
 export const VIDEO_MAX_SECONDS = 300;

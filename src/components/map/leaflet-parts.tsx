@@ -131,7 +131,23 @@ export function VectorBase({ variant = "light" }: { variant?: "light" | "satelli
   useEffect(() => {
     let layer: L.Layer | null = null;
     let cancelled = false;
+    // Without WebGL (switched off, blocked by the browser after the graphics
+    // card crashed, or a very old phone) the vector map can't be drawn: show
+    // ordinary picture tiles instead, so the map is never just grey.
+    const pictures = () => {
+      if (cancelled) return;
+      if (layer) map.removeLayer(layer);
+      layer = L.tileLayer(
+        variant === "satellite" ? mapConfig.satelliteTileUrl : mapConfig.tileUrl,
+        {
+          maxZoom: 19,
+          attribution: "",
+        },
+      );
+      layer.addTo(map);
+    };
     (async () => {
+      if (!webglWorks()) return pictures();
       const [{ maplibreGL }] = await Promise.all([
         import("@maplibre/maplibre-gl-leaflet"),
         import("maplibre-gl/dist/maplibre-gl.css"),
@@ -143,12 +159,26 @@ export function VectorBase({ variant = "light" }: { variant?: "light" | "satelli
           if (!res.ok) throw new Error(String(res.status));
           style = lightStyle((await res.json()) as StyleSpecification);
         } catch {
-          return; // Offline or key refused: the land-coloured background stays.
+          return pictures(); // The style didn't load: picture tiles instead.
         }
       }
       if (cancelled) return;
-      layer = maplibreGL({ style, attributionControl: false });
-      layer.addTo(map);
+      try {
+        const vector = maplibreGL({ style, attributionControl: false });
+        layer = vector;
+        vector.addTo(map);
+        const gl = (
+          vector as unknown as { getMaplibreMap?: () => MaplibreMapLike }
+        ).getMaplibreMap?.();
+        // The browser can take WebGL away later (graphics crash): switch then.
+        gl?.getCanvas().addEventListener("webglcontextlost", pictures, { once: true });
+        gl?.on("error", (e) => {
+          if ((e as { error?: { type?: string } }).error?.type === "webglcontextcreationerror")
+            pictures();
+        });
+      } catch {
+        pictures();
+      }
     })();
     return () => {
       cancelled = true;
@@ -156,6 +186,21 @@ export function VectorBase({ variant = "light" }: { variant?: "light" | "satelli
     };
   }, [map, variant]);
   return null;
+}
+
+type MaplibreMapLike = {
+  getCanvas: () => HTMLCanvasElement;
+  on: (event: "error", fn: (e: unknown) => void) => void;
+};
+
+// Can this browser draw WebGL (the vector map) right now?
+function webglWorks() {
+  try {
+    const canvas = document.createElement("canvas");
+    return Boolean(canvas.getContext("webgl2") ?? canvas.getContext("webgl"));
+  } catch {
+    return false;
+  }
 }
 
 const el = (tag: string, className: string) => {

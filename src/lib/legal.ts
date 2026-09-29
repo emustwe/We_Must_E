@@ -2,7 +2,7 @@
 // to accept again and a new row is written to public.consents.
 export const CONSENT_VERSIONS = {
   terms: "2026-09-24",
-  privacy: "2026-09-28",
+  privacy: "2026-09-29",
   data_sharing: "2026-09-24",
 } as const;
 

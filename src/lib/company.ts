@@ -1,32 +1,34 @@
 // The company behind WemustE, shown in the privacy policy, the terms, the legal
-// pages' footer and the email footer. PLACEHOLDERS: fill in the real details
-// here only; anything left null is simply not shown.
+// pages' footer and the email footer. Change the details here only; anything
+// left null (the phone) is simply not shown.
 export const COMPANY = {
   // Exactly as registered, e.g. "Example Technologies (Private) Limited".
-  legalName: null as string | null,
+  legalName: "UnifiedSoftwareSolutions (Private) Limited" as string | null,
   // "secp": a company registered with SECP; "fbr": registered only with FBR
   // (sole proprietorship or partnership).
-  registration: "fbr" as "secp" | "fbr",
-  // FBR National Tax Number.
-  ntn: null as string | null,
+  registration: "secp" as "secp" | "fbr",
+  // FBR registration number (NTN).
+  ntn: "I603015" as string | null,
   // SECP registration number (CUIN), only for an SECP company.
-  secpCuin: null as string | null,
+  secpCuin: "0328510" as string | null,
   // Registered business address, one line.
-  address: null as string | null,
+  address:
+    "Street 2, House No. 32, Hussain Town, Yousafabad, Ring Road, Peshawar, Khyber Pakhtunkhwa, Pakistan" as
+      string | null,
   // Business phone number to show (optional), e.g. "+92 300 1234567".
   phone: null as string | null,
   country: "Pakistan",
 };
 
 // "WemustE is run by Example (Private) Limited, a company registered in
-// Pakistan (SECP no. 0123456, NTN 1234567-8), Street, City." Only the
-// details that are filled in.
+// Pakistan (SECP registration no. 0123456, FBR registration no. A123456).
+// Address: Street, City." Only the details that are filled in.
 export function companyLine(): string | null {
   const c = COMPANY;
   if (!c.legalName) return null;
   const numbers = [
     c.registration === "secp" && c.secpCuin ? `SECP registration no. ${c.secpCuin}` : null,
-    c.ntn ? `NTN ${c.ntn}` : null,
+    c.ntn ? `FBR registration no. ${c.ntn}` : null,
   ].filter(Boolean);
   const kind =
     c.registration === "secp"
