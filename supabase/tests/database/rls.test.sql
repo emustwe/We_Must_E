@@ -733,5 +733,16 @@ update jobs set selected_at = now() - interval '31 days' where id = :JC;
 select is((select count(*)::int from app_close_selected_jobs(30)), 1, 'a month after the selection the job closes');
 select is((select status::text from jobs where id = :JC), 'closed', 'the job is closed (off the map)');
 
+-- An order's exact amount is reserved for 2 hours, then it can be used again.
+update employer_profiles set status = 'approved' where user_id = :E1;
+insert into payment_orders (employer_id, pack, coins, usd_cents, amount_micro, status, created_at, expires_at)
+select :E1, 'full', 1, 1234, 1234 * 10000 + g * 100, 'expired', now() - interval '1 hour', now() - interval '30 minutes'
+  from generate_series(1, 999) g;
+select throws_ok(format('select payment_create_order(%L, ''full'', 1, 1234)', :E1), '54000', 'rate_limited',
+  'all 999 amounts of a price used in the last 2 hours: no new order for now');
+update payment_orders set created_at = now() - interval '3 hours' where employer_id = :E1 and usd_cents = 1234;
+select lives_ok(format('select payment_create_order(%L, ''full'', 1, 1234)', :E1),
+  'after 2 hours the amounts can be used again');
+
 select * from finish();
 rollback;
