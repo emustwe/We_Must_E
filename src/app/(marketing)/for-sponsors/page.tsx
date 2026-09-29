@@ -12,7 +12,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 // Companies can't sign up themselves: they send a request, and the WemustE
 // team checks them and creates their sponsor account.
-export default async function ForEmployersPage() {
+export default async function ForEmployersPage({ searchParams }: PageProps<"/for-sponsors">) {
+  // A salesperson's link (/for-sponsors?ref=CODE) fills in their code.
+  const { ref } = await searchParams;
+  const referralCode = typeof ref === "string" && /^[A-Za-z0-9-]{3,20}$/.test(ref) ? ref : "";
   const t = await getTranslations("forEmployers");
   const tc = await getTranslations("common");
   const steps = [t("step1"), t("step2"), t("step3")];
@@ -50,7 +53,7 @@ export default async function ForEmployersPage() {
         </>
       }
     >
-      <SponsorRequestForm />
+      <SponsorRequestForm referralCode={referralCode} />
       <p className="mt-4 text-center text-xs text-wm-caption">
         {t("contactNote", { email: SUPPORT_EMAIL })}
       </p>

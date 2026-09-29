@@ -2,7 +2,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { dbFail } from "@/lib/db-errors";
 import { after } from "next/server";
-import { notifyAdmins } from "@/lib/email/notify";
+import { notifyAdmins, notifySponsor } from "@/lib/email/notify";
 import { sendEmail } from "@/lib/email/send";
 import { displayTitle } from "@/lib/jobs/display";
 import { RETENTION_DAYS, SUPPORT_EMAIL } from "@/lib/legal";
@@ -27,7 +27,7 @@ export const VIDEO_BUCKET = "application-videos";
 export const CV_BUCKET = "application-cvs";
 const MAX_CV_BYTES = 5 * 1024 * 1024;
 // The privacy policy version an applicant agrees to (see CONSENT_VERSIONS).
-export const CONSENT_VERSION = "privacy-2026-09-29";
+export const CONSENT_VERSION = "privacy-2026-09-29-2";
 const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
 // One video answers all the questions; the database allows up to 5 minutes.
 export const VIDEO_MAX_SECONDS = 300;
@@ -627,8 +627,15 @@ export async function submitApplication(
   if (error) return dbFail("app-submit", error);
   await clearToken(jobId);
 
-  // Tell the team, without any personal data in the email.
+  // Tell the team, and the job's sponsor (the application is theirs to see at
+  // once), without any personal data in the emails.
   notifyAdmins("newApplication");
+  const { data: owner } = await db()
+    .from("jobs")
+    .select("employer_id")
+    .eq("id", jobId)
+    .maybeSingle();
+  if (owner) notifySponsor("newCandidate", owner.employer_id);
   // Thank the applicant (when they gave an email), after the response is sent.
   const to = String(profile.email ?? "").trim();
   if (to) {

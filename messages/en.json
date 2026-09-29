@@ -39,7 +39,7 @@
     "valueTitle": "Real jobs. Verified sponsors.",
     "trust1": "Your profile is never public",
     "trust2": "Every sponsor is checked by our team",
-    "trust3": "Only candidates our team approved reach sponsors",
+    "trust3": "Your contact details stay hidden until an employer chooses you",
     "employerBadge": "Verified by WemustE",
     "tagline": "Jobs near you"
   },
@@ -67,7 +67,7 @@
     "password": "Password",
     "passwordHint": "At least 10 characters.",
     "acceptTerms": "I agree to the <terms>Terms</terms> and the <privacy>Privacy Policy</privacy>.",
-    "acceptDataSharing": "I understand my information is stored privately and shared only with sponsors approved and selected by WemustE.",
+    "acceptDataSharing": "I understand my application is shared with the employer of this job, and my contact details only if they choose me.",
     "submitEmployee": "Create account",
     "haveAccount": "Already have an account?",
     "hiring": "Hiring?",
@@ -181,7 +181,10 @@
     "tooLong": "This is too long.",
     "ageRange": "Please enter an age between 18 and 80.",
     "adultRequired": "You must be 18 or older to apply. Please confirm.",
-    "jobTypeRequired": "Please choose the job type."
+    "jobTypeRequired": "Please choose the job type.",
+    "referralInvalid": "Use 3–20 letters, numbers or dashes.",
+    "referralUnknown": "This referral code doesn't exist. Check it, or leave it empty.",
+    "codeTaken": "This referral code is already used. Choose another one."
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",
@@ -216,7 +219,7 @@
     "wrongStep": "This step is already done. We've taken you to where you left off.",
     "noCoins": "You don't have enough Era. Contact the WemustE team to add more.",
     "accountBlocked": "Your account is blocked for now. Please contact the WemustE team.",
-    "priceChanged": "The price changed because a new candidate was approved. Check the new price and try again.",
+    "priceChanged": "The price changed because a new candidate applied. Check the new price and try again.",
     "paymentsOff": "Payments with USDT aren't set up yet. Please contact the WemustE team to add Era.",
     "tooManyOrders": "You have 5 open orders. Pay one of them, or wait until they expire.",
     "jobFilled": "This job has been filled: someone was selected, so applications are closed."
@@ -292,7 +295,7 @@
       "employers": "Sponsors",
       "jobs": "Live jobs",
       "employees": "Job seekers",
-      "toReview": "Applications to review",
+      "toReview": "New applications (24 h)",
       "jobsToReview": "Jobs to review"
     },
     "needsAttention": "Needs your attention",
@@ -334,8 +337,8 @@
     "noVideos": "No videos in this application.",
     "noCv": "No CV uploaded.",
     "openCv": "Open CV (link valid 5 minutes)",
-    "approve": "Approve",
-    "reject": "Reject",
+    "approve": "Share with the sponsor again",
+    "reject": "Remove from the sponsor",
     "videoStatus": {
       "uploaded": "To review",
       "approved": "Approved",
@@ -475,10 +478,10 @@
     "reviewNotes": "Notes",
     "reviewNotesPlaceholder": "Why approve or reject? Visible to admins only.",
     "reviewNotesHint": "Notes are for the WemustE team only, never shown to sponsors or applicants.",
-    "approveConfirm": "Approve this application? The sponsor will be able to see it.",
-    "rejectConfirm": "Reject this application?",
-    "approvedToast": "Approved. The sponsor can now see this candidate.",
-    "rejectedToast": "Rejected.",
+    "approveConfirm": "Share this application with the sponsor again?",
+    "rejectConfirm": "Remove this application? The sponsor will no longer see it.",
+    "approvedToast": "Shared with the sponsor again.",
+    "rejectedToast": "Removed. The sponsor no longer sees this application.",
     "approveNote": "Approving shares this application (survey, score and videos) with the sponsor who posted the job.",
     "historyTitle": "Other applications from this person",
     "noHistory": "This is their first application.",
@@ -580,7 +583,7 @@
     "body": "Post jobs on the WemustE map and meet candidates our team has checked. Send us your details and we will set up your sponsor account.",
     "step1": "Send us your company details",
     "step2": "We check your company and create your login",
-    "step3": "Post jobs and meet approved candidates",
+    "step3": "Post jobs and meet candidates",
     "contact": "Contact our team",
     "contactNote": "Questions? Email us at {email}. We reply within 7 working days.",
     "haveLogin": "Already a sponsor?",
@@ -597,7 +600,8 @@
     "send": "Send request",
     "sending": "Sending…",
     "sentTitle": "Request sent",
-    "sentBody": "Thank you! Our team will check your details and email your login within 7 working days."
+    "sentBody": "Thank you! Our team will check your details and email your login within 7 working days.",
+    "referralCode": "Referral code"
   },
   "tabs": {
     "jobs": "Jobs",
@@ -628,7 +632,7 @@
     "closedToast": "Job closed.",
     "hiddenNotice": "WemustE has hidden this job from the map. Contact support if you have questions.",
     "applicantsTitle": "Candidates",
-    "noApplicants": "No candidates yet. People who apply are reviewed by the WemustE team first; approved candidates appear here and we email you.",
+    "noApplicants": "No candidates yet. When someone applies, they appear here and we email you.",
     "privateLocation": "Only you and WemustE see the exact point. The public map shows an approximate pin.",
     "sentForReview": "Changes saved. The job is back in review and returns to the map once approved.",
     "pendingNotice": "Waiting for review. The WemustE team checks every job before it appears on the map. We'll email you when it's live.",
@@ -872,7 +876,7 @@
     "privacyLink": "Read the privacy policy",
     "submit": "Send application",
     "submittedTitle": "Application sent",
-    "submittedBody": "Thank you! We'll contact you if you're shortlisted. There's nothing else you need to do.",
+    "submittedBody": "Thank you! The employer can see your application now. If they choose you, they'll contact you. There's nothing else you need to do.",
     "submittedNote": "We never ask for money. If someone asks you to pay for a job, it isn't us.",
     "moreJobs": "See more jobs",
     "jobClosedTitle": "This job isn't taking applications",
@@ -978,8 +982,8 @@
   "applicationStatus": {
     "in_progress": "Unfinished",
     "submitted": "To review",
-    "approved": "Approved",
-    "rejected": "Rejected"
+    "approved": "With the sponsor",
+    "rejected": "Removed"
   },
   "sponsorLogo": {
     "hint": "Shown on your jobs on the map. A square image works best.",
@@ -1006,9 +1010,9 @@
     "balanceLabel": "{count, plural, one {You have # Era} other {You have # Era}}",
     "newCandidates": "{count, plural, =0 {Candidates} one {# new candidate} other {# new candidates}}",
     "candidatesTitle": "Candidates",
-    "candidatesBody": "People the WemustE team approved for your jobs.",
+    "candidatesBody": "People who applied to your jobs.",
     "lockedCount": "{count, plural, one {# candidate's contact details are still closed.} other {# candidates' contact details are still closed.}} You can see their full applications now.",
-    "noCandidates": "No candidates yet. When the WemustE team approves someone for one of your jobs, they appear here and we email you.",
+    "noCandidates": "No candidates yet. When someone applies to one of your jobs, they appear here and we email you.",
     "sharedOn": "Shared {date}",
     "open": "Contact open",
     "new": "New",
@@ -1022,7 +1026,7 @@
     "noCoinsBody": "{price, plural, one {Opening this contact costs # Era} other {Opening this contact costs # Era}}, and you have {balance}. Please contact the WemustE team to add Era.",
     "unlocked": "Contact details opened.",
     "accountTitle": "Era",
-    "accountBody": "Era opens candidates' contact details. You see every approved candidate's full application for free; opening a contact costs the number of the job's approved candidates not yet counted in an earlier payment (1 Era for a candidate already counted). For now the WemustE team adds Era to your account.",
+    "accountBody": "Era opens candidates' contact details. You see every candidate's full application for free; opening a contact costs the number of the job's candidates not yet counted in an earlier payment (1 Era for a candidate already counted). For now the WemustE team adds Era to your account.",
     "history": "History",
     "historyEmpty": "No Era activity yet.",
     "reason": {
@@ -1037,7 +1041,7 @@
     "notePlaceholder": "e.g. Welcome bonus",
     "add": "Update balance",
     "added": "Balance updated.",
-    "priceNew": "{count, plural, one {The price is the number of new approved candidates for this job: # (just this one).} other {The price is the number of new approved candidates for this job: #. They are all counted in this payment, and each of them costs only 1 Era to open later.}}",
+    "priceNew": "{count, plural, one {The price is the number of new candidates for this job: # (just this one).} other {The price is the number of new candidates for this job: #. They are all counted in this payment, and each of them costs only 1 Era to open later.}}",
     "priceCounted": "This candidate was counted in an earlier payment, so opening costs 1 Era.",
     "price": "{count, plural, one {# Era} other {# Era}}",
     "candidateLabel": "Candidate {code}",
@@ -1054,7 +1058,8 @@
       "content": "Content",
       "audit": "Audit log",
       "requests": "Sponsor requests",
-      "payments": "Payments"
+      "payments": "Payments",
+      "sales": "Sales"
     },
     "waiting": "Waiting for review",
     "openMap": "Open the public map",
@@ -1076,11 +1081,11 @@
     "overviewBody": "Manage sponsors and keep the map safe. Here is what needs you today.",
     "createSponsor": "Create sponsor",
     "stat": {
-      "apps": "Applications to review",
+      "apps": "New applications (24 h)",
       "jobs": "Jobs to review",
       "sponsors": "Sponsors",
       "live": "Live jobs on the map",
-      "reviewApps": "Review applications",
+      "reviewApps": "See applications",
       "reviewJobs": "Review jobs",
       "upToDate": "Up to date"
     },
@@ -1210,11 +1215,11 @@
     "anyone": "Anyone",
     "admins": "Admins",
     "sponsorsWho": "Sponsors",
-    "appsBody": "Everyone who applied to a job. Review the test, video and answers, then approve or reject.",
+    "appsBody": "Everyone who applied to this job. Applications go to the sponsor straight away (without contact details). Remove one if it's spam or fake.",
     "tabs": {
       "toReview": "To review",
-      "approved": "Approved",
-      "rejected": "Rejected",
+      "approved": "With the sponsor",
+      "rejected": "Removed",
       "all": "All"
     },
     "col": {
@@ -1234,8 +1239,8 @@
     "noApps": "No applications match these filters.",
     "appStatus": {
       "submitted": "To review",
-      "approved": "Approved",
-      "rejected": "Rejected",
+      "approved": "With the sponsor",
+      "rejected": "Removed",
       "in_progress": "In progress"
     },
     "appliedAt": "Applied {date}",
@@ -1256,9 +1261,9 @@
     "showAll": "Show all answers",
     "hideAll": "Hide answers",
     "noSurvey": "No survey answers.",
-    "reject": "Reject",
-    "approve": "Approve",
-    "sponsorsOnly": "Sponsors only see applications you approve, and only for their own jobs.",
+    "reject": "Remove",
+    "approve": "Share again",
+    "sponsorsOnly": "Sponsors see applications to their own jobs straight away, without contact details.",
     "contact": "Contact",
     "consent": "Consent",
     "notes": "Notes",
@@ -1411,7 +1416,13 @@
     "requestDelete": "Delete",
     "requestDeleteTitle": "Delete this request?",
     "requestDeleteBody": "The company’s details are deleted for good. This can’t be undone.",
-    "selectedPill": "Candidate selected"
+    "selectedPill": "Candidate selected",
+    "appsAllJobs": "All jobs",
+    "appsJobsBody": "Every job with applications, newest first. Open a job to see who applied.",
+    "appsJobsEmpty": "No applications yet.",
+    "appsJobsLast": "last {date}",
+    "appsJobsCount": "{count, plural, one {# application} other {# applications}}",
+    "appsJobsToday": "{count} new today"
   },
   "sponsorUi": {
     "sponsor": "Sponsor",
@@ -1424,7 +1435,7 @@
     "coins": "Era",
     "coinsLabel": "{count, plural, one {You have # Era} other {You have # Era}}",
     "howItWorks": "How it works",
-    "howBody": "WemustE reviews every applicant first. You only see candidates who passed review.",
+    "howBody": "Everyone who applies appears here straight away. You see their whole application; contact details open with Era.",
     "owner": "Account owner",
     "signOut": "Sign out",
     "openMenu": "Open menu",
@@ -1444,7 +1455,7 @@
     "location": "Location",
     "exactPoint": "Exact point, private",
     "publicArea": "Area shown to the public",
-    "candidatesBody": "People WemustE approved for this job. See their full applications now, and open a contact when you want to reach someone.",
+    "candidatesBody": "Everyone who applied for this job. See their full applications now, and open a contact when you want to reach someone.",
     "viewsRecorded": "Every time you view a candidate, it is recorded for their safety.",
     "approvedByWemuste": "Approved by WemustE",
     "contact": "Contact",
@@ -1537,5 +1548,28 @@
     "added": "Added to the order. The Era was given to the sponsor.",
     "explorer": "View on Solscan",
     "notSetUp": "Payments aren't set up yet: add PAYMENT_SOLANA_ADDRESS and HELIUS_API_KEY in Vercel."
+  },
+  "adminSales": {
+    "title": "Sales",
+    "body": "Salespeople and their referral codes. Companies enter a code when they ask to become a sponsor, and they are counted here.",
+    "createTitle": "Create referral code",
+    "code": "Referral code",
+    "nickname": "Nickname",
+    "nicknamePlaceholder": "e.g. Ali (Lahore)",
+    "create": "Create",
+    "created": "Referral code created.",
+    "empty": "No salespeople yet. Create a referral code above.",
+    "since": "Since {date}",
+    "sponsorsShort": "sponsors",
+    "accountsShort": "{count, plural, one {# account} other {# accounts}}",
+    "copyCode": "Copy code",
+    "link": "Share link",
+    "copyLink": "Copy link",
+    "linkNote": "The link opens \"Become a sponsor\" with this code filled in.",
+    "requestsTitle": "{count, plural, one {# sponsor used this code} other {# sponsors used this code}}",
+    "noRequests": "No sponsor has used this code yet.",
+    "accountsTitle": "{count, plural, one {# sponsor account} other {# sponsor accounts}}",
+    "noAccounts": "No sponsor account made from these requests yet.",
+    "referredBy": "Referral: {code} ({name})"
   }
 }

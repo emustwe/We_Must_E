@@ -5,6 +5,8 @@ import { serverEnv } from "@/lib/env.server";
 import { logError } from "@/lib/log";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+const PARTNER_ACCOUNT_EMAIL = "practice-jobs@wemuste.com";
+
 type SponsorEmail = "jobApproved" | "jobRejected" | "newCandidate" | "paymentReceived";
 
 // Emails go out after the response, so an email problem never breaks an action.
@@ -24,6 +26,8 @@ export function notifySponsor(kind: SponsorEmail, sponsorId: string) {
       logError(`notify-${kind}`, error ?? { name: "NoEmail" });
       return;
     }
+    // The internal partner-jobs account has no inbox.
+    if (data.user.email === PARTNER_ACCOUNT_EMAIL) return;
     await sendEmail(kind, data.user.email);
   });
 }

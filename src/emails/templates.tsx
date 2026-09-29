@@ -8,12 +8,12 @@ export type ApplicationDetails = { jobTitle: string; supportEmail: string };
 
 export const TEMPLATES = {
   newApplication: {
-    subject: "New application to review",
+    subject: "New application on WemustE",
     render: (site: string) => (
       <EmailLayout
         preview="A new application is waiting for review"
-        heading="New application to review"
-        body="Someone applied for a job on WemustE. Log in to the admin area to review it."
+        heading="New application"
+        body="Someone applied for a job on WemustE. The application went straight to the sponsor, without contact details. Log in to the admin area to see it (or remove it if it is fake)."
         cta="Open applications"
         href={`${site}/admin/applications`}
       />
@@ -97,7 +97,7 @@ export const TEMPLATES = {
       <EmailLayout
         preview="The WemustE team shared a candidate with you"
         heading="You have a new candidate"
-        body="The WemustE team approved an application for one of your jobs. Log in to see the candidate."
+        body="Someone applied for one of your jobs. Log in to see their application. Their contact details open with Era."
         cta="See candidates"
         href={`${site}/sponsor`}
       />
@@ -114,8 +114,8 @@ export const TEMPLATES = {
         steps={{
           title: "What happens next",
           items: [
-            "Our team reviews every application carefully.",
-            "If you are shortlisted, we share your application with the employer.",
+            "We shared your application with the employer, without your contact details.",
+            "If the employer chooses you, they get your phone number and email.",
             "The employer contacts you directly by phone or email.",
           ],
         }}

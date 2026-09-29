@@ -371,7 +371,7 @@ select lives_ok(format($$select app_submit(%s, %s, 'Sara Ali', '+971501234567', 
   jsonb_build_object(:SQ, '{"options":[0]}'::jsonb)), 'the application is submitted');
 \set AA '(select a.id from applications a join jobs j on j.id = a.job_id where j.title = ''Apply here'')'
 select is((select (status, current_step, draft_token_hash is null)::text from applications where id = :AA),
-  '(submitted,submitted,t)', 'submitting ends the draft: status submitted, token cleared');
+  '(approved,submitted,t)', 'submitting ends the draft and shares it with the sponsor at once (approved), token cleared');
 select is((select count(*)::int from consents where application_id = :AA), 1, 'the consent is recorded');
 select is((select email from applicants where phone_e164 = '+971501234567'), 'sara@example.com', 'the applicant is stored by phone number');
 select throws_ok(format('select app_start_test(%s, %s)', :'JC', :'TOKA'), '28000', 'invalid_token', 'the token stops working after submitting');
@@ -381,11 +381,11 @@ select app_start(:JD, :TOKB, 'ip');
 update applications set current_step = 'survey' where draft_token_hash = :TOKB;
 select app_submit(:JD, :TOKB, 'Sara A.', '+971501234567', '', jsonb_build_object(:SQ, '{"options":[1]}'::jsonb), 'v1', 'ip', true);
 select is((select count(*)::int from applicants), 1, 'repeat applicants are matched by phone number');
-select is((select count(distinct applicant_id)::int from applications where status = 'submitted'), 1, 'both applications belong to the same applicant');
+select is((select count(distinct applicant_id)::int from applications where status = 'approved'), 1, 'both applications belong to the same applicant');
 select is((select full_name || '|' || email from applicants where phone_e164 = '+971501234567'), 'Sara Ali|sara@example.com',
   'a later application (the phone is not verified) never changes the stored name or email');
 select is((select string_agg(contact_name || ':' || coalesce(contact_email, '-'), ',' order by contact_name desc) from applications
-            where status = 'submitted'), 'Sara Ali:sara@example.com,Sara A.:-', 'each application keeps the details given with it');
+            where status = 'approved'), 'Sara Ali:sara@example.com,Sara A.:-', 'each application keeps the details given with it');
 
 -- Reads: nobody but MFA admins (employers get approved ones in phase 6).
 select is(tests.rows_as(null, 'select 1 from applications'), -1, 'anon cannot read applications');
@@ -434,21 +434,26 @@ select tests.run_as(:AD, format('select log_sponsor_change(%L, ''password'')', :
 select ok(exists (select 1 from audit_logs where action = 'sponsor.password' and target_id = :E3::uuid), 'admin password changes are logged');
 
 -- Sponsors see approved candidates only (required tests 3, 8, 9) ----------------------
-select is(tests.rows_as(:E3, format('select * from sponsor_list_candidates(%s)', :'JC')), 0, 'before approval the sponsor sees no candidates');
+select is(tests.rows_as(:E3, format('select * from sponsor_list_candidates(%s)', :'JC')), 1, 'a sent application reaches the sponsor at once (no review first)');
 select id as aa_id from applications a where a.job_id = (select id from jobs where title = 'Apply here') \gset
-select ok(tests.denied_as(:E3, format('select sponsor_get_candidate(%L)', :'aa_id')), 'an unapproved application cannot be opened by the sponsor');
+select ok(not tests.denied_as(:E3, format('select sponsor_get_candidate(%L)', :'aa_id')), 'the sponsor can open a new application at once');
 select is(tests.rows_as(:E3, 'select 1 from application_videos'), 0, 'the sponsor sees no videos before approval');
 
 -- Admin review (required test 7: admin writes fail without MFA).
 select ok(tests.denied_as(:AD, format('select admin_review_application(%s, ''approved'', ''ok'')', :'AA')),
   'admin without MFA cannot approve an application');
+-- An admin can remove an application (spam, fake data): the sponsor no longer sees it.
+select tests.run_as(:AD, format('select admin_review_application(%s, ''rejected'', ''Looks fake'')', :'AA'), 'aal2');
+select is(tests.rows_as(:E3, format('select * from sponsor_list_candidates(%s)', :'JC')), 0, 'a removed application disappears for the sponsor');
+select ok(exists (select 1 from audit_logs where action = 'application.reviewed' and target_id = :AA
+                   and metadata = '{"to": "rejected", "from": "approved"}'), 'removing is audited');
 select ok(tests.denied_as(:E3, format('select admin_review_application(%s, ''approved'', ''ok'')', :'AA'), 'aal2'),
   'employers cannot approve applications');
 select tests.run_as(:AD, format('select admin_review_application(%s, ''approved'', ''Great fit'')', :'AA'), 'aal2');
 select is((select (status, admin_notes, reviewed_by)::text from applications where id = :AA),
   '(approved,"Great fit",00000000-0000-0000-0000-0000000000ad)', 'approval records the decision, notes and reviewer');
-select is((select metadata::text from audit_logs where action = 'application.reviewed' and target_id = :AA),
-  '{"to": "approved", "from": "submitted"}', 'the review is audited without personal data');
+select ok(exists (select 1 from audit_logs where action = 'application.reviewed' and target_id = :AA
+                   and metadata = '{"to": "approved", "from": "rejected"}'), 'sharing it again is audited without personal data');
 select ok(tests.denied_as(:AD, format('select admin_review_application(%s, ''in_progress'', '''')', :'AA'), 'aal2'),
   'an application cannot be sent back to in progress');
 select id as video_id from application_videos where application_id = :AA limit 1 \gset
@@ -743,6 +748,24 @@ select throws_ok(format('select payment_create_order(%L, ''full'', 1, 1234)', :E
 update payment_orders set created_at = now() - interval '3 hours' where employer_id = :E1 and usd_cents = 1234;
 select lives_ok(format('select payment_create_order(%L, ''full'', 1, 1234)', :E1),
   'after 2 hours the amounts can be used again');
+
+-- Salespeople: referral codes made by MFA admins; a request with a code links
+-- the sponsor account made from it to that salesperson.
+select ok(tests.denied_as(:AD, $$select admin_create_salesperson('ali10', 'Ali')$$), 'creating a salesperson needs MFA');
+select ok(tests.denied_as(:E3, $$select admin_create_salesperson('ali10', 'Ali')$$, 'aal2'), 'sponsors cannot create salespeople');
+select tests.run_as(:AD, $$select admin_create_salesperson(' ali10 ', 'Ali (Lahore)')$$, 'aal2');
+select is((select code from sales_people where nickname = 'Ali (Lahore)'), 'ALI10', 'referral codes are kept in capitals');
+select throws_ok(format('select tests.run_as(%L, %L, %L)', :AD, $$select admin_create_salesperson('ALI10', 'Other')$$, 'aal2'),
+  '23505', 'code_taken', 'referral codes are unique');
+select is(tests.rows_as(:E3, 'select 1 from sales_people'), 0, 'sponsors cannot see salespeople');
+update employer_profiles set contact_email = 'referred@example.test' where user_id = :E3;
+insert into sponsor_requests (company_name, contact_person, email, phone, city, salesperson_id)
+select 'Referred Co', 'Omar Ali', 'referred@example.test', '+971500000000', 'Dubai', id
+  from sales_people where code = 'ALI10'
+returning id as rq_id \gset
+select tests.run_as(:AD, format('select admin_handle_sponsor_request(%L, ''approved'')', :'rq_id'), 'aal2');
+select is((select s.code from employer_profiles e join sales_people s on s.id = e.referred_by where e.user_id = :E3), 'ALI10',
+  'the sponsor account made from a referred request belongs to that salesperson');
 
 select * from finish();
 rollback;

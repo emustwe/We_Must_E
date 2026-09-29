@@ -27,7 +27,7 @@ test.afterEach(async () => {
   psql(`update public.jobs set selected_at = null where title = '[SAMPLE] Evening cashier'`);
 });
 
-test("full journey: apply with test, video and survey -> admin approves -> sponsor sees the candidate", async ({
+test("full journey: apply with test, video and survey -> the sponsor sees the candidate at once", async ({
   page,
 }) => {
   test.setTimeout(240_000);
@@ -87,14 +87,20 @@ test("full journey: apply with test, video and survey -> admin approves -> spons
   expect(survey, "survey answers saved").toBeGreaterThan(0);
 
   // ---------------------------------------------------------------- admin
+  // No review step: the admin finds it under its job, already with the sponsor.
   await loginAsAdmin(page);
   await page.goto("/admin/applications");
+  await page
+    .getByRole("link", { name: /Evening cashier/ })
+    .first()
+    .click();
   await page.getByRole("link", { name: new RegExp(name) }).click();
   await expect(page.getByRole("button", { name: /Play video/ })).toHaveCount(videos);
   await page.getByLabel("Notes").fill("Good answers.");
-  await page.getByRole("button", { name: "Approve" }).click();
   await expect(
-    page.locator('section[aria-labelledby="app-name"]').getByText("Approved", { exact: true }),
+    page
+      .locator('section[aria-labelledby="app-name"]')
+      .getByText("With the sponsor", { exact: true }),
   ).toBeVisible();
   await signOut(page);
 

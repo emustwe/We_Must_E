@@ -517,6 +517,7 @@ export type Database = {
           ecoin_balance: number
           logo_path: string | null
           must_change_password: boolean
+          referred_by: string | null
           status: Database["public"]["Enums"]["employer_status"]
           trade_license_no: string | null
           updated_at: string
@@ -535,6 +536,7 @@ export type Database = {
           ecoin_balance?: number
           logo_path?: string | null
           must_change_password?: boolean
+          referred_by?: string | null
           status?: Database["public"]["Enums"]["employer_status"]
           trade_license_no?: string | null
           updated_at?: string
@@ -553,6 +555,7 @@ export type Database = {
           ecoin_balance?: number
           logo_path?: string | null
           must_change_password?: boolean
+          referred_by?: string | null
           status?: Database["public"]["Enums"]["employer_status"]
           trade_license_no?: string | null
           updated_at?: string
@@ -572,6 +575,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employer_profiles_referred_by_fkey"
+            columns: ["referred_by"]
+            isOneToOne: false
+            referencedRelation: "sales_people"
             referencedColumns: ["id"]
           },
           {
@@ -872,6 +882,38 @@ export type Database = {
         }
         Relationships: []
       }
+      sales_people: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          id: string
+          nickname: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nickname: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nickname?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_people_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sponsor_requests: {
         Row: {
           city: string
@@ -885,6 +927,7 @@ export type Database = {
           ip_hash: string | null
           message: string | null
           phone: string
+          salesperson_id: string | null
           status: Database["public"]["Enums"]["sponsor_request_status"]
           website: string | null
         }
@@ -900,6 +943,7 @@ export type Database = {
           ip_hash?: string | null
           message?: string | null
           phone: string
+          salesperson_id?: string | null
           status?: Database["public"]["Enums"]["sponsor_request_status"]
           website?: string | null
         }
@@ -915,6 +959,7 @@ export type Database = {
           ip_hash?: string | null
           message?: string | null
           phone?: string
+          salesperson_id?: string | null
           status?: Database["public"]["Enums"]["sponsor_request_status"]
           website?: string | null
         }
@@ -924,6 +969,13 @@ export type Database = {
             columns: ["handled_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sponsor_requests_salesperson_id_fkey"
+            columns: ["salesperson_id"]
+            isOneToOne: false
+            referencedRelation: "sales_people"
             referencedColumns: ["id"]
           },
         ]
@@ -1197,6 +1249,22 @@ export type Database = {
       admin_add_ecoins: {
         Args: { p_amount: number; p_employer_id: string; p_note: string }
         Returns: number
+      }
+      admin_application_jobs: {
+        Args: never
+        Returns: {
+          company_name: string
+          job_id: string
+          last_at: string
+          location_label: string
+          title: string
+          today: number
+          total: number
+        }[]
+      }
+      admin_create_salesperson: {
+        Args: { p_code: string; p_nickname: string }
+        Returns: string
       }
       admin_delete_application: {
         Args: { p_application_id: string }

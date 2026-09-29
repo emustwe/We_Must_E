@@ -162,7 +162,7 @@ test("a candidate completes the real interview: Test, Task (profile, CV, 7 video
        from public.applications a join public.applicants p on p.id = a.applicant_id
       where p.phone_e164 = '${PHONE}'`,
   );
-  expect(row).toBe("submitted|Min-su Kim|20|true|7|25|25|true");
+  expect(row).toBe("approved|Min-su Kim|20|true|7|25|25|true");
   expect(
     psql(`select s.answer->>'other' from public.application_survey_answers s
            join public.applications a on a.id = s.application_id join public.applicants p on p.id = a.applicant_id

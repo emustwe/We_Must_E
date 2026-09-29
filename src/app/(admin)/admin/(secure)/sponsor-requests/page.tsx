@@ -21,6 +21,7 @@ export default async function SponsorRequestsPage({
   searchParams,
 }: PageProps<"/admin/sponsor-requests">) {
   const t = await getTranslations("adminUi");
+  const ts = await getTranslations("adminSales");
   const format = await getFormatter();
   const query = await searchParams;
   const tab = query.tab === "handled" ? "handled" : "new";
@@ -28,7 +29,7 @@ export default async function SponsorRequestsPage({
   let q = supabase
     .from("sponsor_requests")
     .select(
-      "id, company_name, contact_person, email, phone, city, website, message, status, created_at",
+      "id, company_name, contact_person, email, phone, city, website, message, status, created_at, sales_people(code, nickname)",
     )
     .order("created_at", { ascending: false })
     .limit(200);
@@ -76,6 +77,11 @@ export default async function SponsorRequestsPage({
                   <Row label={t("requestPhone")} value={r.phone} href={`tel:${r.phone}`} />
                   {r.website ? <Row label={t("requestWebsite")} value={r.website} /> : null}
                 </dl>
+                {r.sales_people ? (
+                  <span className="self-start rounded-full bg-wm-tint px-2.5 py-1 text-xs font-bold text-wm-blue">
+                    {ts("referredBy", { code: r.sales_people.code, name: r.sales_people.nickname })}
+                  </span>
+                ) : null}
                 {r.message ? (
                   <p className="m-0 rounded-xl bg-wm-mist p-3 text-sm whitespace-pre-line text-wm-body">
                     {r.message}

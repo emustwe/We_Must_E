@@ -21,14 +21,15 @@ const EMPTY: Values = {
   city: "",
   website: "",
   message: "",
+  referralCode: "",
 };
 
 // "Become a sponsor": the company's details go to the WemustE team, who create
 // the account and email the login details.
-export function SponsorRequestForm() {
+export function SponsorRequestForm({ referralCode = "" }: { referralCode?: string }) {
   const t = useTranslations("forEmployers");
   const te = useTranslations("errors");
-  const [values, setValues] = useState<Values>(EMPTY);
+  const [values, setValues] = useState<Values>({ ...EMPTY, referralCode });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
@@ -110,6 +111,7 @@ export function SponsorRequestForm() {
       {field("phone", t("phone"), { type: "tel", autoComplete: "tel" })}
       {field("city", t("city"), { autoComplete: "address-level2" })}
       {field("website", t("website"), { type: "url", autoComplete: "url", optional: true })}
+      {field("referralCode", t("referralCode"), { autoComplete: "off", optional: true })}
       <Field label={t("message")} optionalLabel={t("optional")} error={errors.message}>
         {(props) => (
           <textarea

@@ -17,6 +17,7 @@ import { describeAudit } from "@/lib/admin/audit-text";
 import { requireAdminMfa } from "@/lib/auth/session";
 import { shortLabel } from "@/lib/jobs/display";
 import { createClient } from "@/lib/supabase/server";
+import { hoursAgo } from "@/lib/admin/since";
 
 const areaOf = (label: string | null | undefined) => label?.split(",")[0]?.trim() || "—";
 
@@ -49,9 +50,15 @@ export default async function AdminHome() {
   const format = await getFormatter();
   const supabase = await createClient();
   const count = { count: "exact" as const, head: true };
+  const since24h = hoursAgo(24);
   const [toReview, jobsToReview, sponsors, live, pendingApps, pendingJobs, audit, mapJobs] =
     await Promise.all([
-      supabase.from("applications").select("id", count).eq("status", "submitted"),
+      // Applications go straight to sponsors: the ones sent in the last 24 hours.
+      supabase
+        .from("applications")
+        .select("id", count)
+        .neq("status", "in_progress")
+        .gte("submitted_at", since24h),
       supabase.from("jobs").select("id", count).eq("status", "pending"),
       supabase.from("employer_profiles").select("user_id", count),
       supabase.from("jobs").select("id", count).eq("status", "published"),
@@ -60,7 +67,8 @@ export default async function AdminHome() {
         .select(
           "id, submitted_at, contact_name, jobs(title, location_label, employer_profiles(company_name))",
         )
-        .eq("status", "submitted")
+        .neq("status", "in_progress")
+        .gte("submitted_at", since24h)
         .order("submitted_at", { ascending: false })
         .limit(6),
       supabase

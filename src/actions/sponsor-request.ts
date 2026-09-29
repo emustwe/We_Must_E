@@ -26,20 +26,30 @@ export async function requestSponsorship(input: unknown): Promise<ActionResult> 
   if (!(await withinRateLimit("sponsorRequestPerIp", ipHash))) return fail("rateLimited");
   if (!(await verifyTurnstile(parsed.data.captchaToken))) return fail("captchaFailed");
   const r = parsed.data;
-  // Service role: nobody outside the team may write or read requests
-  // directly; the checks above ran first.
-  const { error } = await createAdminClient()
-    .from("sponsor_requests")
-    .insert({
-      company_name: r.companyName,
-      contact_person: r.contactPerson,
-      email: r.email,
-      phone: r.phone,
-      city: r.city,
-      website: r.website || null,
-      message: r.message || null,
-      ip_hash: ipHash,
-    });
+  // Service role: nobody outside the team may write or read requests (or
+  // the salespeople) directly; the checks above ran first.
+  const service = createAdminClient();
+  let salespersonId: string | null = null;
+  if (r.referralCode) {
+    const { data: person } = await service
+      .from("sales_people")
+      .select("id")
+      .eq("code", r.referralCode.toUpperCase())
+      .maybeSingle();
+    if (!person) return fail("invalidInput", { referralCode: "validation.referralUnknown" });
+    salespersonId = person.id;
+  }
+  const { error } = await service.from("sponsor_requests").insert({
+    company_name: r.companyName,
+    contact_person: r.contactPerson,
+    email: r.email,
+    phone: r.phone,
+    city: r.city,
+    website: r.website || null,
+    message: r.message || null,
+    salesperson_id: salespersonId,
+    ip_hash: ipHash,
+  });
   if (error) {
     logError("sponsor-request", error);
     return fail("generic");

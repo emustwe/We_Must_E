@@ -57,7 +57,7 @@ export async function ApplicationsView({
   const since = sinceFor(f.date);
   if (since) query = query.gte("submitted_at", since);
 
-  const [{ data: rows, count }, { data: jobs }, { data: sponsors }, { count: toReview }] =
+  const [{ data: rows, count }, { data: jobs }, { data: sponsors }, { data: jobRow }] =
     await Promise.all([
       query,
       // The Job and Area filters list only jobs that have applications (there
@@ -69,10 +69,9 @@ export async function ApplicationsView({
         .order("created_at", { ascending: false })
         .limit(500),
       supabase.from("employer_profiles").select("user_id, company_name").order("company_name"),
-      supabase
-        .from("applications")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "submitted"),
+      f.job
+        ? supabase.from("jobs").select("title").eq("id", f.job).maybeSingle()
+        : Promise.resolve({ data: null }),
     ]);
   const areas = [
     ...new Set((jobs ?? []).map((j) => j.city).filter((c): c is string => Boolean(c))),
@@ -91,8 +90,11 @@ export async function ApplicationsView({
   return (
     <>
       <div className={cn(selectedId && "hidden lg:block")}>
+        <Link href="/admin/applications" className="text-sm font-bold text-wm-blue no-underline">
+          ← {t("appsAllJobs")}
+        </Link>
         <PageHeader
-          title={t("nav.applications")}
+          title={jobRow?.title ? displayTitle(jobRow.title) : t("nav.applications")}
           body={t("appsBody")}
           actions={
             <a href={`/admin/applications/export${qs}`} className={btn("secondary")} download>
@@ -106,10 +108,9 @@ export async function ApplicationsView({
         <Segmented
           label={t("nav.applications")}
           items={[
-            tab("submitted", t("tabs.toReview"), toReview ?? 0),
+            tab("all", t("tabs.all")),
             tab("approved", t("tabs.approved")),
             tab("rejected", t("tabs.rejected")),
-            tab("all", t("tabs.all")),
           ]}
         />
         <span className="grow" />

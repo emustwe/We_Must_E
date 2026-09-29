@@ -30,7 +30,7 @@ test.afterEach(async () => {
   psql(`delete from public.applications where job_id = '${jobId()}'`);
 });
 
-test("a visitor applies in 3 steps without an account, and nothing reaches the employer", async ({
+test("a visitor applies in 3 steps without an account; the sponsor sees it at once, without contact details", async ({
   page,
 }) => {
   test.setTimeout(120_000);
@@ -107,7 +107,9 @@ test("a visitor applies in 3 steps without an account, and nothing reaches the e
 
   await expect(page).toHaveURL(new RegExp(`/apply/${id}/submitted$`));
   await expect(page.getByRole("heading", { name: "Application sent" })).toBeVisible();
-  await expect(page.getByText("We'll contact you if you're shortlisted.")).toBeVisible();
+  await expect(
+    page.getByText("The employer can see your application now.", { exact: false }),
+  ).toBeVisible();
 
   // Stored once, not scored, with a video per question in private storage.
   const row = psql(
@@ -118,16 +120,19 @@ test("a visitor applies in 3 steps without an account, and nothing reaches the e
        from public.applications a join public.applicants p on p.id = a.applicant_id
       where a.job_id = '${id}'`,
   );
-  expect(row).toBe("submitted|true|+971501112233|2|2|true");
+  expect(row).toBe("approved|true|+971501112233|2|2|true");
 
-  // The team is told, without personal data; the employer is not.
-  const email = await waitForEmail("admin@wemuste.local", /New application to review/, since);
+  // The team and the sponsor are told, without personal data; the sponsor
+  // sees the application at once (contact details stay hidden until paid).
+  const email = await waitForEmail("admin@wemuste.local", /New application on WemustE/, since);
   expect(JSON.stringify(email)).not.toContain("Sara");
   expect(JSON.stringify(email)).not.toContain("501112233");
   expect(
     psql(`select count(*) from public.applications a join public.jobs j on j.id = a.job_id
           where j.id = '${id}' and a.status = 'approved'`),
-  ).toBe("0");
+  ).toBe("1");
+  const notice = await waitForEmail("employer@wemuste.local", /You have a new candidate/, since);
+  expect(JSON.stringify(notice)).not.toContain("Sara");
 
   // The cookie is gone: coming back starts a fresh application.
   await page.goto(`/apply/${id}`);

@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { requireAdminMfa } from "@/lib/auth/session";
 import { dbFail } from "@/lib/db-errors";
-import { notifySponsor } from "@/lib/email/notify";
 import { logError } from "@/lib/log";
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { createClient } from "@/lib/supabase/server";
@@ -33,15 +32,8 @@ export async function reviewApplication(input: unknown): Promise<ActionResult> {
     p_notes: notes,
   });
   if (error) return dbFail("admin-review-application", error);
-  // The sponsor who posted the job is told there's a new candidate.
-  if (decision === "approved") {
-    const { data: app } = await supabase
-      .from("applications")
-      .select("jobs(employer_id)")
-      .eq("id", applicationId)
-      .maybeSingle();
-    if (app?.jobs?.employer_id) notifySponsor("newCandidate", app.jobs.employer_id);
-  }
+  // (Sponsors are emailed when the application arrives, not when an admin
+  // removes it or shares it again.)
   revalidatePath("/admin/applications", "layout");
   return ok(undefined);
 }

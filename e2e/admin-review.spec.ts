@@ -23,12 +23,13 @@ test("an admin reviews an application (answers, logged video view, approval); th
       .click();
     await expect(page.getByRole("heading", { name: "Applications", exact: true })).toBeVisible();
 
-    // Filter by job; there is no score to filter by.
-    await expect(page.getByLabel(/Minimum score/)).toHaveCount(0);
+    // First the jobs with applications; the job opens its applicants.
     await page
-      .getByLabel("Job", { exact: true })
-      .selectOption({ label: JOB.replace("[SAMPLE] ", "") });
+      .getByRole("link", { name: new RegExp(JOB.replace("[SAMPLE] ", "")) })
+      .first()
+      .click();
     await expect(page).toHaveURL(/job=/);
+    await expect(page.getByLabel(/Minimum score/)).toHaveCount(0); // nothing is scored
     await page.getByRole("link", { name: new RegExp(name) }).click();
     await expect(page).toHaveURL(new RegExp(`/admin/applications/${appId}`));
     await expect(page.getByRole("heading", { name })).toBeVisible();
@@ -59,12 +60,16 @@ test("an admin reviews an application (answers, logged video view, approval); th
     await page.getByRole("button", { name: "Show all answers" }).click();
     await expect(page.getByText("Latte art")).toBeVisible();
 
-    // Approve with notes.
+    // It is already with the sponsor; the admin can remove it (spam, fake
+    // data) and share it again, with notes.
+    const panel = page.locator('section[aria-labelledby="app-name"]');
+    await expect(panel.getByText("With the sponsor", { exact: true })).toBeVisible();
     await page.getByLabel("Notes").fill("Friendly, good answers.");
-    await page.getByRole("button", { name: "Approve" }).click();
-    await expect(
-      page.locator('section[aria-labelledby="app-name"]').getByText("Approved", { exact: true }),
-    ).toBeVisible();
+    await page.getByRole("button", { name: "Remove" }).click();
+    await expect(panel.getByText("Removed", { exact: true })).toBeVisible();
+    expect(psql(`select status from public.applications where id = '${appId}'`)).toBe("rejected");
+    await page.getByRole("button", { name: "Share again" }).click();
+    await expect(panel.getByText("With the sponsor", { exact: true })).toBeVisible();
     expect(
       psql(`select status || '|' || admin_notes from public.applications where id = '${appId}'`),
     ).toBe("approved|Friendly, good answers.");
@@ -75,11 +80,9 @@ test("an admin reviews an application (answers, logged video view, approval); th
       page.getByRole("link", { name: "Application", exact: true }).first(),
     ).toHaveAttribute("href", `/admin/applications/${appId}`);
 
-    // The sponsor who posted the job now sees the candidate (and was emailed).
-    const since = new Date(Date.now() - 60_000);
+    // The sponsor who posted the job sees the candidate (the email on arrival
+    // is checked in apply.spec, which sends applications through the site).
     const sponsorEmail = "employer@wemuste.local";
-    const notice = await waitForEmail(sponsorEmail, /You have a new candidate/, since);
-    expect(JSON.stringify(notice)).not.toContain(name);
     // The admin gives the sponsor Era.
     const sponsorId = psql(`select id from auth.users where email = '${sponsorEmail}'`);
     psql(`update public.employer_profiles set ecoin_balance = 0 where user_id = '${sponsorId}'`);
