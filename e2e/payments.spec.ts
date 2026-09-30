@@ -4,7 +4,7 @@ import { login } from "./helpers";
 import { addPayment, startSolanaMock, WEBHOOK_SECRET } from "./solana-mock";
 
 // USDT on Solana: the sponsor buys a pack, pays the exact amount, and the
-// E-coins arrive once the payment is on the (fake) blockchain.
+// Era arrive once the payment is on the (fake) blockchain.
 const SPONSOR = "employer@wemuste.local";
 let server: Awaited<ReturnType<typeof startSolanaMock>>;
 test.beforeAll(async () => {
@@ -21,7 +21,7 @@ test.afterAll(() => {
 // Fake transaction IDs in base58 (no 0, O, I or l), 88 characters like real ones.
 const sig = (n: number) => `5${"ABCDEFGHJK"[n]}`.padEnd(88, "Q");
 
-test("a sponsor buys E-coins with USDT: exact amount, paid once, wrong amounts wait for an admin", async ({
+test("a sponsor buys Era with USDT: exact amount, paid once, wrong amounts wait for an admin", async ({
   page,
   request,
 }) => {
@@ -31,7 +31,7 @@ test("a sponsor buys E-coins with USDT: exact amount, paid once, wrong amounts w
   await login(page, SPONSOR);
   await expect(page).toHaveURL(/\/sponsor$/);
   await page.goto("/sponsor/coins");
-  await expect(page.getByRole("heading", { name: "Buy E-coins" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Buy Era" })).toBeVisible();
   // Every pack is at or above the minimum payment ($10), so each can be bought.
   for (const pack of ["pack-10", "pack-50", "pack-200"]) {
     await expect(
@@ -80,7 +80,7 @@ test("a sponsor buys E-coins with USDT: exact amount, paid once, wrong amounts w
   await expect(page.getByRole("heading", { name: "Payment received" })).toBeVisible({
     timeout: 20_000,
   });
-  await expect(page.getByText("50 E-coins were added to your account.")).toBeVisible();
+  await expect(page.getByText("50 Era was added to your account.")).toBeVisible();
   expect(
     psql(`select ecoin_balance from public.employer_profiles where user_id = '${sponsorId}'`),
   ).toBe("50");

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 
-// The sponsor's E-coin balance and new (still locked) candidates, in the header.
+// The sponsor's Era balance and new (still locked) candidates, in the header.
 export async function SponsorHeaderBar({ balance }: { balance: number }) {
   const t = await getTranslations("ecoins");
   const supabase = await createClient();

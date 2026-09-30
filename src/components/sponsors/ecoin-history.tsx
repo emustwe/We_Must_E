@@ -2,7 +2,7 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 
-// The last E-coin movements for a sponsor (RLS: the sponsor or an MFA admin).
+// The last Era movements for a sponsor (RLS: the sponsor or an MFA admin).
 export async function EcoinHistory({ employerId }: { employerId: string }) {
   const t = await getTranslations("ecoins");
   const format = await getFormatter();

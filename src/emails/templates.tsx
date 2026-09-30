@@ -44,25 +44,25 @@ export const TEMPLATES = {
     ),
   },
   newPayment: {
-    subject: "A sponsor paid for E-coins",
+    subject: "A sponsor paid for Era",
     render: (site: string) => (
       <EmailLayout
         preview="A USDT payment arrived"
-        heading="A sponsor paid for E-coins"
-        body="A USDT payment arrived and needs a look, or was added to a sponsor's E-coins. Log in to the admin area to see the payments."
+        heading="A sponsor paid for Era"
+        body="A USDT payment arrived and needs a look, or was added to a sponsor's Era. Log in to the admin area to see the payments."
         cta="See payments"
         href={`${site}/admin/payments`}
       />
     ),
   },
   paymentReceived: {
-    subject: "Your E-coins were added",
+    subject: "Your Era was added",
     render: (site: string) => (
       <EmailLayout
         preview="Thank you for your payment"
-        heading="Your E-coins were added"
-        body="We received your USDT payment and added the E-coins to your WemustE account. Log in to see your balance and open candidates' contact details."
-        cta="See your E-coins"
+        heading="Your Era was added"
+        body="We received your USDT payment and added the Era to your WemustE account. Log in to see your balance and open candidates' contact details."
+        cta="See your Era"
         href={`${site}/sponsor/coins`}
       />
     ),

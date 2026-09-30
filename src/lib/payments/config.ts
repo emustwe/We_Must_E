@@ -1,4 +1,4 @@
-// E-coin packs and the USDT payment settings (no secrets: safe in the browser).
+// Era packs and the USDT payment settings (no secrets: safe in the browser).
 
 // PLACEHOLDER prices: set the real packs and prices here (USD; sponsors pay
 // the same number of USDT, plus a few hundredths that identify the order).

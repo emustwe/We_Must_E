@@ -10,7 +10,7 @@ import { idSchema } from "@/lib/validations/jobs";
 import { isSignature } from "@/server/payments/solana";
 
 // An MFA admin pays an order with a USDT transfer that didn't match (wrong
-// amount, or too late): the order's E-coins go to its sponsor. Audited.
+// amount, or too late): the order's Era go to its sponsor. Audited.
 export async function settleTransfer(signature: unknown, orderId: unknown): Promise<ActionResult> {
   const order = idSchema.safeParse(orderId);
   if (!isSignature(signature) || !order.success) return fail("invalidInput");

@@ -9,7 +9,7 @@ import { btn } from "@/components/admin/wm";
 import { WmIcon } from "@/components/map/wm-icons";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
-// Opens the candidate's contact details for `price` E-coins (after asking).
+// Opens the candidate's contact details for `price` Era (after asking).
 // If the price changed meanwhile, nothing is charged and the page reloads
 // with the new price.
 export function UnlockButton({

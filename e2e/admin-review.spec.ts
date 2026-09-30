@@ -5,7 +5,7 @@ import { JOB, PHONE, seedApplication } from "./seed-application";
 import { acceptConfirms, answerAll, login, signOut, unique } from "./helpers";
 import { waitForEmail } from "./mailpit";
 
-test("an admin reviews an application (answers, logged video view, approval); the sponsor sees it and opens the contact with E-coins", async ({
+test("an admin reviews an application (answers, logged video view, approval); the sponsor sees it and opens the contact with Era", async ({
   page,
 }) => {
   test.setTimeout(120_000);
@@ -80,7 +80,7 @@ test("an admin reviews an application (answers, logged video view, approval); th
     const sponsorEmail = "employer@wemuste.local";
     const notice = await waitForEmail(sponsorEmail, /You have a new candidate/, since);
     expect(JSON.stringify(notice)).not.toContain(name);
-    // The admin gives the sponsor E-coins.
+    // The admin gives the sponsor Era.
     const sponsorId = psql(`select id from auth.users where email = '${sponsorEmail}'`);
     psql(`update public.employer_profiles set ecoin_balance = 0 where user_id = '${sponsorId}'`);
     await page.goto(`/admin/sponsors/${sponsorId}`);
@@ -116,7 +116,7 @@ test("an admin reviews an application (answers, logged video view, approval); th
               and not exists (select 1 from public.candidate_counted c where c.application_id = a.id)`),
     );
     const open = page.getByRole("button", {
-      name: `Open contact for ${price} E-coin${price === 1 ? "" : "s"}`,
+      name: `Open contact for ${price} Era`,
     });
     await open.click();
     await expect(page.getByText(PHONE)).toBeVisible();

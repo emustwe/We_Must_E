@@ -25,7 +25,7 @@ export async function createOrder(employerId: string, pack: Pack) {
 export type ScanResult = { checked: number; paid: number; unmatched: number };
 
 // Checks these transactions on the blockchain and records the USDT that came
-// in: an exact order amount pays the order (E-coins added once); anything else
+// in: an exact order amount pays the order (Era added once); anything else
 // waits for an admin. Transactions already recorded are skipped.
 export async function processSignatures(signatures: string[]): Promise<ScanResult> {
   const result: ScanResult = { checked: 0, paid: 0, unmatched: 0 };

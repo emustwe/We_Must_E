@@ -99,7 +99,7 @@ test("full journey: apply with test, video and survey -> admin approves -> spons
   await signOut(page);
 
   // ---------------------------------------------------------------- sponsor
-  // E-coins are added by hand for now (a wallet comes later).
+  // Era is added by hand for now (a wallet comes later).
   psql(`update public.employer_profiles set ecoin_balance = 50
          where user_id = (select id from auth.users where email = '${SPONSOR}')`);
   await login(page, SPONSOR);
@@ -110,7 +110,7 @@ test("full journey: apply with test, video and survey -> admin approves -> spons
   await page.getByRole("link", { name: new RegExp(label) }).click();
   await expect(page.getByRole("heading", { name: label })).toBeVisible();
   await expect(page.getByText(PHONE)).toHaveCount(0);
-  await page.getByRole("button", { name: /^Open contact for \d+ E-coins?$/ }).click();
+  await page.getByRole("button", { name: /^Open contact for \d+ Era$/ }).click();
   await expect(page.getByRole("heading", { name })).toBeVisible();
   // The test answers are shared too, question by question.
   const testAnswers = page
