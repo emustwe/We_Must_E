@@ -150,7 +150,7 @@ export async function setEmployerStatus(input: unknown): Promise<ActionResult> {
   return ok(undefined);
 }
 
-// Adds (or with a negative amount, takes back) Era. Audited in the database.
+// Adds (or with a negative amount, takes back) Vera. Audited in the database.
 export async function addEcoins(input: unknown): Promise<ActionResult<{ balance: number }>> {
   const parsed = ecoinSchema.safeParse(input);
   if (!parsed.success) return fail("invalidInput");

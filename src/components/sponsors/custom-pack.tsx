@@ -16,7 +16,7 @@ import {
   formatUsd,
 } from "@/lib/payments/config";
 
-// The "any amount" card: the sponsor types a number of Era (above 300) and
+// The "any amount" card: the sponsor types a number of Vera (above 300) and
 // sees the price before paying. Its rows line up with the pack cards.
 export function CustomPack({ canPay }: { canPay: boolean }) {
   const t = useTranslations("payments");
@@ -47,7 +47,7 @@ export function CustomPack({ canPay }: { canPay: boolean }) {
           value={value}
           onChange={(e) => setValue(e.target.value)}
         />
-        Era
+        Vera
       </span>
       <span className="text-lg font-bold">{pack ? formatUsd(pack.usdCents) : "—"}</span>
       <span

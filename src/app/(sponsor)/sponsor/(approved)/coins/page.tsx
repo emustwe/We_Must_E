@@ -18,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const TONE = { pending: "warn", paid: "ok", expired: "idle" } as const;
 
-// Buy Era: the packs, and the sponsor's own payments.
+// Buy Vera: the packs, and the sponsor's own payments.
 export default async function CoinsPage() {
   const { profile, employer } = await getEmployerAccount();
   const t = await getTranslations("payments");

@@ -68,7 +68,7 @@ export default async function OrderPage({ params }: PageProps<"/sponsor/coins/[o
     );
   }
 
-  const qr = await QRCode.toString(solanaPayUrl(address, order.amount_micro, "WemustE Era"), {
+  const qr = await QRCode.toString(solanaPayUrl(address, order.amount_micro, "WemustE Vera"), {
     type: "svg",
     margin: 1,
     width: 200,

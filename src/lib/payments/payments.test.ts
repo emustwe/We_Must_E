@@ -103,7 +103,7 @@ describe("payment helpers", () => {
   });
 
   it("makes a Solana Pay link with the exact amount and the USDT mint", () => {
-    const url = solanaPayUrl(US, 50_013_700, "WemustE Era");
+    const url = solanaPayUrl(US, 50_013_700, "WemustE Vera");
     expect(url.startsWith(`solana:${US}?`)).toBe(true);
     const params = new URLSearchParams(url.split("?")[1]);
     expect(params.get("amount")).toBe("50.0137");
@@ -114,7 +114,7 @@ describe("payment helpers", () => {
     for (const p of PACKS) expect(canBuy(p)).toBe(p.usdCents >= MIN_PAYMENT_CENTS);
   });
 
-  it("prices a typed amount at $0.80 per Era, above 300 Era only", () => {
+  it("prices a typed amount at $0.80 per Vera, above 300 Vera only", () => {
     expect(customPack(301)).toEqual({ id: "custom", coins: 301, usdCents: 24080 });
     expect(customPack(1234)?.usdCents).toBe(98720);
     for (const bad of [300, 299, 0, -5, 300.5, NaN, CUSTOM_MAX_COINS + 1]) {

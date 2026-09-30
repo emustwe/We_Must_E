@@ -44,25 +44,25 @@ export const TEMPLATES = {
     ),
   },
   newPayment: {
-    subject: "A sponsor paid for Era",
+    subject: "A sponsor paid for Vera",
     render: (site: string) => (
       <EmailLayout
         preview="A USDT payment arrived"
-        heading="A sponsor paid for Era"
-        body="A USDT payment arrived and needs a look, or was added to a sponsor's Era. Log in to the admin area to see the payments."
+        heading="A sponsor paid for Vera"
+        body="A USDT payment arrived and needs a look, or was added to a sponsor's Vera. Log in to the admin area to see the payments."
         cta="See payments"
         href={`${site}/admin/payments`}
       />
     ),
   },
   paymentReceived: {
-    subject: "Your Era was added",
+    subject: "Your Vera was added",
     render: (site: string) => (
       <EmailLayout
         preview="Thank you for your payment"
-        heading="Your Era was added"
-        body="We received your USDT payment and added the Era to your WemustE account. Log in to see your balance and open candidates' contact details."
-        cta="See your Era"
+        heading="Your Vera was added"
+        body="We received your USDT payment and added the Vera to your WemustE account. Log in to see your balance and open candidates' contact details."
+        cta="See your Vera"
         href={`${site}/sponsor/coins`}
       />
     ),
@@ -97,7 +97,7 @@ export const TEMPLATES = {
       <EmailLayout
         preview="The WemustE team shared a candidate with you"
         heading="You have a new candidate"
-        body="Someone applied for one of your jobs. Log in to see their application. Their contact details open with Era."
+        body="Someone applied for one of your jobs. Log in to see their application. Their contact details open with Vera."
         cta="See candidates"
         href={`${site}/sponsor`}
       />

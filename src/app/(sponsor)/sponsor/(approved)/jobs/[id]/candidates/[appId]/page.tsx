@@ -94,7 +94,7 @@ const PROFILE_ORDER = [
 // A candidate approved by the WemustE team for this sponsor's job: the whole
 // application is visible. The contact details (name, phone, email, CV, and
 // any contact written in an answer, which the database replaces with •••)
-// open with Era and then stay open until the job closes.
+// open with Vera and then stay open until the job closes.
 export default async function CandidatePage({
   params,
 }: PageProps<"/sponsor/jobs/[id]/candidates/[appId]">) {

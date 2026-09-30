@@ -13,7 +13,7 @@ import { z } from "@/lib/validations/zod";
 import { createOrder, scanWallet } from "@/server/payments";
 import { paymentsConfigured } from "@/server/payments/solana";
 
-// A sponsor starts paying for a pack (or a typed number of Era): an order with
+// A sponsor starts paying for a pack (or a typed number of Vera): an order with
 // its own exact USDT amount. The price always comes from the server.
 export async function buyPack(
   packId: unknown,

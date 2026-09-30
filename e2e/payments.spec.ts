@@ -4,7 +4,7 @@ import { login } from "./helpers";
 import { addPayment, startSolanaMock, WEBHOOK_SECRET } from "./solana-mock";
 
 // USDT on Solana: the sponsor buys a pack, pays the exact amount, and the
-// Era arrive once the payment is on the (fake) blockchain.
+// Vera arrive once the payment is on the (fake) blockchain.
 const SPONSOR = "employer@wemuste.local";
 let server: Awaited<ReturnType<typeof startSolanaMock>>;
 test.beforeAll(async () => {
@@ -21,7 +21,7 @@ test.afterAll(() => {
 // Fake transaction IDs in base58 (no 0, O, I or l), 88 characters like real ones.
 const sig = (n: number) => `5${"ABCDEFGHJK"[n]}`.padEnd(88, "Q");
 
-test("a sponsor buys Era with USDT: exact amount, paid once, wrong amounts wait for an admin", async ({
+test("a sponsor buys Vera with USDT: exact amount, paid once, wrong amounts wait for an admin", async ({
   page,
   request,
 }) => {
@@ -31,7 +31,7 @@ test("a sponsor buys Era with USDT: exact amount, paid once, wrong amounts wait 
   await login(page, SPONSOR);
   await expect(page).toHaveURL(/\/sponsor$/);
   await page.goto("/sponsor/coins");
-  await expect(page.getByRole("heading", { name: "Buy Era" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Buy Vera" })).toBeVisible();
   // Every pack is at or above the minimum payment ($10), so each can be bought.
   for (const pack of ["pack-10", "pack-200"]) {
     await expect(
@@ -39,11 +39,11 @@ test("a sponsor buys Era with USDT: exact amount, paid once, wrong amounts wait 
     ).toBeVisible();
   }
   await expect(page.locator('[data-pack="pack-200"]')).toContainText("$180");
-  // Any amount above 300 Era, at $0.80 each: 300 or fewer can't be bought.
+  // Any amount above 300 Vera, at $0.80 each: 300 or fewer can't be bought.
   const custom = page.locator('[data-pack="custom"]');
-  const count = custom.getByLabel("Number of Era (above 300)");
+  const count = custom.getByLabel("Number of Vera (above 300)");
   const pay = custom.getByRole("button", { name: "Pay with USDT" });
-  await expect(custom).toContainText("$0.80 per Era, above 300 Era");
+  await expect(custom).toContainText("$0.80 per Vera, above 300 Vera");
   await count.fill("300");
   await expect(pay).toBeDisabled();
   await expect(custom).toContainText("Type a number from 301 to 100,000.");
@@ -91,7 +91,7 @@ test("a sponsor buys Era with USDT: exact amount, paid once, wrong amounts wait 
   await expect(page.getByRole("heading", { name: "Payment received" })).toBeVisible({
     timeout: 20_000,
   });
-  await expect(page.getByText("350 Era was added to your account.")).toBeVisible();
+  await expect(page.getByText("350 Vera was added to your account.")).toBeVisible();
   expect(
     psql(`select ecoin_balance from public.employer_profiles where user_id = '${sponsorId}'`),
   ).toBe("350");
