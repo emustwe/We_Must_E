@@ -32,10 +32,12 @@ test("a sponsor buys E-coins with USDT: exact amount, paid once, wrong amounts w
   await expect(page).toHaveURL(/\/sponsor$/);
   await page.goto("/sponsor/coins");
   await expect(page.getByRole("heading", { name: "Buy E-coins" })).toBeVisible();
-  // A pack under the minimum payment ($20) can't be bought.
-  const small = page.locator('[data-pack="pack-10"]');
-  await expect(small.getByText(/Minimum payment is \$20/)).toBeVisible();
-  await expect(small.getByRole("button")).toHaveCount(0);
+  // Every pack is at or above the minimum payment ($10), so each can be bought.
+  for (const pack of ["pack-10", "pack-50", "pack-200"]) {
+    await expect(
+      page.locator(`[data-pack="${pack}"]`).getByRole("button", { name: "Pay with USDT" }),
+    ).toBeVisible();
+  }
   await page
     .locator('[data-pack="pack-50"]')
     .getByRole("button", { name: "Pay with USDT" })

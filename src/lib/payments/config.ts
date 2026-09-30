@@ -11,9 +11,9 @@ export type Pack = (typeof PACKS)[number];
 export const packById = (id: string) => PACKS.find((p) => p.id === id);
 
 // The smallest payment the receiving wallet accepts (Bybit's minimum deposit,
-// as set by WemustE: $20). Smaller packs are shown but can't be bought, so no
-// sponsor sends an amount that would never arrive.
-export const MIN_PAYMENT_CENTS = 2000;
+// as set by WemustE: $10, the basic pack). Smaller packs are shown but can't
+// be bought, so no sponsor sends an amount that would never arrive.
+export const MIN_PAYMENT_CENTS = 1000;
 export const canBuy = (pack: Pack) => pack.usdCents >= MIN_PAYMENT_CENTS;
 
 // Tether's USDT on Solana (the official mint; fakes with the same name exist).
