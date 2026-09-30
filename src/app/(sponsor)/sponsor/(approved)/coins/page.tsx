@@ -4,6 +4,7 @@ import { getFormatter, getTranslations } from "next-intl/server";
 import { PageHeader, StatusPill } from "@/components/admin/wm";
 import { WmIcon } from "@/components/map/wm-icons";
 import { BuyPackButton } from "@/components/sponsors/buy-pack-button";
+import { CustomPack } from "@/components/sponsors/custom-pack";
 import { Crumbs } from "@/components/sponsors/sponsor-shell";
 import { getEmployerAccount } from "@/lib/auth/employer";
 import { canBuy, formatUsd, formatUsdt, MIN_PAYMENT_CENTS, PACKS } from "@/lib/payments/config";
@@ -72,6 +73,7 @@ export default async function CoinsPage() {
             )}
           </li>
         ))}
+        <CustomPack canPay={configured} />
       </ul>
 
       <section className="flex flex-col gap-3 rounded-3xl bg-white p-6 shadow-wm-1">

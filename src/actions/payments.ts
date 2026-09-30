@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getEmployerAccount } from "@/lib/auth/employer";
 import { requireRole } from "@/lib/auth/session";
 import { dbFail } from "@/lib/db-errors";
-import { canBuy, packById } from "@/lib/payments/config";
+import { canBuy, CUSTOM_PACK_ID, customPack, packById } from "@/lib/payments/config";
 import { fail, ok, type ActionResult } from "@/lib/result";
 import { withinRateLimit } from "@/lib/security/rate-limit";
 import { createClient } from "@/lib/supabase/server";
@@ -13,9 +13,20 @@ import { z } from "@/lib/validations/zod";
 import { createOrder, scanWallet } from "@/server/payments";
 import { paymentsConfigured } from "@/server/payments/solana";
 
-// A sponsor starts paying for a pack: an order with its own exact USDT amount.
-export async function buyPack(packId: unknown): Promise<ActionResult<{ orderId: string }>> {
-  const pack = typeof packId === "string" ? packById(packId) : undefined;
+// A sponsor starts paying for a pack (or a typed number of Era): an order with
+// its own exact USDT amount. The price always comes from the server.
+export async function buyPack(
+  packId: unknown,
+  coins?: unknown,
+): Promise<ActionResult<{ orderId: string }>> {
+  const pack =
+    packId === CUSTOM_PACK_ID
+      ? typeof coins === "number"
+        ? customPack(coins)
+        : undefined
+      : typeof packId === "string"
+        ? packById(packId)
+        : undefined;
   if (!pack || !canBuy(pack)) return fail("invalidInput");
   const { profile, employer } = await getEmployerAccount();
   if (employer?.status !== "approved") return fail("forbidden");

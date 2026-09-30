@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   canBuy,
+  CUSTOM_MAX_COINS,
+  customPack,
   formatUsd,
   formatUsdt,
   MIN_PAYMENT_CENTS,
@@ -110,6 +112,14 @@ describe("payment helpers", () => {
 
   it("only packs at or above the minimum payment can be bought", () => {
     for (const p of PACKS) expect(canBuy(p)).toBe(p.usdCents >= MIN_PAYMENT_CENTS);
+  });
+
+  it("prices a typed amount at $0.80 per Era, from 300 Era only", () => {
+    expect(customPack(300)).toEqual({ id: "custom", coins: 300, usdCents: 24000 });
+    expect(customPack(1234)?.usdCents).toBe(98720);
+    for (const bad of [299, 0, -5, 300.5, NaN, CUSTOM_MAX_COINS + 1]) {
+      expect(customPack(bad)).toBeUndefined();
+    }
   });
 
   it("finds packs by id only", () => {

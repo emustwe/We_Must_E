@@ -33,21 +33,31 @@ test("a sponsor buys Era with USDT: exact amount, paid once, wrong amounts wait 
   await page.goto("/sponsor/coins");
   await expect(page.getByRole("heading", { name: "Buy Era" })).toBeVisible();
   // Every pack is at or above the minimum payment ($10), so each can be bought.
-  for (const pack of ["pack-10", "pack-50", "pack-200"]) {
+  for (const pack of ["pack-10", "pack-200"]) {
     await expect(
       page.locator(`[data-pack="${pack}"]`).getByRole("button", { name: "Pay with USDT" }),
     ).toBeVisible();
   }
-  await page
-    .locator('[data-pack="pack-50"]')
-    .getByRole("button", { name: "Pay with USDT" })
-    .click();
+  await expect(page.locator('[data-pack="pack-200"]')).toContainText("$180");
+  // Any amount from 300 Era, at $0.80 each: fewer can't be bought.
+  const custom = page.locator('[data-pack="custom"]');
+  const count = custom.getByLabel("Any amount (300 Era or more)");
+  const pay = custom.getByRole("button", { name: "Pay with USDT" });
+  await count.fill("250");
+  await expect(pay).toBeDisabled();
+  await expect(custom).toContainText(/Type a number from 300 to 100,?000/);
+  await count.fill("350");
+  await expect(custom).toContainText("$280");
+  await pay.click();
   await expect(page).toHaveURL(/\/sponsor\/coins\/[0-9a-f-]{36}$/);
   const orderId = page.url().split("/").pop()!;
   const micro = Number(
     psql(`select amount_micro from public.payment_orders where id = '${orderId}'`),
   );
   const amount = (micro / 1e6).toFixed(4);
+  expect(
+    psql(`select coins || '|' || usd_cents from public.payment_orders where id = '${orderId}'`),
+  ).toBe("350|28000");
   await expect(page.getByRole("heading", { name: `Pay ${amount} USDT` })).toBeVisible();
   await expect(page.getByText("9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin")).toBeVisible();
   await expect(page.getByText(/Send only USDT, and only on the Solana network/)).toBeVisible();
@@ -80,10 +90,10 @@ test("a sponsor buys Era with USDT: exact amount, paid once, wrong amounts wait 
   await expect(page.getByRole("heading", { name: "Payment received" })).toBeVisible({
     timeout: 20_000,
   });
-  await expect(page.getByText("50 Era was added to your account.")).toBeVisible();
+  await expect(page.getByText("350 Era was added to your account.")).toBeVisible();
   expect(
     psql(`select ecoin_balance from public.employer_profiles where user_id = '${sponsorId}'`),
-  ).toBe("50");
+  ).toBe("350");
 
   // The same notice again adds nothing.
   await request.post("/api/payments/solana", {
@@ -92,7 +102,7 @@ test("a sponsor buys Era with USDT: exact amount, paid once, wrong amounts wait 
   });
   expect(
     psql(`select ecoin_balance from public.employer_profiles where user_id = '${sponsorId}'`),
-  ).toBe("50");
+  ).toBe("350");
   await page.goto("/sponsor/coins");
   await expect(page.getByRole("link", { name: new RegExp(`${amount} USDT.*Paid`) })).toBeVisible();
 });

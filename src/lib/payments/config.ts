@@ -1,14 +1,25 @@
 // Era packs and the USDT payment settings (no secrets: safe in the browser).
 
-// PLACEHOLDER prices: set the real packs and prices here (USD; sponsors pay
-// the same number of USDT, plus a few hundredths that identify the order).
+// The packs (USD; sponsors pay the same number of USDT, plus a few hundredths
+// that identify the order).
 export const PACKS = [
   { id: "pack-10", coins: 10, usdCents: 1000 },
-  { id: "pack-50", coins: 50, usdCents: 4500 },
-  { id: "pack-200", coins: 200, usdCents: 16000 },
+  { id: "pack-200", coins: 200, usdCents: 18000 },
 ] as const;
-export type Pack = (typeof PACKS)[number];
-export const packById = (id: string) => PACKS.find((p) => p.id === id);
+export type Pack = { id: string; coins: number; usdCents: number };
+export const packById = (id: string): Pack | undefined => PACKS.find((p) => p.id === id);
+
+// Larger amounts: the sponsor types any number of Era from 300, at $0.80 each.
+export const CUSTOM_PACK_ID = "custom";
+export const CUSTOM_MIN_COINS = 300;
+export const CUSTOM_MAX_COINS = 100_000;
+export const CUSTOM_CENTS_PER_COIN = 80;
+export function customPack(coins: number): Pack | undefined {
+  if (!Number.isInteger(coins) || coins < CUSTOM_MIN_COINS || coins > CUSTOM_MAX_COINS) {
+    return undefined;
+  }
+  return { id: CUSTOM_PACK_ID, coins, usdCents: coins * CUSTOM_CENTS_PER_COIN };
+}
 
 // The smallest payment the receiving wallet accepts (Bybit's minimum deposit,
 // as set by WemustE: $10, the basic pack). Smaller packs are shown but can't

@@ -1525,7 +1525,9 @@
     "seeCandidates": "See your candidates",
     "date": "Date",
     "amount": "Amount",
-    "belowMinimum": "Minimum payment is {amount}, so this pack can't be bought with USDT for now."
+    "belowMinimum": "Minimum payment is {amount}, so this pack can't be bought with USDT for now.",
+    "customLabel": "Any amount (300 Era or more)",
+    "customRange": "Type a number from {min} to {max}. {price} per Era."
   },
   "adminPayments": {
     "nav": "Payments",
