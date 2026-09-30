@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { SponsorRequestForm } from "@/components/sponsors/sponsor-request-form";
 import { SUPPORT_EMAIL } from "@/lib/legal";
+import { outreachByToken } from "@/server/outreach";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("forEmployers");
@@ -13,9 +14,22 @@ export async function generateMetadata(): Promise<Metadata> {
 // Companies can't sign up themselves: they send a request, and the WemustE
 // team checks them and creates their sponsor account.
 export default async function ForEmployersPage({ searchParams }: PageProps<"/for-sponsors">) {
-  // A salesperson's link (/for-sponsors?ref=CODE) fills in their code.
-  const { ref } = await searchParams;
-  const referralCode = typeof ref === "string" && /^[A-Za-z0-9-]{3,20}$/.test(ref) ? ref : "";
+  // A salesperson's link (/for-sponsors?ref=CODE) fills in their code; the
+  // private link from our outreach email (?c=...) fills in the company too.
+  const { ref, c } = await searchParams;
+  const contact = await outreachByToken(c);
+  const referralCode =
+    typeof ref === "string" && /^[A-Za-z0-9-]{3,20}$/.test(ref)
+      ? ref
+      : (contact?.referral_code ?? "");
+  const initial = contact
+    ? {
+        companyName: contact.company,
+        contactPerson: contact.name,
+        email: contact.email,
+        outreachToken: c as string,
+      }
+    : undefined;
   const t = await getTranslations("forEmployers");
   const tc = await getTranslations("common");
   const steps = [t("step1"), t("step2"), t("step3")];
@@ -53,7 +67,7 @@ export default async function ForEmployersPage({ searchParams }: PageProps<"/for
         </>
       }
     >
-      <SponsorRequestForm referralCode={referralCode} />
+      <SponsorRequestForm referralCode={referralCode} initial={initial} />
       <p className="mt-4 text-center text-xs text-wm-caption">
         {t("contactNote", { email: SUPPORT_EMAIL })}
       </p>

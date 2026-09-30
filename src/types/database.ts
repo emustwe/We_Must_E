@@ -722,6 +722,81 @@ export type Database = {
           },
         ]
       }
+      outreach_contacts: {
+        Row: {
+          company: string
+          country: string | null
+          created_at: string
+          created_by: string | null
+          email: string
+          first_opened_at: string | null
+          id: string
+          last_opened_at: string | null
+          link_off: boolean
+          name: string
+          open_count: number
+          salesperson_id: string | null
+          sent_at: string | null
+          signed_up_at: string | null
+          status: string
+          token: string
+          unsubscribed_at: string | null
+        }
+        Insert: {
+          company: string
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          email: string
+          first_opened_at?: string | null
+          id?: string
+          last_opened_at?: string | null
+          link_off?: boolean
+          name: string
+          open_count?: number
+          salesperson_id?: string | null
+          sent_at?: string | null
+          signed_up_at?: string | null
+          status?: string
+          token?: string
+          unsubscribed_at?: string | null
+        }
+        Update: {
+          company?: string
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          first_opened_at?: string | null
+          id?: string
+          last_opened_at?: string | null
+          link_off?: boolean
+          name?: string
+          open_count?: number
+          salesperson_id?: string | null
+          sent_at?: string | null
+          signed_up_at?: string | null
+          status?: string
+          token?: string
+          unsubscribed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_contacts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_contacts_salesperson_id_fkey"
+            columns: ["salesperson_id"]
+            isOneToOne: false
+            referencedRelation: "sales_people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_orders: {
         Row: {
           amount_micro: number
@@ -1296,6 +1371,17 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_outreach_add: {
+        Args: { p_contacts: Json; p_salesperson_id?: string }
+        Returns: {
+          added: number
+          skipped: number
+        }[]
+      }
+      admin_outreach_update: {
+        Args: { p_action: string; p_id: string }
+        Returns: undefined
+      }
       admin_review_application: {
         Args: {
           p_application_id: string
@@ -1471,6 +1557,21 @@ export type Database = {
         Returns: undefined
       }
       log_video_view: { Args: { p_video_id: string }; Returns: string }
+      outreach_opened: { Args: { p_token: string }; Returns: undefined }
+      outreach_signed_up: {
+        Args: { p_email: string; p_token: string }
+        Returns: undefined
+      }
+      outreach_unsubscribe: { Args: { p_token: string }; Returns: boolean }
+      outreach_view: {
+        Args: { p_token: string }
+        Returns: {
+          company: string
+          email: string
+          name: string
+          referral_code: string
+        }[]
+      }
       payment_create_order: {
         Args: {
           p_coins: number

@@ -22,14 +22,22 @@ const EMPTY: Values = {
   website: "",
   message: "",
   referralCode: "",
+  outreachToken: "",
 };
 
 // "Become a sponsor": the company's details go to the WemustE team, who create
-// the account and email the login details.
-export function SponsorRequestForm({ referralCode = "" }: { referralCode?: string }) {
+// the account and email the login details. Coming from our outreach email,
+// the company's details are filled in.
+export function SponsorRequestForm({
+  referralCode = "",
+  initial,
+}: {
+  referralCode?: string;
+  initial?: Partial<Values>;
+}) {
   const t = useTranslations("forEmployers");
   const te = useTranslations("errors");
-  const [values, setValues] = useState<Values>({ ...EMPTY, referralCode });
+  const [values, setValues] = useState<Values>({ ...EMPTY, referralCode, ...initial });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);

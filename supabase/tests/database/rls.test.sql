@@ -767,5 +767,28 @@ select tests.run_as(:AD, format('select admin_handle_sponsor_request(%L, ''appro
 select is((select s.code from employer_profiles e join sales_people s on s.id = e.referred_by where e.user_id = :E3), 'ALI10',
   'the sponsor account made from a referred request belongs to that salesperson');
 
+-- Outreach: contacts only MFA admins see and add; the video page is read by
+-- the server; unsubscribed contacts stay on the list and can't come back.
+select ok(tests.denied_as(:AD, $$select admin_outreach_add('[{"name":"Sara","company":"Sara Co","email":"sara@example.test"}]')$$),
+  'adding outreach contacts needs MFA');
+select ok(tests.denied_as(:E3, $$select admin_outreach_add('[{"name":"Sara","company":"Sara Co","email":"sara@example.test"}]')$$, 'aal2'),
+  'sponsors cannot add outreach contacts');
+select tests.run_as(:AD, $$select admin_outreach_add('[{"name":"Sara","company":"Sara Co","email":" Sara@Example.test "},{"name":"Sara 2","company":"Sara Co","email":"sara@example.test"}]')$$, 'aal2');
+select is((select count(*)::int from outreach_contacts where email = 'sara@example.test'), 1,
+  'an email is added once (kept in lowercase)');
+select is(tests.rows_as(:E3, 'select 1 from outreach_contacts'), 0, 'sponsors cannot see outreach contacts');
+select is(tests.rows_as(null, 'select 1 from outreach_contacts'), -1, 'visitors cannot read outreach contacts');
+select ok(tests.denied_as(null, format('select outreach_view(%L)', (select token from outreach_contacts where email = 'sara@example.test'))),
+  'visitors cannot read a link directly (the server does)');
+select token as ot from outreach_contacts where email = 'sara@example.test' \gset
+select is((select company from outreach_view(:'ot')), 'Sara Co', 'the server reads the contact behind a link');
+select outreach_opened(:'ot');
+select is((select status || '|' || open_count from outreach_contacts where token = :'ot'), 'opened|1', 'opening the link is recorded');
+select ok(outreach_unsubscribe(:'ot'), 'the contact unsubscribes');
+select is((select count(*)::int from outreach_view(:'ot')), 0, 'an unsubscribed link no longer works');
+select throws_ok(format('select tests.run_as(%L, %L, %L)', :AD,
+  format('select admin_outreach_update(%L, ''delete'')', (select id from outreach_contacts where token = :'ot')), 'aal2'),
+  'P0002', 'not_found', 'an unsubscribed contact cannot be deleted (so it is never emailed again)');
+
 select * from finish();
 rollback;

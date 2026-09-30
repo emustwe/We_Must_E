@@ -20,6 +20,7 @@ type NavKey =
   | "requests"
   | "payments"
   | "sales"
+  | "outreach"
   | "content"
   | "audit";
 const NAV: { href: string; key: NavKey; icon: IconName; count?: keyof Counts; exact?: boolean }[] =
@@ -31,6 +32,7 @@ const NAV: { href: string; key: NavKey; icon: IconName; count?: keyof Counts; ex
     { href: "/admin/sponsor-requests", key: "requests", icon: "mail", count: "requests" },
     { href: "/admin/payments", key: "payments", icon: "coin" },
     { href: "/admin/sales", key: "sales", icon: "share" },
+    { href: "/admin/outreach", key: "outreach", icon: "play" },
     { href: "/admin/content", key: "content", icon: "fileText" },
     { href: "/admin/audit", key: "audit", icon: "shieldClock" },
   ];

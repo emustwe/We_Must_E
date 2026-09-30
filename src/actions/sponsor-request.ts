@@ -15,6 +15,7 @@ import {
   handleSponsorRequestSchema,
   sponsorRequestSchema,
 } from "@/lib/validations/sponsor-request";
+import { markOutreachSignedUp } from "@/server/outreach";
 import { verifyTurnstile } from "@/server/public-application/turnstile";
 
 // "Become a sponsor": anyone can ask. Checked, rate-limited and bot-tested,
@@ -54,6 +55,8 @@ export async function requestSponsorship(input: unknown): Promise<ActionResult> 
     logError("sponsor-request", error);
     return fail("generic");
   }
+  // A company we emailed (from its link, or with the same email) signed up.
+  await markOutreachSignedUp(r.outreachToken || null, r.email);
   notifyAdmins("newSponsorRequest");
   return ok(undefined);
 }

@@ -30,6 +30,8 @@ export const LIMITS = {
   paymentOrderPerEmployer: { max: 10, windowSeconds: 3600 },
   paymentCheckPerEmployer: { max: 30, windowSeconds: 600 },
   paymentScanGlobal: { max: 1, windowSeconds: 15 },
+  // Outreach video links: opens recorded and unsubscribes, per IP.
+  outreachPerIp: { max: 30, windowSeconds: 3600 },
 } as const;
 
 /**

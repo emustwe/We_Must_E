@@ -1059,7 +1059,8 @@
       "audit": "Audit log",
       "requests": "Sponsor requests",
       "payments": "Payments",
-      "sales": "Sales"
+      "sales": "Sales",
+      "outreach": "Outreach"
     },
     "waiting": "Waiting for review",
     "openMap": "Open the public map",
@@ -1154,7 +1155,8 @@
       "sponsorInvite": "Sent a set-password link",
       "sponsorBlocked": "Blocked a sponsor",
       "sponsorUnblocked": "Unblocked a sponsor",
-      "sponsorRequest": "Handled a sponsor request"
+      "sponsorRequest": "Handled a sponsor request",
+      "outreach": "Changed outreach contacts"
     },
     "activity": {
       "videoViewed": "viewed a video answer on an <t>application</t>",
@@ -1185,7 +1187,8 @@
       "sponsorInvite": "sent a set-password link to a <t>sponsor</t>",
       "sponsorBlocked": "blocked a <t>sponsor</t>",
       "sponsorUnblocked": "unblocked a <t>sponsor</t>",
-      "sponsorRequest": "handled a sponsor request"
+      "sponsorRequest": "handled a sponsor request",
+      "outreach": "changed outreach contacts"
     },
     "change": "{from} to {to}",
     "statusWord": {
@@ -1574,5 +1577,75 @@
     "accountsTitle": "{count, plural, one {# sponsor account} other {# sponsor accounts}}",
     "noAccounts": "No sponsor account made from these requests yet.",
     "referredBy": "Referral: {code} ({name})"
+  },
+  "adminOutreach": {
+    "title": "Outreach",
+    "body": "Companies you email about WemustE. Each one gets its own private video link: only they can open it, and you see when they do.",
+    "howTitle": "How to send",
+    "step1": "Add the companies below (paste from a spreadsheet or open a CSV file).",
+    "step2": "On a company, press “Copy address”, then “Copy subject”, and paste them into a new email in your mailbox.",
+    "step3": "Press “Copy email” and paste it into the email body, then send it.",
+    "step4": "Back here, press “Mark as sent”. You'll see when they open their link and when they ask to become a sponsor.",
+    "preview": "Preview the email",
+    "subject": "Subject",
+    "addTitle": "Add contacts",
+    "pasteLabel": "One company per line: Name, Company, Email, Country (country is optional)",
+    "pastePlaceholder": "Sara Khan, Khan Traders, sara@khantraders.com, Pakistan\nOmar Ali, Ali Builders, hr@alibuilders.ae, UAE",
+    "openCsv": "Open a CSV file",
+    "campaign": "Referral code (optional)",
+    "noCampaign": "No code",
+    "add": "{count, plural, =0 {Add contacts} one {Add # contact} other {Add # contacts}}",
+    "ready": "{count, plural, =0 {No contacts found yet.} one {# contact ready.} other {# contacts ready.}}",
+    "badLines": "{count, plural, one {Line {lines} can't be read (it needs a name, a company and an email).} other {Lines {lines} can't be read (each needs a name, a company and an email).}}",
+    "tooMany": "Up to {max} contacts at a time, please.",
+    "added": "Added {added}. {skipped, plural, =0 {} one {# was already in the list.} other {# were already in the list.}}",
+    "filterLabel": "Filter contacts",
+    "all": "All",
+    "status": {
+      "new": "Not sent",
+      "sent": "Sent",
+      "opened": "Opened the link",
+      "signed_up": "Asked to join",
+      "unsubscribed": "Unsubscribed"
+    },
+    "empty": "No contacts here yet.",
+    "addedOn": "Added {date}",
+    "sentOn": "sent {date}",
+    "openedOn": "last opened {date}",
+    "opens": "{count, plural, one {Opened # time} other {Opened # times}}",
+    "linkIsOff": "Link off",
+    "copyAddress": "Copy address",
+    "copySubject": "Copy subject",
+    "copyEmail": "Copy email",
+    "copied": {
+      "address": "Email address copied",
+      "subject": "Subject copied",
+      "email": "Email copied. Paste it into the body of your email."
+    },
+    "copyFailed": "Couldn't copy. Please allow copying in your browser and try again.",
+    "markSent": "Mark as sent",
+    "openLink": "Open their link",
+    "linkOff": "Turn link off",
+    "linkOn": "Turn link on",
+    "delete": "Delete",
+    "deleteTitle": "Delete this contact?",
+    "deleteBody": "Their private link stops working. You can add them again later."
+  },
+  "outreachPage": {
+    "metaTitle": "A short video for you",
+    "hello": "Hi {name},",
+    "title": "A short video for {company}",
+    "comingSoon": "Video coming soon",
+    "point1": "Your jobs appear on a live map, so people near your workplace find them.",
+    "point2": "Every candidate takes three steps before you see them: Exam (a short test), Execute (their details and video answers) and Engage (a survey).",
+    "point3": "You see every full application for free, and pay only to open the contact details of the people you want.",
+    "cta": "Become a sponsor",
+    "ctaNote": "Your details are already filled in. Our team checks every company and creates your account.",
+    "unsubscribeNote": "Don't want emails from us?",
+    "unsubscribe": "Unsubscribe",
+    "unsubscribeTitle": "Stop emails from WemustE",
+    "unsubscribeBody": "Press the button and we won't email you again.",
+    "unsubscribeButton": "Don't email me again",
+    "unsubscribed": "Done. We won't email you again."
   }
 }

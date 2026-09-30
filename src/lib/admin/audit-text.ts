@@ -40,6 +40,7 @@ export type AuditKey =
   | "answerKey"
   | "exportApplications"
   | "exportAudit"
+  | "outreach"
   | "other";
 
 export type AuditTone = "blue" | "green" | "red" | "grey";
@@ -204,6 +205,16 @@ export function describeAudit(row: AuditRow): Described {
     case "export.audit":
       return { ...base, key: "exportAudit", icon: "download", tone: "blue" };
     default:
+      if (row.action.startsWith("outreach.")) {
+        const n = typeof m.count === "number" ? m.count : null;
+        return {
+          ...base,
+          key: "outreach",
+          icon: "play",
+          tone: "grey",
+          chip: n !== null ? { kind: "text", text: `+${n}` } : null,
+        };
+      }
       return { ...base, key: "other", icon: "info", tone: "grey" };
   }
 }

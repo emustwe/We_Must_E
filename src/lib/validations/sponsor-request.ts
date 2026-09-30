@@ -28,6 +28,8 @@ export const sponsorRequestSchema = z.strictObject({
       z.literal(""),
     ])
     .optional(),
+  // The private link from our outreach email, if the company came from it.
+  outreachToken: z.union([z.string().regex(/^[0-9a-f]{32}$/), z.literal("")]).optional(),
   captchaToken: z.string().max(2048).optional(),
 });
 export type SponsorRequestInput = z.input<typeof sponsorRequestSchema>;
