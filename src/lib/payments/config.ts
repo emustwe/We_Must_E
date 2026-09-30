@@ -9,9 +9,9 @@ export const PACKS = [
 export type Pack = { id: string; coins: number; usdCents: number };
 export const packById = (id: string): Pack | undefined => PACKS.find((p) => p.id === id);
 
-// Larger amounts: the sponsor types any number of Era from 300, at $0.80 each.
+// Larger amounts: the sponsor types any number of Era above 300, at $0.80 each.
 export const CUSTOM_PACK_ID = "custom";
-export const CUSTOM_MIN_COINS = 300;
+export const CUSTOM_MIN_COINS = 301;
 export const CUSTOM_MAX_COINS = 100_000;
 export const CUSTOM_CENTS_PER_COIN = 80;
 export function customPack(coins: number): Pack | undefined {

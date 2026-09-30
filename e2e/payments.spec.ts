@@ -39,13 +39,14 @@ test("a sponsor buys Era with USDT: exact amount, paid once, wrong amounts wait 
     ).toBeVisible();
   }
   await expect(page.locator('[data-pack="pack-200"]')).toContainText("$180");
-  // Any amount from 300 Era, at $0.80 each: fewer can't be bought.
+  // Any amount above 300 Era, at $0.80 each: 300 or fewer can't be bought.
   const custom = page.locator('[data-pack="custom"]');
-  const count = custom.getByLabel("Any amount (300 Era or more)");
+  const count = custom.getByLabel("Number of Era (above 300)");
   const pay = custom.getByRole("button", { name: "Pay with USDT" });
-  await count.fill("250");
+  await expect(custom).toContainText("$0.80 per Era, above 300 Era");
+  await count.fill("300");
   await expect(pay).toBeDisabled();
-  await expect(custom).toContainText(/Type a number from 300 to 100,?000/);
+  await expect(custom).toContainText("Type a number from 301 to 100,000.");
   await count.fill("350");
   await expect(custom).toContainText("$280");
   await pay.click();

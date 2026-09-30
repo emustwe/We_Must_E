@@ -1526,8 +1526,9 @@
     "date": "Date",
     "amount": "Amount",
     "belowMinimum": "Minimum payment is {amount}, so this pack can't be bought with USDT for now.",
-    "customLabel": "Any amount (300 Era or more)",
-    "customRange": "Type a number from {min} to {max}. {price} per Era."
+    "customLabel": "Number of Era (above 300)",
+    "customRange": "Type a number from {min} to {max}.",
+    "customPer": "{price} per Era, above 300 Era"
   },
   "adminPayments": {
     "nav": "Payments",

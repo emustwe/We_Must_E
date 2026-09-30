@@ -57,7 +57,7 @@ export default async function CoinsPage() {
             <span className="flex size-11 items-center justify-center rounded-2xl bg-wm-tint text-wm-blue">
               <WmIcon name="coin" size={20} stroke={2.2} />
             </span>
-            <span className="text-2xl font-extrabold tracking-[-0.6px]">
+            <span className="flex h-12 items-center text-2xl font-extrabold tracking-[-0.6px]">
               {t("packCoins", { count: p.coins })}
             </span>
             <span className="text-lg font-bold">{formatUsd(p.usdCents)}</span>

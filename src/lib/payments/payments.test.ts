@@ -114,10 +114,10 @@ describe("payment helpers", () => {
     for (const p of PACKS) expect(canBuy(p)).toBe(p.usdCents >= MIN_PAYMENT_CENTS);
   });
 
-  it("prices a typed amount at $0.80 per Era, from 300 Era only", () => {
-    expect(customPack(300)).toEqual({ id: "custom", coins: 300, usdCents: 24000 });
+  it("prices a typed amount at $0.80 per Era, above 300 Era only", () => {
+    expect(customPack(301)).toEqual({ id: "custom", coins: 301, usdCents: 24080 });
     expect(customPack(1234)?.usdCents).toBe(98720);
-    for (const bad of [299, 0, -5, 300.5, NaN, CUSTOM_MAX_COINS + 1]) {
+    for (const bad of [300, 299, 0, -5, 300.5, NaN, CUSTOM_MAX_COINS + 1]) {
       expect(customPack(bad)).toBeUndefined();
     }
   });

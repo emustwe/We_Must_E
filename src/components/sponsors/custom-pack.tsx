@@ -16,8 +16,8 @@ import {
   formatUsd,
 } from "@/lib/payments/config";
 
-// The "any amount" card: the sponsor types a number of Era (300 or more) and
-// sees the price before paying.
+// The "any amount" card: the sponsor types a number of Era (above 300) and
+// sees the price before paying. Its rows line up with the pack cards.
 export function CustomPack({ canPay }: { canPay: boolean }) {
   const t = useTranslations("payments");
   const te = useTranslations("errors");
@@ -34,28 +34,31 @@ export function CustomPack({ canPay }: { canPay: boolean }) {
       <span className="flex size-11 items-center justify-center rounded-2xl bg-wm-tint text-wm-blue">
         <WmIcon name="coin" size={20} stroke={2.2} />
       </span>
-      <label className="flex flex-col gap-1.5">
-        <span className="text-[13px] font-bold">{t("customLabel")}</span>
+      <span className="flex h-12 items-center gap-2 text-2xl font-extrabold tracking-[-0.6px]">
         <input
           type="number"
           inputMode="numeric"
           min={CUSTOM_MIN_COINS}
           max={CUSTOM_MAX_COINS}
           step={1}
-          className="h-11 rounded-xl border border-[#D5DAE2] bg-white px-3.5 text-lg font-extrabold"
+          aria-label={t("customLabel")}
+          aria-describedby="custom-pack-note"
+          className="h-12 w-0 min-w-0 grow rounded-xl border border-[#D5DAE2] bg-white px-3 text-2xl font-extrabold tracking-[-0.6px]"
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          aria-describedby="custom-pack-note"
         />
-      </label>
+        Era
+      </span>
       <span className="text-lg font-bold">{pack ? formatUsd(pack.usdCents) : "—"}</span>
-      <span id="custom-pack-note" className="text-[13px] font-medium text-wm-slate">
-        {pack
-          ? t("perCoin", { price: formatUsd(CUSTOM_CENTS_PER_COIN) })
+      <span
+        id="custom-pack-note"
+        className={`text-[13px] font-medium ${pack || !value.trim() ? "text-wm-slate" : "text-wm-danger"}`}
+      >
+        {pack || !value.trim()
+          ? t("customPer", { price: formatUsd(CUSTOM_CENTS_PER_COIN) })
           : t("customRange", {
               min: CUSTOM_MIN_COINS,
-              max: CUSTOM_MAX_COINS,
-              price: formatUsd(CUSTOM_CENTS_PER_COIN),
+              max: CUSTOM_MAX_COINS.toLocaleString("en-US"),
             })}
       </span>
       {canPay ? (
