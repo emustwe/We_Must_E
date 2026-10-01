@@ -1,11 +1,8 @@
 // Outreach emails: companies the team emails by hand, each with its own
 // private video link (/w/<token>).
 
-// PLACEHOLDER: who signs the email. Set the real name and job title here.
-export const OUTREACH_SENDER = {
-  name: "The WemustE team" as string,
-  title: null as string | null,
-};
+// Who signs the email (the team's choice: just "WemustE").
+export const OUTREACH_SENDER = { name: "WemustE" };
 
 // The marketing video (an MP4 on the site or in Supabase Storage). Until it
 // is set, the page shows "Video coming soon".

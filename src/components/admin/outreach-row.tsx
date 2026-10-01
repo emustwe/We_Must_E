@@ -55,7 +55,7 @@ export function OutreachRow({ row, site }: { row: OutreachRowData; site: string 
   const router = useRouter();
   const confirm = useConfirm();
   const [pending, startTransition] = useTransition();
-  const email = outreachEmail({ site, token: row.token, name: row.name, company: row.company });
+  const email = outreachEmail({ site, token: row.token });
   const unsubscribed = row.status === "unsubscribed";
 
   const copy = (what: "address" | "subject" | "email") => async () => {

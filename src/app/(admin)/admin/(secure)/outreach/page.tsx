@@ -43,12 +43,7 @@ export default async function OutreachPage({ searchParams }: PageProps<"/admin/o
   ]);
   const counts = Object.fromEntries(OUTREACH_STATUSES.map((x, i) => [x, byStatus[i].count ?? 0]));
   const date = (d: string) => format.dateTime(new Date(d), { dateStyle: "medium" });
-  const sample = outreachEmail({
-    site,
-    token: "0".repeat(32),
-    name: contacts?.[0]?.name ?? "Sara Khan",
-    company: contacts?.[0]?.company ?? "Example Company",
-  });
+  const sample = outreachEmail({ site, token: "0".repeat(32) });
   const steps = [t("step1"), t("step2"), t("step3"), t("step4")];
 
   return (

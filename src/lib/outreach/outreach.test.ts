@@ -42,24 +42,20 @@ describe("pasted outreach contacts", () => {
 });
 
 describe("outreach email", () => {
-  const email = outreachEmail({
-    site: "https://www.wemuste.com",
-    token: "a".repeat(32),
-    name: "Sara <b>Khan</b>",
-    company: "Khan & Sons",
-  });
+  const email = outreachEmail({ site: "https://www.wemuste.com", token: "a".repeat(32) });
 
   it("links the picture and the button to the contact's private page", () => {
-    expect(email.subject).toBe("Hiring at Khan & Sons? A short video for you");
+    expect(email.subject).toBe("The Next Generation of Hiring");
     expect(email.html).toContain(`href="https://www.wemuste.com/w/${"a".repeat(32)}"`);
     expect(email.html).toContain('src="https://www.wemuste.com/email/video.jpg"');
     expect(email.html).toContain(`https://www.wemuste.com/w/${"a".repeat(32)}/unsubscribe`);
     expect(email.text).toContain(`https://www.wemuste.com/w/${"a".repeat(32)}/unsubscribe`);
   });
 
-  it("escapes what was typed in", () => {
-    expect(email.html).toContain("Hi Sara,");
-    expect(email.html).toContain("Khan &amp; Sons");
-    expect(email.html).not.toContain("<b>");
+  it("uses the team's own text, signed WemustE", () => {
+    expect(email.html).toContain("Hi,");
+    expect(email.html).toContain("This is a new way to discover people beyond a CV.");
+    expect(email.text).toContain("We’ll build the process.");
+    expect(email.text).toMatch(/Best,\nWemustE/);
   });
 });

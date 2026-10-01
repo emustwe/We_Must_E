@@ -53,7 +53,7 @@ test("an admin emails companies a private video link; one signs up, one unsubscr
     const tokenA = token(a.email);
     expect(html).toContain(`/w/${tokenA}`);
     expect(html).toContain("/email/video.jpg");
-    expect(html).toContain("Hi Sara,");
+    expect(html).toContain("This is a new way to discover people beyond a CV.");
     await rowA.getByRole("button", { name: "Mark as sent" }).click();
     await expect(rowA).toContainText("Sent");
     // An admin opening the link isn't counted.
