@@ -567,7 +567,7 @@
     }
   },
   "legal": {
-    "placeholder": "PLACEHOLDER — client/lawyer to replace.",
+    "placeholder": "Draft: this page is being reviewed.",
     "privacyTitle": "Privacy Policy",
     "termsTitle": "Terms of Service",
     "updated": "Version {version}"
