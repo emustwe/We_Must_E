@@ -74,9 +74,9 @@ test("an admin emails companies a private video link; one signs up, one unsubscr
     await expect(page.getByText("Video coming soon")).toBeVisible();
     await expect.poll(() => status(a.email)).toBe("opened|1");
     await page.getByRole("link", { name: "Become a sponsor" }).click();
-    await expect(page.getByLabel("Company name")).toHaveValue(a.company);
+    await expect(page.getByLabel(/^Company or business name/)).toHaveValue(a.company);
     await expect(page.getByLabel("Your name")).toHaveValue(a.name);
-    await expect(page.getByLabel("Work email")).toHaveValue(a.email);
+    await expect(page.getByLabel("Email", { exact: true })).toHaveValue(a.email);
     await page.getByLabel("Phone number").fill("+92 300 1234567");
     await page.getByLabel("City").fill("Lahore");
     await page.getByRole("button", { name: "Send request" }).click();

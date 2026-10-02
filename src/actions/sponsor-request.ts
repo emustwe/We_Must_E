@@ -41,7 +41,7 @@ export async function requestSponsorship(input: unknown): Promise<ActionResult> 
     salespersonId = person.id;
   }
   const { error } = await service.from("sponsor_requests").insert({
-    company_name: r.companyName,
+    company_name: r.companyName || r.contactPerson,
     contact_person: r.contactPerson,
     email: r.email,
     phone: r.phone,

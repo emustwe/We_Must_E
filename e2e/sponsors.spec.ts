@@ -206,9 +206,9 @@ test("a company asks to become a sponsor; the admin creates the account from the
   await page.getByRole("link", { name: /Become a sponsor/ }).click();
   await expect(page).toHaveURL(/\/for-sponsors$/);
 
-  await page.getByLabel("Company name").fill(company);
+  await page.getByLabel(/^Company or business name/).fill(company);
   await page.getByLabel("Your name").fill("Lina Karim");
-  await page.getByLabel("Work email").fill(`lina-${unique()}@example.test`);
+  await page.getByLabel("Email", { exact: true }).fill(`lina-${unique()}@example.test`);
   await page.getByLabel("Phone number").fill("+971 50 123 4567");
   await page.getByLabel("City").fill("Dubai");
   await page.getByRole("button", { name: "Send request" }).click();
@@ -223,4 +223,39 @@ test("a company asks to become a sponsor; the admin creates the account from the
   await expect(page.getByLabel("Company name")).toHaveValue(company);
   await expect(page.getByLabel("Contact person")).toHaveValue("Lina Karim");
   psql(`delete from public.sponsor_requests where company_name = '${company}'`);
+});
+
+test("a person without a company asks to become a sponsor (their name is used)", async ({
+  page,
+}) => {
+  const name = `Sara Malik ${unique()}`;
+  try {
+    await page.goto("/for-sponsors");
+    // (The intro is on the page twice: phone and desktop layouts.)
+    await expect(
+      page.getByText("full-time, part-time, or a task for 1 to 3 days").filter({ visible: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("We approve it and email you a link").filter({ visible: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Set your own password", { exact: false }).filter({ visible: true }),
+    ).toBeVisible();
+    await expect(page.getByText(/company details|create your login/i)).toHaveCount(0);
+    await page.getByLabel("Your name").fill(name);
+    await page.getByLabel("Email", { exact: true }).fill(`sara-${unique()}@example.test`);
+    await page.getByLabel("Phone number").fill("+92 300 1234567");
+    await page.getByLabel("City").fill("Lahore");
+    await page.getByLabel(/What do you need help with/).fill("2 waiters for a wedding on Friday");
+    await page.getByRole("button", { name: "Send request" }).click();
+    await expect(page.getByRole("heading", { name: "Request sent" })).toBeVisible();
+    await expect(
+      page.getByText("email you a link to set your password", { exact: false }),
+    ).toBeVisible();
+    expect(
+      psql(`select company_name from public.sponsor_requests where contact_person = '${name}'`),
+    ).toBe(name);
+  } finally {
+    psql(`delete from public.sponsor_requests where contact_person = '${name}'`);
+  }
 });

@@ -113,7 +113,7 @@ export function SponsorRequestForm({
   return (
     <form onSubmit={submit} noValidate className="space-y-4">
       <FormAlert message={formError} />
-      {field("companyName", t("companyName"), { autoComplete: "organization" })}
+      {field("companyName", t("companyName"), { autoComplete: "organization", optional: true })}
       {field("contactPerson", t("contactPerson"), { autoComplete: "name" })}
       {field("email", t("email"), { type: "email", autoComplete: "email" })}
       {field("phone", t("phone"), { type: "tel", autoComplete: "tel" })}

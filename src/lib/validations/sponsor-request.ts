@@ -6,7 +6,13 @@ const text = (min: number, max: number, required: string) =>
 
 // "Become a sponsor": what a company sends to the WemustE team.
 export const sponsorRequestSchema = z.strictObject({
-  companyName: text(2, 160, "validation.companyRequired"),
+  // Optional: individuals can be sponsors too (their name is used instead).
+  companyName: z
+    .string()
+    .trim()
+    .max(160, { error: "validation.tooLong" })
+    .refine((v) => v.length === 0 || v.length >= 2, { error: "validation.companyRequired" })
+    .optional(),
   contactPerson: text(2, 120, "validation.nameRequired"),
   email: emailSchema,
   phone: z

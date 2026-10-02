@@ -34,9 +34,9 @@ test("an admin creates a referral code; a company uses the salesperson's link", 
     // The company opens the salesperson's link: the code is filled in.
     await page.goto(`/for-sponsors?ref=${code}`);
     await expect(page.getByLabel(/Referral code/)).toHaveValue(code);
-    await page.getByLabel("Company name").fill(company);
+    await page.getByLabel(/^Company or business name/).fill(company);
     await page.getByLabel("Your name").fill("Lina Karim");
-    await page.getByLabel("Work email").fill(`lina-${unique()}@example.test`);
+    await page.getByLabel("Email", { exact: true }).fill(`lina-${unique()}@example.test`);
     await page.getByLabel("Phone number").fill("+971 50 123 4567");
     await page.getByLabel("City").fill("Dubai");
     // A code that doesn't exist is refused (so it can be fixed).
