@@ -67,23 +67,26 @@ export function OutreachRow({ row, site }: { row: OutreachRowData; site: string 
       toast.error(t("copyFailed"));
     }
   };
-  const run = (action: "sent" | "link_off" | "link_on" | "delete") =>
+  const run = async (action: "sent" | "link_off" | "link_on" | "delete") => {
+    // Asked before the update starts: a pop-up opened inside a transition
+    // would only show once it ended.
+    if (
+      action === "delete" &&
+      !(await confirm({
+        title: t("deleteTitle"),
+        body: t("deleteBody"),
+        confirmLabel: t("delete"),
+        tone: "danger",
+      }))
+    ) {
+      return;
+    }
     startTransition(async () => {
-      if (
-        action === "delete" &&
-        !(await confirm({
-          title: t("deleteTitle"),
-          body: t("deleteBody"),
-          confirmLabel: t("delete"),
-          tone: "danger",
-        }))
-      ) {
-        return;
-      }
       const result = await updateOutreachContact({ id: row.id, action });
       if (!result.ok) toast.error(te(result.error));
       else router.refresh();
     });
+  };
 
   return (
     <li

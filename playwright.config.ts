@@ -45,6 +45,9 @@ export default defineConfig({
       PAYMENT_SOLANA_ADDRESS: "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin",
       SOLANA_RPC_URL: "http://127.0.0.1:3199",
       HELIUS_WEBHOOK_SECRET: "e2e-helius-webhook-secret-0123456789",
+      // The Question builder's AI, against the fake service in e2e/anthropic-mock.ts.
+      ANTHROPIC_API_KEY: "e2e-anthropic-key-0123456789abcdef",
+      ANTHROPIC_BASE_URL: "http://127.0.0.1:3198",
     },
   },
 });

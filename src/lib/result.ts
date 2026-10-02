@@ -33,7 +33,10 @@ export type ActionError =
   | "priceChanged"
   | "paymentsOff"
   | "tooManyOrders"
-  | "jobFilled";
+  | "jobFilled"
+  | "aiOff"
+  | "aiFailed"
+  | "jobNotPending";
 
 export type ActionResult<T = undefined> =
   { ok: true; data: T } | { ok: false; error: ActionError; fieldErrors?: Record<string, string> };

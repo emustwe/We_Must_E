@@ -957,6 +957,61 @@ export type Database = {
         }
         Relationships: []
       }
+      question_builds: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string
+          id: string
+          role: Json
+          test_id: string
+          title: string
+          video_set_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description: string
+          id?: string
+          role: Json
+          test_id: string
+          title: string
+          video_set_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          role?: Json
+          test_id?: string
+          title?: string
+          video_set_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_builds_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_builds_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "tests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_builds_video_set_id_fkey"
+            columns: ["video_set_id"]
+            isOneToOne: false
+            referencedRelation: "video_question_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sales_people: {
         Row: {
           code: string
@@ -1337,6 +1392,10 @@ export type Database = {
           total: number
         }[]
       }
+      admin_attach_question_build: {
+        Args: { p_build_id: string; p_job_id: string }
+        Returns: undefined
+      }
       admin_create_salesperson: {
         Args: { p_code: string; p_nickname: string }
         Returns: string
@@ -1395,6 +1454,16 @@ export type Database = {
         Returns: undefined
       }
       admin_revoke_sessions: { Args: { p_user_id: string }; Returns: undefined }
+      admin_save_question_build: {
+        Args: {
+          p_description: string
+          p_role: Json
+          p_test: Json
+          p_title: string
+          p_videos: Json
+        }
+        Returns: string
+      }
       admin_set_answer_key: {
         Args: { p_correct_options: number[]; p_question_id: string }
         Returns: undefined

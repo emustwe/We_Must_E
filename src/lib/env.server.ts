@@ -40,6 +40,12 @@ const serverSchema = z.object({
   // Sent by Helius with each notice (its "Authentication header"), so fake
   // notices are rejected. At least 24 characters.
   HELIUS_WEBHOOK_SECRET: z.string().min(24).optional(),
+  // Claude (Anthropic API) for the admin Question builder; without it the
+  // builder says "AI not set up yet". The model can be changed here.
+  ANTHROPIC_API_KEY: z.string().min(20).optional(),
+  ANTHROPIC_MODEL: z.string().min(3).default("claude-sonnet-5"),
+  // Tests only: a local stand-in for the Anthropic API.
+  ANTHROPIC_BASE_URL: z.url().default("https://api.anthropic.com"),
 });
 
 const parsed = serverSchema.safeParse({
@@ -58,6 +64,9 @@ const parsed = serverSchema.safeParse({
   HELIUS_API_KEY: process.env.HELIUS_API_KEY || undefined,
   SOLANA_RPC_URL: process.env.SOLANA_RPC_URL || undefined,
   HELIUS_WEBHOOK_SECRET: process.env.HELIUS_WEBHOOK_SECRET || undefined,
+  ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || undefined,
+  ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL || undefined,
+  ANTHROPIC_BASE_URL: process.env.ANTHROPIC_BASE_URL || undefined,
 });
 
 if (!parsed.success) {

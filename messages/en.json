@@ -222,7 +222,10 @@
     "priceChanged": "The price changed because a new candidate applied. Check the new price and try again.",
     "paymentsOff": "Payments with USDT aren't set up yet. Please contact the WemustE team to add Vera.",
     "tooManyOrders": "You have 5 open orders. Pay one of them, or wait until they expire.",
-    "jobFilled": "This job has been filled: someone was selected, so applications are closed."
+    "jobFilled": "This job has been filled: someone was selected, so applications are closed.",
+    "aiOff": "The AI isn't set up yet. Add the Anthropic API key in Vercel, then try again.",
+    "aiFailed": "The AI couldn't write the questions this time. Please try again.",
+    "jobNotPending": "This job is no longer waiting for approval, so its questions can't be changed here."
   },
   "employee": {
     "welcome": "Hi {name}",
@@ -1060,7 +1063,8 @@
       "requests": "Sponsor requests",
       "payments": "Payments",
       "sales": "Sales",
-      "outreach": "Outreach"
+      "outreach": "Outreach",
+      "questions": "Question builder"
     },
     "waiting": "Waiting for review",
     "openMap": "Open the public map",
@@ -1156,7 +1160,8 @@
       "sponsorBlocked": "Blocked a sponsor",
       "sponsorUnblocked": "Unblocked a sponsor",
       "sponsorRequest": "Handled a sponsor request",
-      "outreach": "Changed outreach contacts"
+      "outreach": "Changed outreach contacts",
+      "questionBuild": "Worked on generated interview questions"
     },
     "activity": {
       "videoViewed": "viewed a video answer on an <t>application</t>",
@@ -1188,7 +1193,8 @@
       "sponsorBlocked": "blocked a <t>sponsor</t>",
       "sponsorUnblocked": "unblocked a <t>sponsor</t>",
       "sponsorRequest": "handled a sponsor request",
-      "outreach": "changed outreach contacts"
+      "outreach": "changed outreach contacts",
+      "questionBuild": "worked on generated interview questions"
     },
     "change": "{from} to {to}",
     "statusWord": {
@@ -1647,5 +1653,59 @@
     "unsubscribeBody": "Press the button and we won't email you again.",
     "unsubscribeButton": "Don't email me again",
     "unsubscribed": "Done. We won't email you again."
+  },
+  "adminQuestions": {
+    "title": "Question builder",
+    "body": "Paste a job title and description. The AI writes the Exam (25 questions) and the Execute video questions (7) in the WemustE pattern; Engage (the survey) is the same for every job. Then connect them with a sponsor's job that is waiting for approval.",
+    "aiOff": "The AI isn't set up yet (the Anthropic API key isn't added). Everything else works; Generate will work once the key is added in Vercel.",
+    "newTitle": "Generate questions",
+    "jobTitle": "Job title",
+    "jobTitlePlaceholder": "e.g. Warehouse Supervisor",
+    "description": "Job description",
+    "descriptionPlaceholder": "Paste the job description: duties, tools, place, shifts, requirements…",
+    "generate": "Generate questions",
+    "generating": "Writing the questions… (about a minute)",
+    "reviewTitle": "Review and edit",
+    "reviewBody": "Change anything you like, then save. You can still edit them later in Content.",
+    "section1": "Section 1 · Exam — 25 test questions",
+    "section2": "Section 2 · Execute — personal details and CV, then 7 video questions",
+    "section2Note": "The personal details and CV step is the same for every job; only the 7 video questions below are written for this job.",
+    "section3": "Section 3 · Engage — the standard survey",
+    "section3Note": "Same 25 questions for every job. Nothing to write here.",
+    "typingText": "Text to type (typing test)",
+    "question": "Question {n}",
+    "video": "Video {n}",
+    "save": "Save questions",
+    "saved": "Saved. Now connect them with a job.",
+    "discard": "Start over",
+    "savedTitle": "Saved question sets",
+    "empty": "No question sets yet.",
+    "created": "Made {date}",
+    "jobsCount": "{count, plural, =0 {Not connected to a job yet} one {Connected to # job} other {Connected to # jobs}}",
+    "back": "Question builder",
+    "connectTitle": "Connect with a job",
+    "connectBody": "Choose the sponsor, then one of their jobs waiting for approval. The job's Exam and Execute questions become these; its survey stays the same.",
+    "sponsor": "Sponsor",
+    "chooseSponsor": "Choose a sponsor",
+    "noPendingJobs": "No sponsor has a job waiting for approval right now.",
+    "pendingJobs": "{count, plural, one {# job waiting for approval} other {# jobs waiting for approval}}",
+    "attach": "Connect",
+    "attached": "Connected. The job now uses these questions.",
+    "attachTitle": "Use these questions for this job?",
+    "attachBody": "“{job}” will use these Exam and Execute questions instead of its current ones.",
+    "current": "Already uses these questions",
+    "connectedTitle": "Connected jobs",
+    "noConnected": "Not connected to any job yet.",
+    "editTest": "Edit the Exam questions",
+    "editVideos": "Edit the video questions",
+    "questionsTitle": "The questions",
+    "jobStatus": {
+      "pending": "Waiting for approval",
+      "published": "On the map",
+      "rejected": "Changes asked",
+      "hidden": "Hidden",
+      "closed": "Closed",
+      "removed": "Removed"
+    }
   }
 }

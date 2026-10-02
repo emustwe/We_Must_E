@@ -31,6 +31,7 @@ const KNOWN: Record<string, ActionError> = {
   too_many_orders: "tooManyOrders",
   invalid_input: "invalidInput",
   rate_limited: "rateLimited",
+  not_pending: "jobNotPending",
 };
 
 export function dbFail(context: string, error: PostgrestError): ActionResult<never> {

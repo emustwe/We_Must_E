@@ -134,6 +134,7 @@ test("admin pages fit a small phone", async ({ page }) => {
       ["admin-video-set", `/admin/content/videos/${setId}`],
       ["admin-audit", "/admin/audit"],
       ["admin-outreach", "/admin/outreach"],
+      ["admin-questions", "/admin/questions"],
     ]) {
       await page.goto(path);
       await expectFits(page, name);

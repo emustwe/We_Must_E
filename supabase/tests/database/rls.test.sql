@@ -790,5 +790,36 @@ select throws_ok(format('select tests.run_as(%L, %L, %L)', :AD,
   format('select admin_outreach_update(%L, ''delete'')', (select id from outreach_contacts where token = :'ot')), 'aal2'),
   'P0002', 'not_found', 'an unsubscribed contact cannot be deleted (so it is never emailed again)');
 
+-- Question builder: MFA admins save a generated interview (25 + 7, inactive)
+-- and attach it to a job that is waiting for approval; nobody else can.
+\set QB_TEST '(select jsonb_agg(jsonb_build_object(''type'', ''long_text'', ''prompt'', ''Question '' || n)) from generate_series(1, 25) n)'
+\set QB_VIDEOS '(select jsonb_agg(''Video '' || n) from generate_series(1, 7) n)'
+select ok(tests.denied_as(:AD, format('select admin_save_question_build(%L, %L, %L, %L, %L)',
+  'Cook', 'Cooks meals.', '{}', :QB_TEST, :QB_VIDEOS)), 'saving generated questions needs MFA');
+select ok(tests.denied_as(:E1, format('select admin_save_question_build(%L, %L, %L, %L, %L)',
+  'Cook', 'Cooks meals.', '{}', :QB_TEST, :QB_VIDEOS), 'aal2'), 'sponsors cannot save question sets');
+select throws_ok(format('select tests.run_as(%L, %L, %L)', :AD, format('select admin_save_question_build(%L, %L, %L, %L, %L)',
+  'Cook', 'Cooks meals.', '{}', :QB_TEST, (select jsonb_agg('Video ' || n) from generate_series(1, 6) n)), 'aal2'),
+  '22023', 'invalid_input', 'a set needs exactly 25 test and 7 video questions');
+select tests.run_as(:AD, format('select admin_save_question_build(%L, %L, %L, %L, %L)',
+  'Line Cook', 'Cooks meals in a busy kitchen.', '{"title":"Line Cook"}', :QB_TEST, :QB_VIDEOS), 'aal2');
+select id as qb_id, test_id as qb_test, video_set_id as qb_set from question_builds where title = 'Line Cook' \gset
+select is((select count(*)::int from test_questions where test_id = :'qb_test'), 25, 'the Exam has 25 questions');
+select is((select count(*)::int from video_questions where set_id = :'qb_set'), 7, 'the video interview has 7 questions');
+select is((select is_active from tests where id = :'qb_test'), false, 'a generated test never becomes the default test');
+select is(tests.rows_as(:E1, 'select 1 from question_builds'), 0, 'sponsors cannot see question sets');
+insert into jobs (id, employer_id, title, description, location_label, lat, lng, status) values
+  ('40000000-0000-0000-0000-0000000000b1', :E1, 'Cook (waiting)', 'A job waiting for approval.', 'Lahore', 31.5, 74.3, 'pending'),
+  ('40000000-0000-0000-0000-0000000000b2', :E1, 'Cook (live)', 'A job on the map.', 'Lahore', 31.5, 74.3, 'published');
+select ok(tests.denied_as(:E1, format('select admin_attach_question_build(%L, %L)', :'qb_id',
+  '40000000-0000-0000-0000-0000000000b1'), 'aal2'), 'sponsors cannot attach question sets');
+select tests.run_as(:AD, format('select admin_attach_question_build(%L, %L)', :'qb_id',
+  '40000000-0000-0000-0000-0000000000b1'), 'aal2');
+select is((select test_id::text || '|' || video_set_id::text from jobs where id = '40000000-0000-0000-0000-0000000000b1'),
+  :'qb_test' || '|' || :'qb_set', 'the waiting job now uses the generated Exam and Execute questions');
+select throws_ok(format('select tests.run_as(%L, %L, %L)', :AD, format('select admin_attach_question_build(%L, %L)', :'qb_id',
+  '40000000-0000-0000-0000-0000000000b2'), 'aal2'),
+  '22023', 'not_pending', 'only jobs waiting for approval can get new questions here');
+
 select * from finish();
 rollback;

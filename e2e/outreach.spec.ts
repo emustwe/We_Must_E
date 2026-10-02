@@ -18,7 +18,9 @@ test("an admin emails companies a private video link; one signs up, one unsubscr
   const token = (email: string) =>
     psql(`select token from public.outreach_contacts where email = '${email}'`);
   const status = (email: string) =>
-    psql(`select status || '|' || open_count from public.outreach_contacts where email = '${email}'`);
+    psql(
+      `select status || '|' || open_count from public.outreach_contacts where email = '${email}'`,
+    );
   try {
     await loginAsAdmin(page);
     await page.goto("/admin/outreach");
@@ -58,7 +60,9 @@ test("an admin emails companies a private video link; one signs up, one unsubscr
     await expect(rowA).toContainText("Sent");
     // An admin opening the link isn't counted.
     await page.goto(`/w/${tokenA}`);
-    await expect(page.getByRole("heading", { name: `A short video for ${a.company}` })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: `A short video for ${a.company}` }),
+    ).toBeVisible();
     await page.waitForTimeout(1500);
     expect(status(a.email)).toBe("sent|0");
     await page.goto("/admin/outreach");
@@ -98,6 +102,19 @@ test("an admin emails companies a private video link; one signs up, one unsubscr
     await expect(rowB.getByRole("button", { name: "Copy email" })).toHaveCount(0);
     await page.goto("/admin/outreach?s=signed_up");
     await expect(page.locator(`[data-contact="${a.email}"]`)).toContainText("Asked to join");
+
+    // Deleting a contact asks first, then removes it (and its link).
+    const c = `cat-${id}@outreach.test`;
+    psql(
+      `insert into public.outreach_contacts (name, company, email) values ('Cat', 'Cat Co', '${c}')`,
+    );
+    await page.goto("/admin/outreach");
+    await page.locator(`[data-contact="${c}"]`).getByRole("button", { name: "Delete" }).click();
+    const dialog = page.locator("dialog[open]");
+    await expect(dialog).toContainText("Delete this contact?");
+    await dialog.getByRole("button", { name: "Delete" }).click();
+    await expect(page.locator(`[data-contact="${c}"]`)).toHaveCount(0);
+    expect(psql(`select count(*) from public.outreach_contacts where email = '${c}'`)).toBe("0");
   } finally {
     psql(`delete from public.sponsor_requests where company_name = '${a.company}'`);
     psql(`delete from public.outreach_contacts where email like '%-${id}@outreach.test'`);
