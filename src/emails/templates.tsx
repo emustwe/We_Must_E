@@ -11,7 +11,7 @@ export const TEMPLATES = {
     subject: "New application on WemustE",
     render: (site: string) => (
       <EmailLayout
-        preview="A new application is waiting for review"
+        preview="A new application arrived"
         heading="New application"
         body="Someone applied for a job on WemustE. The application went straight to the sponsor, without contact details. Log in to the admin area to see it (or remove it if it is fake)."
         cta="Open applications"
@@ -95,7 +95,7 @@ export const TEMPLATES = {
     subject: "You have a new candidate",
     render: (site: string) => (
       <EmailLayout
-        preview="The WemustE team shared a candidate with you"
+        preview="Someone applied for one of your jobs"
         heading="You have a new candidate"
         body="Someone applied for one of your jobs. Log in to see their application. Their contact details open with Vera."
         cta="See candidates"
@@ -114,9 +114,9 @@ export const TEMPLATES = {
         steps={{
           title: "What happens next",
           items: [
-            "We shared your application with the employer, without your contact details.",
-            "If the employer chooses you, they get your phone number and email.",
-            "The employer contacts you directly by phone or email.",
+            "The sponsor of this job can see your application now, without your contact details.",
+            "If the sponsor chooses you, they get your phone number and email.",
+            "The sponsor contacts you directly by phone or email.",
           ],
         }}
         cta="See more jobs"
@@ -132,7 +132,7 @@ export const TEMPLATES = {
       <EmailLayout
         preview={`${app.jobTitle} is now closed`}
         heading="This job is now closed"
-        body={`Thank you again for applying for ${app.jobTitle}. The employer has now closed this position. If you were selected, they have already contacted you or will do so very soon. If not, please don't be discouraged: we truly appreciate the time you put into your application, and new jobs are added to WemustE every day.`}
+        body={`Thank you again for applying for ${app.jobTitle}. The sponsor has now closed this position. If you were selected, they have already contacted you or will do so very soon. If not, please don't be discouraged: we truly appreciate the time you put into your application, and new jobs are added to WemustE every day.`}
         cta="Explore more jobs"
         href={site}
         footer={`As promised in our privacy policy, your application for this job is now being deleted. Questions? Email ${app.supportEmail}. WemustE never asks for money: if someone asks you to pay for a job, it isn't us.`}
@@ -141,12 +141,12 @@ export const TEMPLATES = {
   },
   // To a new sponsor (and again with "Resend invite"): choose your own password.
   sponsorInvite: {
-    subject: "Set up your WemustE sponsor account",
+    subject: "Your WemustE sponsor account is approved",
     render: (_site: string, invite: InviteDetails) => (
       <EmailLayout
-        preview="Your sponsor account is ready: choose your password"
-        heading="Your sponsor account is ready"
-        body="The WemustE team created a sponsor account for your company. Choose your own password to log in, post jobs and meet your candidates."
+        preview="Choose your password to get started"
+        heading="Welcome to WemustE"
+        body="Your sponsor account is approved. Choose your own password to log in, post jobs and see who applies."
         steps={{
           title: "How to start",
           items: [

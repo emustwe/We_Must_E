@@ -43,7 +43,7 @@ test("a visitor applies in 3 steps without an account; the sponsor sees it at on
   await page.getByRole("button", { name: "Start application" }).click();
 
   // --- Test (timed on the server): every question on one page, autosaved.
-  await expect(page.getByText("Step 1 of 3 · Test")).toBeVisible();
+  await expect(page.getByText("Step 1 of 3 · Exam")).toBeVisible();
   await page.getByRole("button", { name: "Start the test" }).click();
   await expect(page.getByText("0 of 3 answered")).toBeVisible();
   await expect(page.getByText("Time left")).toBeAttached(); // the timer
@@ -67,7 +67,7 @@ test("a visitor applies in 3 steps without an account; the sponsor sees it at on
   await confirm.getByRole("button", { name: "Finish test" }).click();
 
   // --- Task: contact details, then one video per video question (fake camera).
-  await expect(page.getByText("Step 2 of 3 · Task")).toBeVisible();
+  await expect(page.getByText("Step 2 of 3 · Execute")).toBeVisible();
   await page.getByLabel("Full name").fill("Sara Ahmed");
   await page.getByLabel("Phone number").fill("12");
   await page.getByRole("button", { name: "Continue" }).click();
@@ -90,7 +90,7 @@ test("a visitor applies in 3 steps without an account; the sponsor sees it at on
   await page.getByRole("button", { name: "Continue" }).click();
 
   // --- Survey: every question on one page, then consent.
-  await expect(page.getByText("Step 3 of 3 · Survey")).toBeVisible();
+  await expect(page.getByText("Step 3 of 3 · Engage")).toBeVisible();
   const consent = page.getByRole("checkbox", {
     name: /I agree to the Privacy Policy/,
   });
@@ -108,7 +108,7 @@ test("a visitor applies in 3 steps without an account; the sponsor sees it at on
   await expect(page).toHaveURL(new RegExp(`/apply/${id}/submitted$`));
   await expect(page.getByRole("heading", { name: "Application sent" })).toBeVisible();
   await expect(
-    page.getByText("The employer can see your application now.", { exact: false }),
+    page.getByText("The sponsor can see your application now.", { exact: false }),
   ).toBeVisible();
 
   // Stored once, not scored, with a video per question in private storage.

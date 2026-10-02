@@ -41,7 +41,7 @@ test("full journey: apply with test, video and survey -> the sponsor sees the ca
   await page.getByRole("button", { name: "Start application" }).click();
 
   // Step 1: the test, every question on one page (every step must be there).
-  await expect(page.getByText(/Step 1 of 3 · Test/)).toBeVisible();
+  await expect(page.getByText(/Step 1 of 3 · Exam/)).toBeVisible();
   await page.getByRole("button", { name: "Start the test" }).click();
   await expect(page.getByText(/^0 of \d+ answered$/)).toBeVisible();
   const testPrompts = await page.locator("main ol > li h2").allTextContents();
@@ -51,7 +51,7 @@ test("full journey: apply with test, video and survey -> the sponsor sees the ca
 
   // Step 2: Task — contact details, then a video per video question
   // (picked from the phone here; recording is covered in apply.spec).
-  await expect(page.getByText(/Step 2 of 3 · Task/)).toBeVisible();
+  await expect(page.getByText(/Step 2 of 3 · Execute/)).toBeVisible();
   await page.getByLabel("Full name").fill(name);
   await page.getByLabel("Phone number").fill(PHONE_LOCAL);
   await page.getByLabel("I confirm I am 18 years or older.").check();
@@ -68,7 +68,7 @@ test("full journey: apply with test, video and survey -> the sponsor sees the ca
   await page.getByRole("button", { name: "Continue" }).click();
 
   // Step 3: the survey questions and consent, on one page.
-  await expect(page.getByText(/Step 3 of 3 · Survey/)).toBeVisible();
+  await expect(page.getByText(/Step 3 of 3 · Engage/)).toBeVisible();
   await answerAll(page);
   await page.getByText(/I agree to the Privacy Policy/).click();
   await page.getByRole("button", { name: "Send application" }).click();

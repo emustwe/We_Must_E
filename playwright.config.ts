@@ -17,6 +17,12 @@ export default defineConfig({
   use: {
     baseURL: BASE_URL,
     trace: "retain-on-failure",
+    // A returning visitor who already answered "See jobs near you" (the
+    // first-visit card is tested on its own in jobs-map.spec.ts).
+    storageState: {
+      cookies: [],
+      origins: [{ origin: BASE_URL, localStorage: [{ name: "wm-location-asked", value: "1" }] }],
+    },
     // A fake camera and microphone for the video-resume step.
     permissions: ["camera", "microphone"],
     launchOptions: {

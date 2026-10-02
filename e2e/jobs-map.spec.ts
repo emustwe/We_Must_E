@@ -114,7 +114,7 @@ test("anyone can browse live jobs on the map and open one, without an account", 
     .getByRole("link", { name: "Apply for this job" })
     .click();
   await expect(page).toHaveURL(/\/apply\/[0-9a-f-]{36}$/);
-  await expect(page.getByRole("heading", { name: "Apply in 3 short steps" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Apply in 3 steps" })).toBeVisible();
 
   // The public page never receives exact coordinates.
   const html = await (await page.request.get("/")).text();
@@ -136,6 +136,50 @@ test("with location allowed, the distance filter keeps the nearest jobs", async 
   await pin(page, "Weekend barista").click();
   const sheet = page.getByRole("region", { name: "Weekend barista" });
   await expect(sheet.getByText(/^0\.\d km$/)).toBeVisible();
+});
+
+test.describe("a first-time visitor", () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+  // A real first visit: the browser hasn't been asked about location yet
+  // (test browsers answer "denied" for anything not granted).
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      const query = navigator.permissions.query.bind(navigator.permissions);
+      navigator.permissions.query = (d: PermissionDescriptor) =>
+        d.name === "geolocation"
+          ? Promise.resolve({ state: "prompt" } as PermissionStatus)
+          : query(d);
+    });
+  });
+
+  test("is asked for their location; allowing it shows them and their nearest jobs", async ({
+    page,
+    context,
+  }) => {
+    await stubMapTiler(page);
+    await page.goto("/");
+    const card = page.getByRole("dialog", { name: "See jobs near you" });
+    await expect(card).toBeVisible();
+    await expect(card).toContainText("It stays on your device.");
+    // A few km from the nearest jobs: the map opens on the visitor and them.
+    await context.grantPermissions(["geolocation"]);
+    await context.setGeolocation({ latitude: 25.12, longitude: 55.2 });
+    await card.getByRole("button", { name: "Use my location" }).click();
+    await expect(card).toHaveCount(0);
+    await expect(page.locator(".wm-you")).toBeAttached();
+    await expect.poll(() => jobsInArea(page)).toBeGreaterThan(0);
+  });
+
+  test("can say Not now, and isn't asked again on the next visit", async ({ page }) => {
+    await stubMapTiler(page);
+    await page.goto("/");
+    const card = page.getByRole("dialog", { name: "See jobs near you" });
+    await card.getByRole("button", { name: "Not now" }).click();
+    await expect(card).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByRole("button", { name: "Near me" }).first()).toBeVisible();
+    await expect(card).toHaveCount(0);
+  });
 });
 
 test("a sponsor's job waits for approval, then appears live on an open map; hiding removes it live", async ({

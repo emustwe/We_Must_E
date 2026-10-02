@@ -35,6 +35,8 @@ type Distance = (typeof DISTANCES)[number];
 type Origin = { point: [number, number]; kind: "me" | "place" };
 
 const SAVED_KEY = "wm-saved-jobs";
+// The visitor answered the "See jobs near you" card (allowed or "Not now").
+const ASKED_KEY = "wm-location-asked";
 const CARD_W = 392;
 // Gap between the pin point and the card: clears the pin's label pill.
 const CARD_GAP = 100;
@@ -60,14 +62,52 @@ function boundsOf(jobs: { lat: number; lng: number }[]): MapTarget | null {
   };
 }
 
-// Where the map opens: the jobs in the visitor's country, else the UAE's,
-// else all of them.
+// Where the map opens before we know the visitor's location: the jobs in
+// their country (from their connection), else all of them.
 function startJobs<T extends { countryCode: string | null }>(jobs: T[], country: string | null) {
-  for (const code of [country, "AE"]) {
-    const here = jobs.filter((j) => j.countryCode === code);
-    if (here.length) return here;
+  const here = country ? jobs.filter((j) => j.countryCode === country) : [];
+  return here.length ? here : jobs;
+}
+
+// Around the visitor and their nearest open jobs, so jobs show at once even
+// when the closest one is a few kilometres away. Only jobs not much further
+// than the closest one are included, so the map stays zoomed in.
+const NEAREST = 5;
+function nearestTarget(
+  point: [number, number],
+  jobs: { lat: number; lng: number; selectedAt: string | null }[],
+): MapTarget {
+  const sorted = jobs
+    .filter((j) => !j.selectedAt)
+    .map((j) => ({ j, km: distanceKm(point, [j.lat, j.lng]) }))
+    .sort((a, b) => a.km - b.km);
+  if (!sorted.length) return { center: point, zoom: 13 };
+  const reach = Math.max(sorted[0].km * 3, 3);
+  const near = sorted.filter(({ km }) => km <= reach).slice(0, NEAREST);
+  if (near.every(({ km }) => km < 1)) return { center: point, zoom: 14 };
+  const lats = [point[0], ...near.map(({ j }) => j.lat)];
+  const lngs = [point[1], ...near.map(({ j }) => j.lng)];
+  return {
+    bounds: [
+      [Math.min(...lats), Math.min(...lngs)],
+      [Math.max(...lats), Math.max(...lngs)],
+    ],
+  };
+}
+
+function readAsked(): boolean {
+  try {
+    return localStorage.getItem(ASKED_KEY) === "1";
+  } catch {
+    return false;
   }
-  return jobs;
+}
+function rememberAsked() {
+  try {
+    localStorage.setItem(ASKED_KEY, "1");
+  } catch {
+    // Storage blocked: the card may show again next visit.
+  }
 }
 
 function readSaved(): string[] {
@@ -115,6 +155,12 @@ export function JobExplorer({
   const [moveSearch, setMoveSearch] = useState(true);
   const [variant, setVariant] = useState<"light" | "satellite">("light");
   const [saved, setSaved] = useState<string[]>([]);
+  // The "See jobs near you" card, on a first visit until it is answered.
+  const [askLocation, setAskLocation] = useState(false);
+  const jobsRef = useRef(jobs);
+  useEffect(() => {
+    jobsRef.current = jobs;
+  }, [jobs]);
   const [anchor, setAnchor] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const [target, setTarget] = useState<MapTarget | null>(() => {
     const job = initialJobs.find((j) => j.id === initialJobId);
@@ -154,7 +200,7 @@ export function JobExplorer({
       (pos) => {
         const point: [number, number] = [pos.coords.latitude, pos.coords.longitude];
         setOrigin({ point, kind: "me" });
-        setTarget({ center: point, zoom: 13 });
+        setTarget(nearestTarget(point, jobsRef.current));
         setLocating(false);
       },
       () => {
@@ -165,15 +211,22 @@ export function JobExplorer({
     );
   }, [t]);
 
-  // Use the location straight away only if the browser already allows it.
+  // Already allowed: use the location straight away. Not asked yet: show the
+  // "See jobs near you" card (a shared job link opens on that job instead).
   useEffect(() => {
+    if (initialJobId) return;
     let cancelled = false;
     (async () => {
+      let state: PermissionState | null = null;
       try {
-        const status = await navigator.permissions?.query({ name: "geolocation" });
-        if (!cancelled && status?.state === "granted" && !initialJobId) locate();
+        state = (await navigator.permissions?.query({ name: "geolocation" }))?.state ?? null;
       } catch {
-        // Permissions API missing (older Safari): wait for "Near me".
+        // Permissions API missing (older Safari): ask with the card.
+      }
+      if (cancelled) return;
+      if (state === "granted") locate();
+      else if (state !== "denied" && "geolocation" in navigator && !readAsked()) {
+        setAskLocation(true);
       }
     })();
     return () => {
@@ -394,6 +447,54 @@ export function JobExplorer({
     />
   );
 
+  const locationCard = askLocation ? (
+    <div
+      role="dialog"
+      aria-labelledby="ask-location-title"
+      className={cn(
+        "absolute inset-x-4 top-[132px] z-[1050] mx-auto max-w-[400px] rounded-3xl p-5 sm:top-[104px]",
+        floating,
+      )}
+    >
+      <div className="flex items-start gap-3">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-wm-tint text-wm-blue">
+          <WmIcon name="nearMe" size={20} stroke={2.2} />
+        </span>
+        <div className="flex min-w-0 flex-col gap-1">
+          <h2 id="ask-location-title" className="m-0 text-[17px] font-extrabold tracking-[-0.3px]">
+            {t("promptTitle")}
+          </h2>
+          <p className="m-0 text-sm leading-snug font-medium text-wm-slate">{t("promptBody")}</p>
+        </div>
+      </div>
+      <div className="mt-4 flex gap-2">
+        <button
+          type="button"
+          autoFocus
+          onClick={() => {
+            rememberAsked();
+            setAskLocation(false);
+            locate();
+          }}
+          className="flex h-11 grow items-center justify-center gap-2 rounded-full bg-wm-blue text-sm font-bold text-white"
+        >
+          <WmIcon name="nearMe" size={16} stroke={2.2} />
+          {t("useLocation")}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            rememberAsked();
+            setAskLocation(false);
+          }}
+          className="h-11 rounded-full px-4 text-sm font-bold text-wm-body hover:bg-wm-mist"
+        >
+          {t("notNow")}
+        </button>
+      </div>
+    </div>
+  ) : null;
+
   const nearMe = (
     <button
       type="button"
@@ -432,6 +533,8 @@ export function JobExplorer({
         onView={setView}
         start={start}
       />
+
+      {locationCard}
 
       {/* Both top bars are rendered; CSS picks one, so phones never flash the desktop bar. */}
       <div className="sm:hidden">

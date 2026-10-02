@@ -48,7 +48,7 @@ test("a candidate completes the real interview: Test, Task (profile, CV, 7 video
   await page.getByRole("button", { name: "Start application" }).click();
 
   // ------------------------------------------------------------ Test
-  await expect(page.getByText("Step 1 of 3 · Test")).toBeVisible();
+  await expect(page.getByText("Step 1 of 3 · Exam")).toBeVisible();
   await expect(page.getByText(/25 questions/)).toBeVisible();
   await expect(page.getByText(/You'll have 25 minutes/)).toBeVisible();
   await page.getByRole("button", { name: "Start the test" }).click();
@@ -73,7 +73,7 @@ test("a candidate completes the real interview: Test, Task (profile, CV, 7 video
   await page.getByRole("button", { name: "Finish test" }).click();
 
   // ------------------------------------------------------------ Task
-  await expect(page.getByText("Step 2 of 3 · Task")).toBeVisible();
+  await expect(page.getByText("Step 2 of 3 · Execute")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Personal information" })).toBeVisible();
   // Everything is required: Continue flags the empty fields.
   await page.getByRole("button", { name: "Continue" }).click();
@@ -130,7 +130,7 @@ test("a candidate completes the real interview: Test, Task (profile, CV, 7 video
   await page.getByRole("button", { name: "Continue" }).click();
 
   // ------------------------------------------------------------ Survey
-  await expect(page.getByText("Step 3 of 3 · Survey")).toBeVisible();
+  await expect(page.getByText("Step 3 of 3 · Engage")).toBeVisible();
   const questions = page.locator("main ol > li");
   await expect(questions).toHaveCount(25);
   // Q1: "Other" asks what.
